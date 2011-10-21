@@ -1,0 +1,3 @@
+http://sourceforge.net/projects/javaxdelta/
+version 2.0.1
+2009-09-24

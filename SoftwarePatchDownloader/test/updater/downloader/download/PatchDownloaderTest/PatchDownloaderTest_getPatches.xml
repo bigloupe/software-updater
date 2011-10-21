@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<root>
+	<releases></releases>
+	<updates>
+	    <update id="1"><version><from>1.0.0</from><to>1.0.1</to></version><patch><url>url</url><checksum>cs</checksum><length>82</length></patch></update>
+	    <update id="2"><version><from>1.0.0</from><to>1.0.2</to></version><patch><url>url</url><checksum>cs</checksum><length>187</length></patch></update>
+	    <update id="3"><version><from>1.0.0</from><to>1.0.3</to></version><patch><url>url</url><checksum>cs</checksum><length>174</length></patch></update>
+	    <update id="4"><version><from>1.0.0</from><to>1.0.4</to></version><patch><url>url</url><checksum>cs</checksum><length>251</length></patch></update>
+	    <update id="5"><version><from>1.0.0</from><to>1.0.5</to></version><patch><url>url</url><checksum>cs</checksum><length>407</length></patch></update>
+	    <update id="6"><version><from>1.0.0</from><to>1.0.6</to></version><patch><url>url</url><checksum>cs</checksum><length>214</length></patch></update>
+
+	    <update id="7"><version><from>1.0.1</from><to>1.0.2</to></version><patch><url>url</url><checksum>cs</checksum><length>75</length></patch></update>
+	    <update id="8"><version><from>1.0.1</from><to>1.0.3</to></version><patch><url>url</url><checksum>cs</checksum><length>30</length></patch></update>
+	    <update id="9"><version><from>1.0.1</from><to>1.0.4</to></version><patch><url>url</url><checksum>cs</checksum><length>13</length></patch></update>
+
+	    <update id="10"><version><from>1.0.2</from><to>1.0.3</to></version><patch><url>url</url><checksum>cs</checksum><length>16</length></patch></update>
+	    <update id="11"><version><from>1.0.2</from><to>1.0.4</to></version><patch><url>url</url><checksum>cs</checksum><length>200</length></patch></update>
+	    <update id="12"><version><from>1.0.2</from><to>1.0.5</to></version><patch><url>url</url><checksum>cs</checksum><length>204</length></patch></update>
+
+	    <update id="13"><version><from>1.0.3</from><to>1.0.4</to></version><patch><url>url</url><checksum>cs</checksum><length>100</length></patch></update>
+	    <update id="14"><version><from>1.0.3</from><to>1.0.5</to></version><patch><url>url</url><checksum>cs</checksum><length>88</length></patch></update>
+	    <update id="15"><version><from>1.0.3</from><to>1.0.6</to></version><patch><url>url</url><checksum>cs</checksum><length>273</length></patch></update>
+
+	    <update id="16"><version><from>1.0.4</from><to>1.0.5</to></version><patch><url>url</url><checksum>cs</checksum><length>7</length></patch></update>
+	    <update id="17"><version><from>1.0.4</from><to>1.0.6</to></version><patch><url>url</url><checksum>cs</checksum><length>184</length></patch></update>
+
+	    <update id="18"><version><from>1.0.5</from><to>1.0.6</to></version><patch><url>url</url><checksum>cs</checksum><length>14</length></patch></update>
+	</updates>
+</root>
