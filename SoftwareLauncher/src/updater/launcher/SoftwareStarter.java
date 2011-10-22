@@ -36,8 +36,8 @@ public class SoftwareStarter {
     }
 
     public static void start(File clientScriptFile, Client client, String[] args) throws IOException, InvalidFormatException, LaunchFailedException {
-        String jarPath = client.getJarPath();
-        String mainClass = client.getMainClass();
+        String jarPath = client.getLaunchJarPath();
+        String mainClass = client.getLaunchMainClass();
         String storagePath = client.getStoragePath();
 
         Information clientInfo = client.getInformation();
@@ -54,18 +54,18 @@ public class SoftwareStarter {
             softwareIcon = ImageIO.read(new File(clientInfo.getSoftwareIconPath()));
         }
         Image updaterIcon;
-        if (clientInfo.getUpdaterIconLocation().equals("jar")) {
-            URL resourceURL = SoftwareStarter.class.getResource(clientInfo.getUpdaterIconPath());
+        if (clientInfo.getLauncherIconLocation().equals("jar")) {
+            URL resourceURL = SoftwareStarter.class.getResource(clientInfo.getLauncherIconPath());
             if (resourceURL != null) {
                 updaterIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
             } else {
-                throw new IOException("Resource not found: " + clientInfo.getUpdaterIconPath());
+                throw new IOException("Resource not found: " + clientInfo.getLauncherIconPath());
             }
         } else {
-            updaterIcon = ImageIO.read(new File(clientInfo.getUpdaterIconPath()));
+            updaterIcon = ImageIO.read(new File(clientInfo.getLauncherIconPath()));
         }
 
-        UpdateResult updateResult = BatchPatcher.update(clientScriptFile, client, new File(storagePath), clientInfo.getSoftwareName(), softwareIcon, clientInfo.getUpdaterTitle(), updaterIcon);
+        UpdateResult updateResult = BatchPatcher.update(clientScriptFile, client, new File(storagePath), clientInfo.getSoftwareName(), softwareIcon, clientInfo.getLauncherTitle(), updaterIcon);
         if (updateResult.isUpdateSucceed() || updateResult.isLaunchSoftware()) {
             startSoftware(jarPath, mainClass, args);
         }

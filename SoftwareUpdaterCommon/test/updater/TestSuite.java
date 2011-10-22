@@ -1,4 +1,4 @@
-package updater.launcher;
+package updater;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -8,10 +8,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    updater.launcher.SoftwareStarterTest.class,
-    updater.launcher.patch.PatchLogTest.class
+    updater.script.ScriptTest.class
 })
 public class TestSuite {
-
-    public static final String pathToTestPackage = "test/";
 }

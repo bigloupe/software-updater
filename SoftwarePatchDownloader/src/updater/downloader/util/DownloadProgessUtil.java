@@ -18,7 +18,7 @@ public class DownloadProgessUtil {
     public DownloadProgessUtil() {
         downloadedSize = 0;
         totalSize = 0;
-        averageTimeSpan = 5;
+        averageTimeSpan = 5000;
         records = new LinkedList<Record>();
         speed = 0;
     }
@@ -72,7 +72,7 @@ public class DownloadProgessUtil {
         Iterator<Record> iterator = records.iterator();
         while (iterator.hasNext()) {
             Record record = iterator.next();
-            if (currentTime - record.time > averageTimeSpan * 1000) {
+            if (currentTime - record.time > averageTimeSpan) {
                 iterator.remove();
             } else {
                 if (record.time < minimumTime) {

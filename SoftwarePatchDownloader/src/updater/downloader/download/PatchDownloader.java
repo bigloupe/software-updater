@@ -24,12 +24,14 @@ import updater.downloader.download.RemoteContent.GetPatchResult;
 import updater.downloader.download.RemoteContent.RSAPublicKey;
 import updater.gui.UpdaterWindow;
 import updater.script.Catalog;
-import updater.script.Catalog.Update;
 import updater.script.Client;
 import updater.script.Client.Information;
 import updater.script.InvalidFormatException;
 import updater.downloader.util.DownloadProgessUtil;
 import updater.downloader.util.Util;
+import updater.script.Patch;
+import updater.script.Patch.Operation;
+import updater.script.Patch.ValidationFile;
 import updater.util.CommonUtil.ObjectReference;
 
 /**
@@ -71,19 +73,19 @@ public class PatchDownloader {
             softwareIcon = ImageIO.read(new File(clientInfo.getSoftwareIconPath()));
         }
         Image updaterIcon;
-        if (clientInfo.getUpdaterIconLocation().equals("jar")) {
-            URL resourceURL = SoftwareUpdater.class.getResource(clientInfo.getUpdaterIconPath());
+        if (clientInfo.getDownloaderIconLocation().equals("jar")) {
+            URL resourceURL = SoftwareUpdater.class.getResource(clientInfo.getDownloaderIconPath());
             if (resourceURL != null) {
                 updaterIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
             } else {
-                throw new IOException("Resource not found: " + clientInfo.getUpdaterIconPath());
+                throw new IOException("Resource not found: " + clientInfo.getDownloaderIconPath());
             }
         } else {
-            updaterIcon = ImageIO.read(new File(clientInfo.getUpdaterIconPath()));
+            updaterIcon = ImageIO.read(new File(clientInfo.getDownloaderIconPath()));
         }
 
         final Thread currentThread = Thread.currentThread();
-        final UpdaterWindow updaterGUI = new UpdaterWindow(clientInfo.getSoftwareName(), softwareIcon, clientInfo.getUpdaterTitle(), updaterIcon);
+        final UpdaterWindow updaterGUI = new UpdaterWindow(clientInfo.getSoftwareName(), softwareIcon, clientInfo.getDownloaderName(), updaterIcon);
         updaterGUI.addListener(new ActionListener() {
 
             @Override
@@ -98,7 +100,7 @@ public class PatchDownloader {
         final JFrame updaterFrame = updaterGUI.getGUI();
         updaterFrame.setVisible(true);
 
-        if (!clientScript.getUpdates().isEmpty()) {
+        if (!clientScript.getPatches().isEmpty()) {
             JOptionPane.showMessageDialog(updaterFrame, "You have to restart the application to make the update take effect.");
             disposeWindow(updaterFrame);
             return;
@@ -119,7 +121,7 @@ public class PatchDownloader {
             return;
         }
 
-        List<Update> updatePatches = getPatches(catalog, clientScript.getVersion());
+        List<Patch> updatePatches = getPatches(catalog, clientScript.getVersion());
         if (updatePatches.isEmpty()) {
             JOptionPane.showMessageDialog(updaterFrame, "There are no updates available.");
             disposeWindow(updaterFrame);
@@ -176,20 +178,20 @@ public class PatchDownloader {
             }
         };
 
-        List<Client.Update> existingUpdates = clientScript.getUpdates();
+        List<Patch> existingUpdates = clientScript.getPatches();
 
         // update storage path
-        for (Update update : updatePatches) {
+        for (Patch update : updatePatches) {
             File saveToFile = new File(clientScript.getStoragePath() + File.separator + update.getId() + ".patch");
             long saveToFileLength = saveToFile.length();
-            GetPatchResult updateResult = RemoteContent.getPatch(listener, update.getPatchUrl(), saveToFile, update.getPatchChecksum(), update.getPatchLength());
+            GetPatchResult updateResult = RemoteContent.getPatch(listener, update.getDownloadUrl(), saveToFile, update.getDownloadChecksum(), update.getDownloadLength());
             if (!updateResult.isInterrupted() && !updateResult.getResult() && saveToFileLength != 0) {
                 // if download failed and saveToFile is not empty, delete it and download again
                 if (saveToFile.exists() && saveToFile.length() > saveToFileLength) {
                     downloadedSize.setObj(downloadedSize.getObj() - (int) (saveToFile.length() - saveToFileLength));
                 }
                 saveToFile.delete();
-                updateResult = RemoteContent.getPatch(listener, update.getPatchUrl(), saveToFile, update.getPatchChecksum(), update.getPatchLength());
+                updateResult = RemoteContent.getPatch(listener, update.getDownloadUrl(), saveToFile, update.getDownloadChecksum(), update.getDownloadLength());
             }
             if (updateResult.isInterrupted() || !updateResult.getResult()) {
                 if (!updateResult.isInterrupted()) {
@@ -199,8 +201,12 @@ public class PatchDownloader {
                 return;
             }
 
-            existingUpdates.add(new Client.Update(update.getId(), update.getVersionFrom(), update.getVersionTo(), saveToFile.getAbsolutePath(), update.getPatchEncryptionType(), update.getPatchEncryptionKey(), update.getPatchEncryptionIV()));
-            clientScript.setUpdates(existingUpdates);
+            existingUpdates.add(new Patch(update.getId(),
+                    update.getVersionFrom(), null, update.getVersionTo(),
+                    saveToFile.getAbsolutePath(), update.getDownloadChecksum(), update.getDownloadLength(),
+                    update.getDownloadEncryptionType(), update.getDownloadEncryptionKey(), update.getDownloadEncryptionIV(),
+                    new ArrayList<Operation>(), new ArrayList<ValidationFile>()));
+            clientScript.setPatches(existingUpdates);
             Util.saveClientScript(clientScriptFile, clientScript);
         }
 
@@ -218,26 +224,26 @@ public class PatchDownloader {
         }
     }
 
-    protected static List<Update> getPatches(Catalog catalog, String currentVersion) {
-        return getPatches(catalog.getUpdates(), currentVersion);
+    protected static List<Patch> getPatches(Catalog catalog, String currentVersion) {
+        return getPatches(catalog.getPatchs(), currentVersion);
     }
 
-    protected static List<Update> getPatches(List<Update> allUpdates, String fromVersion) {
-        List<Update> returnResult = new ArrayList<Update>();
+    protected static List<Patch> getPatches(List<Patch> allPatches, String fromVersion) {
+        List<Patch> returnResult = new ArrayList<Patch>();
 
         String maxVersion = fromVersion;
-        for (Update update : allUpdates) {
-            if (update.getVersionFrom().equals(fromVersion)) {
-                List<Update> tempResult = new ArrayList<Update>();
+        for (Patch patch : allPatches) {
+            if (patch.getVersionFrom().equals(fromVersion)) {
+                List<Patch> tempResult = new ArrayList<Patch>();
 
-                tempResult.add(update);
+                tempResult.add(patch);
 
-                List<Update> _allUpdates = getPatches(allUpdates, update.getVersionTo());
+                List<Patch> _allUpdates = getPatches(allPatches, patch.getVersionTo());
                 if (!_allUpdates.isEmpty()) {
                     tempResult.addAll(_allUpdates);
                 }
 
-                Update _maxUpdateThisRound = tempResult.get(tempResult.size() - 1);
+                Patch _maxUpdateThisRound = tempResult.get(tempResult.size() - 1);
                 long compareResult = Util.compareVersion(_maxUpdateThisRound.getVersionTo(), maxVersion);
                 if (compareResult > 0) {
                     maxVersion = _maxUpdateThisRound.getVersionTo();
@@ -256,10 +262,10 @@ public class PatchDownloader {
         return returnResult;
     }
 
-    protected static long calculateTotalLength(List<Update> allUpdates) {
+    protected static long calculateTotalLength(List<Patch> allPatches) {
         long returnResult = 0;
-        for (Update _update : allUpdates) {
-            returnResult += _update.getPatchLength();
+        for (Patch patch : allPatches) {
+            returnResult += patch.getDownloadLength();
         }
         return returnResult;
     }
@@ -277,15 +283,11 @@ public class PatchDownloader {
         String catalogURL = client.getCatalogUrl();
 
         RSAPublicKey publicKey = null;
-        if (client.getPublicKey() != null) {
-            String publicKeyString = client.getPublicKey();
-            int pos = publicKeyString.indexOf(';');
-            if (pos != -1) {
-                publicKey = new RSAPublicKey(new BigInteger(publicKeyString.substring(0, pos), 16), new BigInteger(publicKeyString.substring(pos + 1, publicKeyString.length()), 16));
-            }
+        if (client.getCatalogPublicKeyModulus() != null) {
+            publicKey = new RSAPublicKey(new BigInteger(client.getCatalogPublicKeyModulus()), new BigInteger(client.getCatalogPublicKeyExponent(), 16));
         }
 
-        GetCatalogResult getCatalogResult = RemoteContent.getCatalog(catalogURL, client.getLastUpdated(), publicKey);
+        GetCatalogResult getCatalogResult = RemoteContent.getCatalog(catalogURL, client.getCatalogLastUpdated(), publicKey);
         if (getCatalogResult.isNotModified()) {
             return null;
         }

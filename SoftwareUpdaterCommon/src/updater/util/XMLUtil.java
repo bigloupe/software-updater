@@ -55,7 +55,7 @@ public class XMLUtil {
 
     public static String getTextContent(Element element, String tagName, boolean mustExist) throws InvalidFormatException {
         Element resultElement = getElement(element, tagName, mustExist);
-        return resultElement.getTextContent();
+        return resultElement == null ? null : resultElement.getTextContent();
     }
 
     public static String getOutput(Document doc) {

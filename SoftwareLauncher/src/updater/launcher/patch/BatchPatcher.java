@@ -17,7 +17,7 @@ import updater.launcher.patch.PatchLogReader.UnfinishedPatch;
 import updater.launcher.util.Util;
 import updater.gui.UpdaterWindow;
 import updater.script.Client;
-import updater.script.Client.Update;
+import updater.script.Patch;
 import watne.seis720.project.KeySize;
 import watne.seis720.project.Mode;
 import watne.seis720.project.Padding;
@@ -31,7 +31,7 @@ public class BatchPatcher {
     protected BatchPatcher() {
     }
 
-    protected static int getPatchStartIndex(Update update, PatchLogReader patchLogReader) {
+    protected static int getPatchStartIndex(Patch update, PatchLogReader patchLogReader) {
         if (patchLogReader == null) {
             return 0;
         }
@@ -45,7 +45,7 @@ public class BatchPatcher {
     public static UpdateResult update(File clientScriptFile, Client clientScript, File tempDir, String windowTitle, Image windowIcon, String title, Image icon) {
         UpdateResult returnResult = new UpdateResult(false, false);
 
-        List<Update> updates = clientScript.getUpdates();
+        List<Patch> updates = clientScript.getPatches();
         if (updates.isEmpty()) {
             return new UpdateResult(true, true);
         }
@@ -86,9 +86,9 @@ public class BatchPatcher {
 
                 List<Integer> finishedPatches = patchLogReader.getfinishedPatches();
                 for (Integer finishedPatch : finishedPatches) {
-                    Iterator<Update> iterator = updates.iterator();
+                    Iterator<Patch> iterator = updates.iterator();
                     while (iterator.hasNext()) {
-                        Update _patch = iterator.next();
+                        Patch _patch = iterator.next();
                         if (_patch.getId() == finishedPatch) {
                             rewriteClientXML = true;
                             iterator.remove();
@@ -97,7 +97,7 @@ public class BatchPatcher {
                 }
 
                 if (rewriteClientXML) {
-                    clientScript.setUpdates(updates);
+                    clientScript.setPatches(updates);
                     Util.saveClientScript(clientScriptFile, clientScript);
                 }
 
@@ -128,17 +128,17 @@ public class BatchPatcher {
             // iterate patches and do patch
             final float stepSize = 97F / (float) updates.size();
             int count = -1;
-            Iterator<Update> iterator = updates.iterator();
+            Iterator<Patch> iterator = updates.iterator();
             while (iterator.hasNext()) {
                 count++;
-                Update _update = iterator.next();
+                Patch _update = iterator.next();
 
                 // check if the update if not suitable
                 if (Util.compareVersion(clientScript.getVersion(), _update.getVersionFrom()) > 0) {
                     // normally should not reach here
                     iterator.remove();
                     // save the client scirpt
-                    clientScript.setUpdates(updates);
+                    clientScript.setPatches(updates);
                     Util.saveClientScript(clientScriptFile, clientScript);
                     continue;
                 }
@@ -155,8 +155,8 @@ public class BatchPatcher {
                 }
                 File tempDirForPatch = new File(tempDirPath);
 
-                File patchFile = new File(_update.getPath());
-                File decryptedPatchFile = new File(_update.getPath() + ".decrypted");
+                File patchFile = new File(_update.getId() + ".patch");
+                File decryptedPatchFile = new File(_update.getId() + ".patch.decrypted");
                 if (!patchFile.exists() && decryptedPatchFile.exists()) {
                     decryptedPatchFile.renameTo(patchFile);
                 }
@@ -164,13 +164,13 @@ public class BatchPatcher {
                 // need modification to allow cancel or make it an output stream
                 updaterGUI.setEnableCancel(false);
                 updaterGUI.setMessage("Decrypting patch ...");
-                if (_update.getEncryptionKey() != null) {
+                if (_update.getDownloadEncryptionKey() != null) {
                     WatneAES_Implementer aesCipher = new WatneAES_Implementer();
                     aesCipher.setMode(Mode.CBC);
                     aesCipher.setPadding(Padding.PKCS5PADDING);
                     aesCipher.setKeySize(KeySize.BITS256);
-                    aesCipher.setKey(Util.hexStringToByteArray(_update.getEncryptionKey()));
-                    aesCipher.setInitializationVector(Util.hexStringToByteArray(_update.getEncryptionIV()));
+                    aesCipher.setKey(Util.hexStringToByteArray(_update.getDownloadEncryptionKey()));
+                    aesCipher.setInitializationVector(Util.hexStringToByteArray(_update.getDownloadEncryptionIV()));
                     aesCipher.decryptFile(patchFile, decryptedPatchFile);
                     patchFile.delete();
                     decryptedPatchFile.renameTo(patchFile);
@@ -210,7 +210,7 @@ public class BatchPatcher {
 
                     // save the client scirpt
                     clientScript.setVersion(_update.getVersionTo());
-                    clientScript.setUpdates(updates);
+                    clientScript.setPatches(updates);
                     Util.saveClientScript(clientScriptFile, clientScript);
 
                     Util.truncateFolder(tempDirForPatch);

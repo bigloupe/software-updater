@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<patch id="2">
+  <version>
+    <from-subsequent>1.0.1</from-subsequent>
+    <to>1.0.2</to>
+  </version>
+  <download>
+    <url>http://localhost/SoftwareUpdaterTest/2.patch</url>
+    <checksum>ded8e7d0f7361ee5521ca6bd945471829205b32868ee8013685ac131e9d9f80b</checksum>
+    <length>27220688</length>
+  </download>
+</patch>

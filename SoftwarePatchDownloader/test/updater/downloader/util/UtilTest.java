@@ -1,7 +1,6 @@
 package updater.downloader.util;
 
-import updater.downloader.util.Util;
-import updater.TestSuite;
+import updater.TestCommon;
 import java.io.File;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.PublicKey;
@@ -23,15 +22,24 @@ import static org.junit.Assert.*;
  */
 public class UtilTest {
 
+    protected final String packagePath = TestCommon.pathToTestPackage + this.getClass().getCanonicalName().replace('.', '/') + "/";
+
     public UtilTest() {
+    }
+
+    protected static String getClassName() {
+        return new Object() {
+        }.getClass().getEnclosingClass().getName();
     }
 
     @BeforeClass
     public static void setUpClass() throws Exception {
+        System.out.println("***** " + getClassName() + " *****");
     }
 
     @AfterClass
     public static void tearDownClass() throws Exception {
+        System.out.println("******************************\r\n");
     }
 
     @Before
@@ -47,7 +55,7 @@ public class UtilTest {
      */
     @Test
     public void testHumanReadableTimeCount() {
-        System.out.println("humanReadableTimeCount");
+        System.out.println("+++++ testHumanReadableTimeCount +++++");
         // 2 yrs, 3 mths, 4 days, 5h 10m 45s
         int time = (31536000 * 2) + (2592000 * 3) + (86400 * 4) + (3600 * 5) + (60 * 10) + 45;
         assertEquals("2 yrs", Util.humanReadableTimeCount(time, 1));
@@ -107,36 +115,35 @@ public class UtilTest {
      */
     @Test
     public void testRsaEnDecrypt() {
-        System.out.println("testRsaEnDecrypt");
+        System.out.println("+++++ testRsaEnDecrypt +++++");
         try {
-            BigInteger mod = new BigInteger(TestSuite.modulesString, 16);
+            BigInteger mod = new BigInteger(TestCommon.modulusString, 16);
 
-            RSAPrivateKeySpec privateKeySpec = new RSAPrivateKeySpec(mod, new BigInteger(TestSuite.privateExponentString, 16));
-            RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(mod, new BigInteger(TestSuite.publicExponentString, 16));
+            RSAPrivateKeySpec privateKeySpec = new RSAPrivateKeySpec(mod, new BigInteger(TestCommon.privateExponentString, 16));
+            RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(mod, new BigInteger(TestCommon.publicExponentString, 16));
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
             PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
 
-            File testFile = new File(TestSuite.pathToTestPackage + UtilTest.class.getPackage().getName().replace('.', '/') + "/UtilTest/" + "UtilTest_rsaEnDecrypt.ico");
+            File testFile = new File(packagePath + "UtilTest_rsaEnDecrypt.ico");
             byte[] testData = Util.readFile(testFile);
-            assertTrue(testData != null && testData.length > 0);
+            assertNotNull(testData);
+            assertTrue(testData.length > 0);
 
             // encrypt
             int blockSize = mod.bitLength() / 8;
             byte[] encrypted = Util.rsaEncrypt(privateKey, blockSize, blockSize - 11, testData);
-            assertTrue(encrypted != null);
+            assertNotNull(encrypted);
             assertEquals(1280, encrypted.length);
 
             // decrypt
             byte[] decrypted = Util.rsaDecrypt(publicKey, blockSize, encrypted);
-            assertTrue(decrypted != null);
+            assertNotNull(decrypted);
             assertEquals(1150, decrypted.length);
 
-            for (int i = 0, iEnd = testData.length; i < iEnd; i++) {
-                assertEquals(testData[i], decrypted[i]);
-            }
+            assertArrayEquals(testData, decrypted);
         } catch (Exception ex) {
-            fail("Exception caught in testRsaEnDecrypt");
+            fail("! Exception caught.");
             Logger.getLogger(UtilTest.class.getName()).log(Level.SEVERE, null, ex);
         }
     }

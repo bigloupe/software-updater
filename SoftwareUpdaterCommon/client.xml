@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<root>
+  <version>1.0.0</version>
+  <storage-path>update/</storage-path>
+  <information>
+    <software>
+      <name>Language Files Tool</name>
+      <icon>
+        <location>folder</location>
+        <path>software_icon.png</path>
+      </icon>
+    </software>
+    <launcher>
+      <name>Update Software</name>
+      <icon>
+        <location>folder</location>
+        <path>updater_icon.png</path>
+      </icon>
+    </launcher>
+    <downloader>
+      <name>Update Software</name>
+      <icon>
+        <location>folder</location>
+        <path>updater_icon.png</path>
+      </icon>
+    </downloader>
+  </information>
+  <launch>
+    <type>jar</type>
+    <jar-path>LanguageFilesTool.jar</jar-path>
+    <main-class>langfiles.Main</main-class>
+  </launch>
+  <catalog>
+    <url>http://localhost/SoftwareUpdaterTest/catalog_manipulated.xml</url>
+    <public-key>
+      <modulus>0080ac742891f8ba0d59dcc96b464e2245e53a9b29f8219aa0b683ad10007247ced6d74b7bef2a6b0555ec22735827b2b9dfe94664d492a723ad78d6d97d1c9b19ade1225edc060eaced684436ce221659c7e8320bc2bf5ddcdbe6751b0f476066437ccc50ea0e5afafb6a59581df509145d34aa4d0541f500f09868686f5681a509bf58feda73b35326f816b60205550783d628e5e61b24e37198349e416f09ef7579f6f25b5725d54df44017e256b1c7060f0c5ba5f3dd162e26fc5fbfcf4294ee261124737b1cdc3024dc2be62c8ebd89c8766bfaf3606a9e7aefa4fd41758498441fe69a967005c66df3ac0551d7b04910c6a9fa272aa6d081defbc2db174f</modulus>
+      <exponent>010001</exponent>
+    </public-key>
+    <last-updated>1000000000000</last-updated>
+  </catalog>
+</root>

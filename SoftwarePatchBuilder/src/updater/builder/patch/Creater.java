@@ -52,7 +52,11 @@ public class Creater {
         List<Operation> operations = new ArrayList<Operation>();
         List<ValidationFile> validations = new ArrayList<ValidationFile>();
 
-        Patch patchScript = new Patch(patchId, fromVersion, toVersion, operations, validations);
+        Patch patchScript = new Patch(patchId,
+                fromVersion, null, toVersion,
+                null, null, -1,
+                null, null, null,
+                operations, validations);
 
         List<OperationRecord> newFileList = new ArrayList<OperationRecord>();
         List<OperationRecord> removeFileList = new ArrayList<OperationRecord>();
@@ -437,14 +441,14 @@ public class Creater {
 //        System.out.println(Util.getSHA256(new File("1.patch")));
 
 
-//        String modulesString = "0092b826d59bad50af9bcbca27fc6a6b74c63068790906484ecc9b5520e0246e5fe853b842a49d3e95d448497d28e616d1924ca48e7ccb7e9e1a27f9cba4c0767d566dcd24c7e25338570a6e2ab19a934d0f903556bd26d897e4bf16735fed32e6dc904eef438a133053eb93a081c338e64a8a84622906901806e4571bbb830c9d0c993f527f1004e99abc8fd96e1376235754a9289d534f6cc678f5b643e29f7c39fe64c9ccd31d43c1624d452c3fa2662d255c48502457a517e670f542ca3be46f50faa24b976779f4bc222cd01a6e8713a9b45b57dd117f1952bb31c886c84aa0961aff24eac140fc08a9338c37109ea4dc82f1b74d00a3fc9cbae78bc68caf";
+//        String modulusString = "0092b826d59bad50af9bcbca27fc6a6b74c63068790906484ecc9b5520e0246e5fe853b842a49d3e95d448497d28e616d1924ca48e7ccb7e9e1a27f9cba4c0767d566dcd24c7e25338570a6e2ab19a934d0f903556bd26d897e4bf16735fed32e6dc904eef438a133053eb93a081c338e64a8a84622906901806e4571bbb830c9d0c993f527f1004e99abc8fd96e1376235754a9289d534f6cc678f5b643e29f7c39fe64c9ccd31d43c1624d452c3fa2662d255c48502457a517e670f542ca3be46f50faa24b976779f4bc222cd01a6e8713a9b45b57dd117f1952bb31c886c84aa0961aff24eac140fc08a9338c37109ea4dc82f1b74d00a3fc9cbae78bc68caf";
 //        String publicExponentString = "010001";
 //        String privateExponentString = "0090641d0be1ae9a96887bf192928e64fc4243c7bd3e0d69c1eb08ffa9600d5a76969d35dc98468c1e4611720973e3a51750a48eda0fa4f11245698c23471b8640e97b1c0613950013954d9587fccbc42575a89565acb77b37590e59d8e7d1f7634e33d30b136be26090666a1def36a25bb98642ac9bf5727fc2e09b7d96776d43ee27eda1dbc465ed23148842f425c89814b69b19fd4b344d7160bae32383ba08d3a88b3a7f7356a543eb56156ee6098e62be8be54d121a1967e2676f493e4ad1adeec409cacb5d37bade5a58b80b6ac2136e756c9eba9a421864a2dfd112f289455424bd5a965ed91e8b10421984dc534199e2a1129c5808ed19ca1bd269f1c9";
-        String modulesString = "0080ac742891f8ba0d59dcc96b464e2245e53a9b29f8219aa0b683ad10007247ced6d74b7bef2a6b0555ec22735827b2b9dfe94664d492a723ad78d6d97d1c9b19ade1225edc060eaced684436ce221659c7e8320bc2bf5ddcdbe6751b0f476066437ccc50ea0e5afafb6a59581df509145d34aa4d0541f500f09868686f5681a509bf58feda73b35326f816b60205550783d628e5e61b24e37198349e416f09ef7579f6f25b5725d54df44017e256b1c7060f0c5ba5f3dd162e26fc5fbfcf4294ee261124737b1cdc3024dc2be62c8ebd89c8766bfaf3606a9e7aefa4fd41758498441fe69a967005c66df3ac0551d7b04910c6a9fa272aa6d081defbc2db174f";
+        String modulusString = "0080ac742891f8ba0d59dcc96b464e2245e53a9b29f8219aa0b683ad10007247ced6d74b7bef2a6b0555ec22735827b2b9dfe94664d492a723ad78d6d97d1c9b19ade1225edc060eaced684436ce221659c7e8320bc2bf5ddcdbe6751b0f476066437ccc50ea0e5afafb6a59581df509145d34aa4d0541f500f09868686f5681a509bf58feda73b35326f816b60205550783d628e5e61b24e37198349e416f09ef7579f6f25b5725d54df44017e256b1c7060f0c5ba5f3dd162e26fc5fbfcf4294ee261124737b1cdc3024dc2be62c8ebd89c8766bfaf3606a9e7aefa4fd41758498441fe69a967005c66df3ac0551d7b04910c6a9fa272aa6d081defbc2db174f";
         String publicExponentString = "010001";
         String privateExponentString = "45fa8429d4494b161bbb21a7bfd29a7d1ccfa4b74c852a0d2175b7572e86f85a9b28f79a6d55ca625a7a53ba1b456bc3feec65264d1d7cdcc069299f9a95461ccf1dd38d7767abef8c25da835bd3da07f5da67ed517ab5d779987a33bf397849e58627b011bac0ec227392278413515ecbd9ea8c7cc1843780a1c296998698769825cd7ac298f5a468af873e2e30eb94cf867086742d0b8d1fd9ab7efc7ce3f07a855fe280e8714c963c8436a20fbaf81f874a6714da4699a75cb5c7e2fa0546038f8a8134661a25ce30ff37d73bd94dee33e7bdc6425729e2fd71bdb938a2f5cd7caf56eca8f7ccb8ea320b20610ffeae7f5c8380da62dca4d7964ded34b731";
 
-        System.out.println(makeXMLForGetCatalogTest(new File("RemoteContentTest_getCatalog.xml"), new File("RemoteContentTest_getCatalog_manipulated.xml"), new BigInteger(modulesString, 16), new BigInteger(privateExponentString, 16)));
+        System.out.println(makeXMLForGetCatalogTest(new File("RemoteContentTest_getCatalog.xml"), new File("RemoteContentTest_getCatalog_manipulated.xml"), new BigInteger(modulusString, 16), new BigInteger(privateExponentString, 16)));
 
     }
 }

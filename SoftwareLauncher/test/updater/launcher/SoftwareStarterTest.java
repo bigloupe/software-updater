@@ -1,7 +1,6 @@
 package updater.launcher;
 
-import updater.launcher.SoftwareStarter;
-import updater.launcher.LaunchFailedException;
+import updater.TestCommon;
 import java.io.File;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,15 +16,24 @@ import static org.junit.Assert.*;
  */
 public class SoftwareStarterTest {
 
+    protected final String packagePath = TestCommon.pathToTestPackage + this.getClass().getCanonicalName().replace('.', '/') + "/";
+
     public SoftwareStarterTest() {
+    }
+
+    protected static String getClassName() {
+        return new Object() {
+        }.getClass().getEnclosingClass().getName();
     }
 
     @BeforeClass
     public static void setUpClass() throws Exception {
+        System.out.println("***** " + getClassName() + " *****");
     }
 
     @AfterClass
     public static void tearDownClass() throws Exception {
+        System.out.println("******************************\r\n");
     }
 
     @Before
@@ -41,20 +49,20 @@ public class SoftwareStarterTest {
      */
     @Test
     public void testStartSoftware() {
-        System.out.println("startSoftware");
+        System.out.println("+++++ testStartSoftware +++++");
 
         File testFile = new File("testLaunch_A9fD6");
         testFile.delete();
-        assertEquals(false, testFile.exists());
+        assertFalse(testFile.exists());
         try {
-            SoftwareStarter.startSoftware(TestSuite.pathToTestPackage + SoftwareStarterTest.class.getPackage().getName().replace('.', '/') + "/SoftwareStarterTest/SoftwareStarterLaunchTest.jar", "softwarestarterlaunchtest.SoftwareStarterLaunchTest", new String[]{"testLaunch_A9fD6"});
+            SoftwareStarter.startSoftware(packagePath + "SoftwareStarterLaunchTest.jar", "softwarestarterlaunchtest.SoftwareStarterLaunchTest", new String[]{"testLaunch_A9fD6"});
         } catch (LaunchFailedException ex) {
-            fail("Launch failed");
+            fail("! Launch failed.");
             Logger.getLogger(SoftwareStarterTest.class.getName()).log(Level.SEVERE, null, ex);
         }
-        assertEquals(true, testFile.exists());
+        assertTrue(testFile.exists());
 
         testFile.delete();
-        assertEquals(false, testFile.exists());
+        assertFalse(testFile.exists());
     }
 }

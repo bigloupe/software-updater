@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<root>
+  <version>1.0.0</version>
+  <storage-path>update/</storage-path>
+  <information>
+    <downloader>
+      <name>Update Software</name>
+      <icon>
+        <location>folder</location>
+        <path>updater_icon.png</path>
+      </icon>
+    </downloader>
+  </information>
+  <launch>
+    <type>command</type>
+    <command>{java} -jar LanguageFilesTool.jar</command>
+  </launch>
+  <catalog>
+    <url>http://localhost/SoftwareUpdaterTest/catalog_manipulated.xml</url>
+    <last-updated>1000000000000</last-updated>
+  </catalog>
+</root>

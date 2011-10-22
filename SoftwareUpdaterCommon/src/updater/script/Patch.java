@@ -1,9 +1,6 @@
 package updater.script;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -11,6 +8,7 @@ import java.util.logging.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+import updater.util.CommonUtil;
 import updater.util.XMLUtil;
 
 /**
@@ -20,14 +18,35 @@ public class Patch {
 
     protected int id;
     protected String versionFrom;
+    protected String versionFromSubsequent;
     protected String versionTo;
+    protected String downloadUrl;
+    protected String downloadChecksum;
+    protected int downloadLength;
+    protected String downloadEncryptionType;
+    protected String downloadEncryptionKey;
+    protected String downloadEncryptionIV;
     protected List<Operation> operations;
     protected List<ValidationFile> validations;
 
-    public Patch(int id, String versionFrom, String versionTo, List<Operation> operations, List<ValidationFile> validations) {
+    public Patch(int id,
+            String versionFrom, String versionFromSubsequent, String versionTo,
+            String downloadUrl, String downloadChecksum, int downloadLength,
+            String downloadEncryptionType, String downloadEncryptionKey, String downloadEncryptionIV,
+            List<Operation> operations, List<ValidationFile> validations) {
         this.id = id;
+
         this.versionFrom = versionFrom;
+        this.versionFromSubsequent = versionFromSubsequent;
         this.versionTo = versionTo;
+
+        this.downloadUrl = downloadUrl;
+        this.downloadChecksum = downloadChecksum;
+        this.downloadLength = downloadLength;
+        this.downloadEncryptionType = downloadEncryptionType;
+        this.downloadEncryptionKey = downloadEncryptionKey;
+        this.downloadEncryptionIV = downloadEncryptionIV;
+
         this.operations = new ArrayList<Operation>(operations);
         this.validations = new ArrayList<ValidationFile>(validations);
     }
@@ -48,12 +67,68 @@ public class Patch {
         this.versionFrom = versionFrom;
     }
 
+    public String getVersionFromSubsequent() {
+        return versionFromSubsequent;
+    }
+
+    public void setVersionFromSubsequent(String versionFromSubsequent) {
+        this.versionFromSubsequent = versionFromSubsequent;
+    }
+
     public String getVersionTo() {
         return versionTo;
     }
 
     public void setVersionTo(String versionTo) {
         this.versionTo = versionTo;
+    }
+
+    public String getDownloadUrl() {
+        return downloadUrl;
+    }
+
+    public void setDownloadUrl(String downloadUrl) {
+        this.downloadUrl = downloadUrl;
+    }
+
+    public String getDownloadChecksum() {
+        return downloadChecksum;
+    }
+
+    public void setDownloadChecksum(String downloadChecksum) {
+        this.downloadChecksum = downloadChecksum;
+    }
+
+    public int getDownloadLength() {
+        return downloadLength;
+    }
+
+    public void setDownloadLength(int downloadLength) {
+        this.downloadLength = downloadLength;
+    }
+
+    public String getDownloadEncryptionType() {
+        return downloadEncryptionType;
+    }
+
+    public void setDownloadEncryptionType(String downloadEncryptionType) {
+        this.downloadEncryptionType = downloadEncryptionType;
+    }
+
+    public String getDownloadEncryptionKey() {
+        return downloadEncryptionKey;
+    }
+
+    public void setDownloadEncryptionKey(String downloadEncryptionKey) {
+        this.downloadEncryptionKey = downloadEncryptionKey;
+    }
+
+    public String getDownloadEncryptionIV() {
+        return downloadEncryptionIV;
+    }
+
+    public void setDownloadEncryptionIV(String downloadEncryptionIV) {
+        this.downloadEncryptionIV = downloadEncryptionIV;
     }
 
     public List<Operation> getOperations() {
@@ -78,36 +153,73 @@ public class Patch {
             throw new InvalidFormatException("XML format incorrect.");
         }
 
-        Element _updateNode = doc.getDocumentElement();
+        return read(doc.getDocumentElement());
+    }
 
+    public static Patch read(Element patchElement) throws InvalidFormatException {
         int _id = 0;
         try {
-            _id = Integer.parseInt(_updateNode.getAttribute("id"));
+            _id = Integer.parseInt(patchElement.getAttribute("id"));
         } catch (Exception ex) {
             throw new InvalidFormatException("attribute 'id' for 'update' element not exist");
         }
 
-        Element _versionElement = XMLUtil.getElement(_updateNode, "version", true);
-        String _versionFrom = XMLUtil.getTextContent(_versionElement, "from", true);
+        Element _versionElement = XMLUtil.getElement(patchElement, "version", true);
+        String _versionFrom = XMLUtil.getTextContent(_versionElement, "from", false);
+        String _versionFromSubsequent = XMLUtil.getTextContent(_versionElement, "from-subsequent", false);
         String _versionTo = XMLUtil.getTextContent(_versionElement, "to", true);
 
+        String _downloadUrl = null;
+        String _downloadChecksum = null;
+        int _downloadLength = -1;
+        String _downloadEncryptionType = null;
+        String _downloadEncryptionKey = null;
+        String _downloadEncryptionIV = null;
+        Element _downloadElement = XMLUtil.getElement(patchElement, "download", false);
+        if (_downloadElement != null) {
+            _downloadUrl = XMLUtil.getTextContent(_downloadElement, "url", true);
+            _downloadChecksum = XMLUtil.getTextContent(_downloadElement, "checksum", true);
+            _downloadLength = Integer.parseInt(XMLUtil.getTextContent(_downloadElement, "length", true));
+
+            Element _downloadEncryptionElement = XMLUtil.getElement(_downloadElement, "encryption", false);
+            if (_downloadEncryptionElement != null) {
+                _downloadEncryptionType = XMLUtil.getTextContent(_downloadEncryptionElement, "type", true);
+                _downloadEncryptionKey = XMLUtil.getTextContent(_downloadEncryptionElement, "key", true);
+                _downloadEncryptionIV = XMLUtil.getTextContent(_downloadEncryptionElement, "IV", true);
+            }
+        }
+
+        if (_versionFrom == null && _versionFromSubsequent == null) {
+            throw new InvalidFormatException("<from> or <from-subsequent> must exist under <version>.");
+        } else if (_versionFrom != null && _versionFromSubsequent != null) {
+            throw new InvalidFormatException("<version> cannot contain both <from> and <from-subsequent>.");
+        }
+
         List<Operation> _operations = new ArrayList<Operation>();
-        Element operationsElement = XMLUtil.getElement(_updateNode, "operations", true);
-        NodeList _operationNodeList = operationsElement.getElementsByTagName("operation");
-        for (int i = 0, iEnd = _operationNodeList.getLength(); i < iEnd; i++) {
-            Element _operationNode = (Element) _operationNodeList.item(i);
-            _operations.add(Operation.read(_operationNode));
+        Element operationsElement = XMLUtil.getElement(patchElement, "operations", false);
+        if (operationsElement != null) {
+            NodeList _operationNodeList = operationsElement.getElementsByTagName("operation");
+            for (int i = 0, iEnd = _operationNodeList.getLength(); i < iEnd; i++) {
+                Element _operationNode = (Element) _operationNodeList.item(i);
+                _operations.add(Operation.read(_operationNode));
+            }
         }
 
         List<ValidationFile> _validations = new ArrayList<ValidationFile>();
-        Element validationElement = XMLUtil.getElement(_updateNode, "validation", true);
-        NodeList _validationFileNodeList = validationElement.getElementsByTagName("file");
-        for (int i = 0, iEnd = _validationFileNodeList.getLength(); i < iEnd; i++) {
-            Element _validationFileNode = (Element) _validationFileNodeList.item(i);
-            _validations.add(ValidationFile.read(_validationFileNode));
+        Element validationsElement = XMLUtil.getElement(patchElement, "validations", false);
+        if (validationsElement != null) {
+            NodeList _validationFileNodeList = validationsElement.getElementsByTagName("file");
+            for (int i = 0, iEnd = _validationFileNodeList.getLength(); i < iEnd; i++) {
+                Element _validationFileNode = (Element) _validationFileNodeList.item(i);
+                _validations.add(ValidationFile.read(_validationFileNode));
+            }
         }
 
-        return new Patch(_id, _versionFrom, _versionTo, _operations, _validations);
+        return new Patch(_id,
+                _versionFrom, _versionFromSubsequent, _versionTo,
+                _downloadUrl, _downloadChecksum, _downloadLength,
+                _downloadEncryptionType, _downloadEncryptionKey, _downloadEncryptionIV,
+                _operations, _validations);
     }
 
     public String output() {
@@ -116,33 +228,83 @@ public class Patch {
             return null;
         }
 
-        Element rootElement = doc.createElement("update");
-        rootElement.setAttribute("id", Integer.toString(id));
-        doc.appendChild(rootElement);
+        Element patchElement = getElement(doc);
+        doc.appendChild(patchElement);
+
+        return XMLUtil.getOutput(doc);
+    }
+
+    public Element getElement(Document doc) {
+        Element patchElement = doc.createElement("patch");
+        patchElement.setAttribute("id", Integer.toString(id));
 
         Element versionElement = doc.createElement("version");
-        rootElement.appendChild(versionElement);
+        patchElement.appendChild(versionElement);
 
-        Element versionFromElement = doc.createElement("from");
-        versionFromElement.setTextContent(versionFrom);
-        versionElement.appendChild(versionFromElement);
+        if (versionFrom != null) {
+            Element versionFromElement = doc.createElement("from");
+            versionFromElement.setTextContent(versionFrom);
+            versionElement.appendChild(versionFromElement);
+        } else if (versionFromSubsequent != null) {
+            Element versionFromSubsequentElement = doc.createElement("from-subsequent");
+            versionFromSubsequentElement.setTextContent(versionFromSubsequent);
+            versionElement.appendChild(versionFromSubsequentElement);
+        }
         Element versionToElement = doc.createElement("to");
         versionToElement.setTextContent(versionTo);
         versionElement.appendChild(versionToElement);
 
-        Element operationsElement = doc.createElement("operations");
-        rootElement.appendChild(operationsElement);
-        for (Operation operation : operations) {
-            operationsElement.appendChild(operation.getElement(doc));
+        if (downloadUrl != null) {
+            Element downloadElement = doc.createElement("download");
+            patchElement.appendChild(downloadElement);
+
+            Element downloadUrlElement = doc.createElement("url");
+            downloadUrlElement.setTextContent(downloadUrl);
+            downloadElement.appendChild(downloadUrlElement);
+
+            Element downloadChecksumElement = doc.createElement("checksum");
+            downloadChecksumElement.setTextContent(downloadChecksum);
+            downloadElement.appendChild(downloadChecksumElement);
+
+            Element downloadLengthElement = doc.createElement("length");
+            downloadLengthElement.setTextContent(Integer.toString(downloadLength));
+            downloadElement.appendChild(downloadLengthElement);
+
+            if (downloadEncryptionType != null) {
+                Element downloadEncryptionElement = doc.createElement("encryption");
+                downloadElement.appendChild(downloadEncryptionElement);
+
+                Element downloadEncryptionTypeElement = doc.createElement("type");
+                downloadEncryptionTypeElement.setTextContent(downloadEncryptionType);
+                downloadEncryptionElement.appendChild(downloadEncryptionTypeElement);
+
+                Element downloadEncryptionKeyElement = doc.createElement("key");
+                downloadEncryptionKeyElement.setTextContent(downloadEncryptionKey);
+                downloadEncryptionElement.appendChild(downloadEncryptionKeyElement);
+
+                Element downloadEncryptionIVElement = doc.createElement("IV");
+                downloadEncryptionIVElement.setTextContent(downloadEncryptionIV);
+                downloadEncryptionElement.appendChild(downloadEncryptionIVElement);
+            }
         }
 
-        Element validationElement = doc.createElement("validation");
-        rootElement.appendChild(validationElement);
-        for (ValidationFile file : validations) {
-            validationElement.appendChild(file.getElement(doc));
+        if (!operations.isEmpty()) {
+            Element operationsElement = doc.createElement("operations");
+            patchElement.appendChild(operationsElement);
+            for (Operation operation : operations) {
+                operationsElement.appendChild(operation.getElement(doc));
+            }
         }
 
-        return XMLUtil.getOutput(doc);
+        if (!validations.isEmpty()) {
+            Element validationsElement = doc.createElement("validations");
+            patchElement.appendChild(validationsElement);
+            for (ValidationFile file : validations) {
+                validationsElement.appendChild(file.getElement(doc));
+            }
+        }
+
+        return patchElement;
     }
 
     public static class Operation {
@@ -265,9 +427,9 @@ public class Patch {
             int pos = -1;
             int length = -1;
             if (_type.equals("patch") || _type.equals("replace") || _type.equals("new") || _type.equals("force")) {
-                Element _patchElement = XMLUtil.getElement(operationElement, "patch", true);
-                pos = Integer.parseInt(XMLUtil.getTextContent(_patchElement, "pos", true));
-                length = Integer.parseInt(XMLUtil.getTextContent(_patchElement, "length", true));
+                Element _contentElement = XMLUtil.getElement(operationElement, "content", true);
+                pos = Integer.parseInt(XMLUtil.getTextContent(_contentElement, "pos", true));
+                length = Integer.parseInt(XMLUtil.getTextContent(_contentElement, "length", true));
             }
 
             String _fileType = XMLUtil.getTextContent(operationElement, "file-type", true);
@@ -302,9 +464,9 @@ public class Patch {
             _type.appendChild(doc.createTextNode(type));
             _operation.appendChild(_type);
 
-            //<editor-fold defaultstate="collapsed" desc="patch">
+            //<editor-fold defaultstate="collapsed" desc="content">
             if (patchPos != -1) {
-                Element _patch = doc.createElement("patch");
+                Element _patch = doc.createElement("content");
                 _operation.appendChild(_patch);
 
                 Element _patchUrl = doc.createElement("pos");
@@ -430,17 +592,10 @@ public class Patch {
         }
     }
 
-    public static void main(String[] args) throws FileNotFoundException, IOException {
-        File file = new File("1.0.0_1.0.1.xml");
-        byte[] content = new byte[(int) file.length()];
-
-        FileInputStream fin = new FileInputStream(file);
-        fin.read(content);
-        fin.close();
-
+    public static void main(String[] args) {
         try {
-            Patch update = Patch.read(content);
-            System.out.println(update.output());
+            Patch patch = Patch.read(CommonUtil.readFile(new File("patch.xml")));
+            System.out.println(patch.output());
         } catch (InvalidFormatException ex) {
             Logger.getLogger(Patch.class.getName()).log(Level.SEVERE, null, ex);
         }

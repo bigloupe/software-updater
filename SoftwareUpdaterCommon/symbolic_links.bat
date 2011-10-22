@@ -27,6 +27,9 @@ mklink ..\SoftwareLauncher\src\updater\util\XMLUtil.java %workingDirectory%\src\
 mklink ..\SoftwareLauncher\src\updater\util\InterruptibleInputStream.java %workingDirectory%\src\updater\util\InterruptibleInputStream.java
 mklink ..\SoftwareLauncher\src\updater\util\InterruptibleOutputStream.java %workingDirectory%\src\updater\util\InterruptibleOutputStream.java
 
+mkdir ..\SoftwareLauncher\test\updater\
+mklink ..\SoftwareLauncher\test\updater\TestCommon.java %workingDirectory%\test\updater\TestCommon.java
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;  Software Patch Builder  ;
@@ -47,6 +50,9 @@ mkdir ..\SoftwarePatchBuilder\src\updater\util\
 mklink ..\SoftwarePatchBuilder\src\updater\util\CommonUtil.java %workingDirectory%\src\updater\util\CommonUtil.java
 mklink ..\SoftwarePatchBuilder\src\updater\util\XMLUtil.java %workingDirectory%\src\updater\util\XMLUtil.java
 
+mkdir ..\SoftwarePatchBuilder\test\updater\
+mklink ..\SoftwarePatchBuilder\test\updater\TestCommon.java %workingDirectory%\test\updater\TestCommon.java
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;  Software Patch Downloader  ;
@@ -60,8 +66,12 @@ mkdir ..\SoftwarePatchDownloader\src\updater\script\
 mklink ..\SoftwarePatchDownloader\src\updater\script\Catalog.java %workingDirectory%\src\updater\script\Catalog.java
 mklink ..\SoftwarePatchDownloader\src\updater\script\Client.java %workingDirectory%\src\updater\script\Client.java
 mklink ..\SoftwarePatchDownloader\src\updater\script\InvalidFormatException.java %workingDirectory%\src\updater\script\InvalidFormatException.java
+mklink ..\SoftwarePatchDownloader\src\updater\script\Patch.java %workingDirectory%\src\updater\script\Patch.java
 
 mkdir ..\SoftwarePatchDownloader\src\updater\util\
 mklink ..\SoftwarePatchDownloader\src\updater\util\CommonUtil.java %workingDirectory%\src\updater\util\CommonUtil.java
 mklink ..\SoftwarePatchDownloader\src\updater\util\XMLUtil.java %workingDirectory%\src\updater\util\XMLUtil.java
+
+mkdir ..\SoftwarePatchDownloader\test\updater\
+mklink ..\SoftwarePatchDownloader\test\updater\TestCommon.java %workingDirectory%\test\updater\TestCommon.java
 

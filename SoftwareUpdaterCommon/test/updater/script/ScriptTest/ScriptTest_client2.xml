@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<root>
+  <version>1.0.0</version>
+  <storage-path>update/</storage-path>
+  <information>
+    <software>
+      <name>Language Files Tool</name>
+      <icon>
+        <location>folder</location>
+        <path>software_icon.png</path>
+      </icon>
+    </software>
+  </information>
+  <launch>
+    <type>command</type>
+    <after-launch>exit</after-launch>
+    <command>{java} -jar LanguageFilesTool.jar</command>
+  </launch>
+  <catalog>
+    <url>http://localhost/SoftwareUpdaterTest/catalog_manipulated.xml</url>
+  </catalog>
+</root>

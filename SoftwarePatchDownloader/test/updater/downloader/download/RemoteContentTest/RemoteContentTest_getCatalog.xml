@@ -1,47 +1,30 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<root>
-  <releases>
-    <release id="1">
-      <version>1.0.1</version>
-      <pack>
-        <url>http://localhost/1.0.1_full.patch</url>
-        <checksum>checksum</checksum>
-        <length>100</length>
-        <encryption>
-          <type>AES-256</type>
-          <key>key</key>
-          <IV>IV</IV>
-        </encryption>
-      </pack>
-    </release>
-  </releases>
-  <updates>
-    <update id="1">
-      <version>
-        <from>1.0.0</from>
-        <to>1.0.1</to>
-      </version>
-      <patch>
-        <url>http://localhost/1.patch</url>
-        <checksum>checksum</checksum>
-        <length>100</length>
-        <encryption>
-          <type>AES-256</type>
-          <key>key</key>
-          <IV>IV</IV>
-        </encryption>
-      </patch>
-    </update>
-    <update id="2">
-      <version>
-        <from>1.0.1</from>
-        <to>1.0.2</to>
-      </version>
-      <patch>
-        <url>http://localhost/2.patch</url>
-        <checksum>checksum</checksum>
-        <length>101</length>
-      </patch>
-    </update>
-  </updates>
-</root>
+<patches>
+  <patch id="1">
+    <version>
+      <from>1.0.0</from>
+      <to>1.0.1</to>
+    </version>
+    <download>
+      <url>http://localhost/1.patch</url>
+      <checksum>checksum</checksum>
+      <length>100</length>
+      <encryption>
+        <type>AES-256</type>
+        <key>key</key>
+        <IV>IV</IV>
+      </encryption>
+    </download>
+  </patch>
+  <patch id="2">
+    <version>
+      <from>1.0.1</from>
+      <to>1.0.2</to>
+    </version>
+    <download>
+      <url>http://localhost/2.patch</url>
+      <checksum>checksum</checksum>
+      <length>101</length>
+    </download>
+  </patch>
+</patches>

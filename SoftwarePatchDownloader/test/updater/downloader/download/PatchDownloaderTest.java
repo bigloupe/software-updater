@@ -10,26 +10,35 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import updater.TestSuite;
+import updater.TestCommon;
 import updater.script.Catalog;
-import updater.script.Catalog.Update;
 import updater.script.InvalidFormatException;
 import updater.downloader.util.Util;
+import updater.script.Patch;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class PatchDownloaderTest {
 
+    protected final String packagePath = TestCommon.pathToTestPackage + this.getClass().getCanonicalName().replace('.', '/') + "/";
+
     public PatchDownloaderTest() {
+    }
+
+    protected static String getClassName() {
+        return new Object() {
+        }.getClass().getEnclosingClass().getName();
     }
 
     @BeforeClass
     public static void setUpClass() throws Exception {
+        System.out.println("***** " + getClassName() + " *****");
     }
 
     @AfterClass
     public static void tearDownClass() throws Exception {
+        System.out.println("******************************\r\n");
     }
 
     @Before
@@ -45,39 +54,40 @@ public class PatchDownloaderTest {
      */
     @Test
     public void testGetPatches_Catalog_String() {
-        System.out.println("testGetPatches_Catalog_String");
+        System.out.println("+++++ testGetPatches_Catalog_String +++++");
 
-        byte[] catalogData = Util.readFile(new File(TestSuite.pathToTestPackage + getClass().getPackage().getName().replace('.', '/') + "/PatchDownloaderTest/PatchDownloaderTest_getPatches.xml"));
-        assertTrue(catalogData != null && catalogData.length != 0);
+        byte[] catalogData = Util.readFile(new File(packagePath + "PatchDownloaderTest_getPatches.xml"));
+        assertNotNull(catalogData);
+        assertTrue(catalogData.length != 0);
 
         Catalog catalog = null;
         try {
             catalog = Catalog.read(catalogData);
         } catch (InvalidFormatException ex) {
             Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
-            fail("Failed to read test file.");
+            fail("! Failed to read test file.");
         }
 
 
-        List<Update> result = PatchDownloader.getPatches(catalog, "1.0.0");
+        List<Patch> result = PatchDownloader.getPatches(catalog, "1.0.0");
         assertEquals(4, result.size());
 
         int totalSize = 0;
 
-        Update update = result.get(0);
-        totalSize += update.getPatchLength();
+        Patch update = result.get(0);
+        totalSize += update.getDownloadLength();
         assertEquals("1.0.0", update.getVersionFrom());
         assertEquals("1.0.1", update.getVersionTo());
         update = result.get(1);
-        totalSize += update.getPatchLength();
+        totalSize += update.getDownloadLength();
         assertEquals("1.0.1", update.getVersionFrom());
         assertEquals("1.0.4", update.getVersionTo());
         update = result.get(2);
-        totalSize += update.getPatchLength();
+        totalSize += update.getDownloadLength();
         assertEquals("1.0.4", update.getVersionFrom());
         assertEquals("1.0.5", update.getVersionTo());
         update = result.get(3);
-        totalSize += update.getPatchLength();
+        totalSize += update.getDownloadLength();
         assertEquals("1.0.5", update.getVersionFrom());
         assertEquals("1.0.6", update.getVersionTo());
 
@@ -90,15 +100,15 @@ public class PatchDownloaderTest {
         totalSize = 0;
 
         update = result.get(0);
-        totalSize += update.getPatchLength();
+        totalSize += update.getDownloadLength();
         assertEquals("1.0.2", update.getVersionFrom());
         assertEquals("1.0.3", update.getVersionTo());
         update = result.get(1);
-        totalSize += update.getPatchLength();
+        totalSize += update.getDownloadLength();
         assertEquals("1.0.3", update.getVersionFrom());
         assertEquals("1.0.5", update.getVersionTo());
         update = result.get(2);
-        totalSize += update.getPatchLength();
+        totalSize += update.getDownloadLength();
         assertEquals("1.0.5", update.getVersionFrom());
         assertEquals("1.0.6", update.getVersionTo());
 
