@@ -1,13 +1,13 @@
 package updater.util;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
@@ -18,6 +18,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 import updater.script.InvalidFormatException;
 
 /**
@@ -58,35 +59,30 @@ public class XMLUtil {
         return resultElement == null ? null : resultElement.getTextContent();
     }
 
-    public static String getOutput(Document doc) {
-        try {
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-            DOMSource source = new DOMSource(doc);
+    public static String getOutput(Document doc) throws TransformerException {
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        Transformer transformer = transformerFactory.newTransformer();
+        DOMSource source = new DOMSource(doc);
 
-            StringWriter writer = new StringWriter();
-            StreamResult result = new StreamResult(writer);
-            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-            transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.transform(source, result);
+        StringWriter writer = new StringWriter();
+        StreamResult result = new StreamResult(writer);
+        transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.transform(source, result);
 
-            return writer.toString();
-        } catch (TransformerException ex) {
-            Logger.getLogger(XMLUtil.class.getName()).log(Level.WARNING, null, ex);
-        }
-        return null;
+        return writer.toString();
     }
 
-    public static Document readDocument(byte[] content) {
+    public static Document readDocument(byte[] content) throws SAXException, IOException {
         Document doc = null;
         try {
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
             doc = docBuilder.parse(new ByteArrayInputStream(content));
-        } catch (Exception ex) {
-            Logger.getLogger(XMLUtil.class.getName()).log(Level.INFO, null, ex);
+        } catch (ParserConfigurationException ex) {
+//            Logger.getLogger(XMLUtil.class.getName()).log(Level.SEVERE, null, ex);
         }
         return doc;
     }
@@ -98,7 +94,7 @@ public class XMLUtil {
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
             doc = docBuilder.newDocument();
         } catch (Exception ex) {
-            Logger.getLogger(XMLUtil.class.getName()).log(Level.SEVERE, null, ex);
+//            Logger.getLogger(XMLUtil.class.getName()).log(Level.SEVERE, null, ex);
         }
         return doc;
     }

@@ -47,7 +47,7 @@ public class RemoteContent {
             // open connection
             URLConnection conn = urlObj.openConnection();
             if (!(conn instanceof HttpURLConnection)) {
-                throw new MalformedURLException("It is not a valid http URL.");
+                throw new MalformedURLException("It is not a valid http URL: " + urlObj.toString());
             }
             httpConn = (HttpURLConnection) conn;
 
@@ -87,7 +87,7 @@ public class RemoteContent {
                 return new GetCatalogResult(null, true);
             } else if (httpStatusCode != 200) {
                 returnResult = new GetCatalogResult(null, false);
-                throw new Exception("HTTP status not 200.");
+                throw new Exception("HTTP status not 200, status: " + httpStatusCode);
             }
 
 
@@ -99,7 +99,7 @@ public class RemoteContent {
             byte[] b = new byte[32];
             while ((byteRead = in.read(b)) != -1) {
                 if (Thread.interrupted()) {
-                    throw new InterruptedException();
+                    throw new InterruptedException("Download cancelled by user.");
                 }
                 buffer.write(b, 0, byteRead);
             }
@@ -116,7 +116,7 @@ public class RemoteContent {
 
                 int maxContentLength = key.getBlockSize();
                 if (content.length % maxContentLength != 0) {
-                    throw new Exception("RSA block size not match.");
+                    throw new Exception("RSA block size not match, content length: " + content.length + ", RSA block size: " + maxContentLength);
                 }
 
                 for (int i = 0, iEnd = content.length; i < iEnd; i += maxContentLength) {
@@ -158,10 +158,21 @@ public class RemoteContent {
         FileInputStream fin = null;
         try {
             fin = new FileInputStream(file);
-            int byteRead;
+            long fileLength = file.length();
+
+            int byteRead, cumulateByteRead = 0;
             byte[] b = new byte[1024];
             while ((byteRead = fin.read(b)) != -1) {
                 digest.update(b, 0, byteRead);
+                cumulateByteRead += byteRead;
+
+                if (cumulateByteRead >= fileLength) {
+                    break;
+                }
+            }
+
+            if (cumulateByteRead != fileLength) {
+                throw new Exception("The total number of bytes read does not match the file size. Actual file size: " + fileLength + ", bytes read: " + cumulateByteRead + ", path: " + file.getAbsolutePath());
             }
         } finally {
             if (fin != null) {
@@ -178,7 +189,7 @@ public class RemoteContent {
         OutputStream fout = null;
         try {
             if (!fileSHA256.matches("^[0-9a-f]{64}$")) {
-                throw new Exception("SHA format invalid.");
+                throw new Exception("SHA format invalid, expected: ^[0-9a-f]{64}$, checksum: " + fileSHA256);
             }
 
             URL urlObj = new URL(url);
@@ -204,7 +215,7 @@ public class RemoteContent {
             // open connection
             URLConnection conn = urlObj.openConnection();
             if (!(conn instanceof HttpURLConnection)) {
-                throw new MalformedURLException("It is not a valid http URL.");
+                throw new MalformedURLException("It is not a valid http URL: " + conn.toString());
             }
             httpConn = (HttpURLConnection) conn;
 
@@ -243,7 +254,7 @@ public class RemoteContent {
                                 throw new Exception("Request byte range from " + rangeStart + " but respond byte range: " + contentRangeString);
                             }
                             if (contentLength - 1 != rangeEnd) {
-                                throw new Exception("Respond byte range end do not match content length.");
+                                throw new Exception("Respond byte range end do not match content length, http respond range end: " + rangeEnd + ", content length: " + contentLength);
                             }
                         }
                     }
@@ -258,10 +269,10 @@ public class RemoteContent {
 
             // check according to header information
             if (httpStatusCode != 200 && httpStatusCode != 206) {
-                throw new Exception("HTTP status is not 200 or 206.");
+                throw new Exception("HTTP status is not 200 or 206, status: " + httpStatusCode);
             }
             if (contentLength != - 1 && contentLength != expectedLength) {
-                throw new Exception("Expected length and respond content length not match.");
+                throw new Exception("Expected length and respond content length not match, expected: " + expectedLength + ", actual: " + contentLength);
             }
 
             // notify listener the starting byte position
@@ -301,7 +312,7 @@ public class RemoteContent {
 
             // check the downloaded file
             if (cumulateByteRead + fileLength != expectedLength) {
-                throw new Exception("Error occurred when reading (cumulated bytes read != expected length).");
+                throw new Exception("Error occurred when reading (cumulated bytes read != expected length), cumulated bytes read: " + cumulateByteRead + " + " + fileLength + ", expected: " + expectedLength);
             }
             if (!Util.byteArrayToHexString(digest.digest()).equals(fileSHA256)) {
                 throw new Exception("Checksum not matched. got: " + Util.byteArrayToHexString(digest.digest()) + ", expected: " + fileSHA256);
@@ -344,11 +355,11 @@ public class RemoteContent {
     public static class GetPatchResult {
 
         protected boolean result;
-        protected boolean isInterrupted;
+        protected boolean interrupted;
 
-        public GetPatchResult(boolean result, boolean isInterrupted) {
+        public GetPatchResult(boolean result, boolean interrupted) {
             this.result = result;
-            this.isInterrupted = isInterrupted;
+            this.interrupted = interrupted;
         }
 
         public boolean getResult() {
@@ -356,7 +367,7 @@ public class RemoteContent {
         }
 
         public boolean isInterrupted() {
-            return isInterrupted;
+            return interrupted;
         }
     }
 
@@ -381,17 +392,17 @@ public class RemoteContent {
 
     public static class RSAPublicKey {
 
-        protected BigInteger mod;
-        protected BigInteger exp;
+        protected BigInteger modulus;
+        protected BigInteger exponent;
 
         public RSAPublicKey(BigInteger mod, BigInteger exp) {
-            this.mod = mod;
-            this.exp = exp;
+            this.modulus = mod;
+            this.exponent = exp;
         }
 
         public PublicKey getKey() {
             try {
-                RSAPublicKeySpec keySpec = new RSAPublicKeySpec(mod, exp);
+                RSAPublicKeySpec keySpec = new RSAPublicKeySpec(modulus, exponent);
                 KeyFactory keyFactory = KeyFactory.getInstance("RSA");
                 return keyFactory.generatePublic(keySpec);
             } catch (Exception ex) {
@@ -401,7 +412,7 @@ public class RemoteContent {
         }
 
         public int getBlockSize() {
-            return (mod.bitLength() / 8);
+            return (modulus.bitLength() / 8);
         }
     }
 }

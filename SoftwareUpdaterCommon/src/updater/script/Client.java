@@ -3,8 +3,7 @@ package updater.script;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import javax.xml.transform.TransformerException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -166,9 +165,11 @@ public class Client {
     }
 
     public static Client read(byte[] content) throws InvalidFormatException {
-        Document doc = XMLUtil.readDocument(content);
-        if (doc == null) {
-            throw new InvalidFormatException("XML format incorrect.");
+        Document doc;
+        try {
+            doc = XMLUtil.readDocument(content);
+        } catch (Exception ex) {
+            throw new InvalidFormatException("XML format incorrect. " + ex.getMessage());
         }
 
         Element _rootNode = doc.getDocumentElement();
@@ -239,7 +240,7 @@ public class Client {
                 patches);
     }
 
-    public String output() {
+    public String output() throws TransformerException {
         Document doc = XMLUtil.createEmptyDocument();
         if (doc == null) {
             return null;
@@ -549,8 +550,10 @@ public class Client {
         try {
             Client client = Client.read(CommonUtil.readFile(new File("client.xml")));
             System.out.println(client.output());
+        } catch (TransformerException ex) {
+            java.util.logging.Logger.getLogger(Client.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InvalidFormatException ex) {
-            Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Client.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
     }
 }

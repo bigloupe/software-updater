@@ -50,7 +50,7 @@ public class PatchDownloaderTest {
     }
 
     /**
-     * Test of getPatches method, of class SoftwareUpdater.
+     * Test of getSuitablePatches method, of class SoftwareUpdater.
      */
     @Test
     public void testGetPatches_Catalog_String() {
@@ -69,7 +69,7 @@ public class PatchDownloaderTest {
         }
 
 
-        List<Patch> result = PatchDownloader.getPatches(catalog, "1.0.0");
+        List<Patch> result = PatchDownloader.getSuitablePatches(catalog, "1.0.0");
         assertEquals(4, result.size());
 
         int totalSize = 0;
@@ -94,7 +94,7 @@ public class PatchDownloaderTest {
         assertEquals(82 + 13 + 7 + 14, totalSize);
 
 
-        result = PatchDownloader.getPatches(catalog, "1.0.2");
+        result = PatchDownloader.getSuitablePatches(catalog, "1.0.2");
         assertEquals(3, result.size());
 
         totalSize = 0;

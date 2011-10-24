@@ -11,6 +11,7 @@ import java.security.MessageDigest;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.UIManager;
+import javax.xml.transform.TransformerException;
 import updater.script.Client;
 
 /**
@@ -44,7 +45,6 @@ public class CommonUtil {
             result = new String(hex, "US-ASCII");
         } catch (UnsupportedEncodingException ex) {
             // should not happen
-            Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
         }
 
         return result;
@@ -394,7 +394,7 @@ public class CommonUtil {
         }
     }
 
-    public static void saveClientScript(File clientScriptFile, Client clientScript) throws IOException {
+    public static void saveClientScript(File clientScriptFile, Client clientScript) throws IOException, TransformerException {
         File clientScriptTemp = new File(getFileDirectory(clientScriptFile) + File.separator + clientScriptFile.getName() + ".new");
         if (!writeFile(clientScriptTemp, clientScript.output()) || !clientScriptFile.delete() || !clientScriptTemp.renameTo(clientScriptFile)) {
             throw new IOException("Failed to save to script to path: " + clientScriptFile.getAbsolutePath());

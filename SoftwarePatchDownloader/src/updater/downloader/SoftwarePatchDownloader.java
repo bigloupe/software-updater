@@ -6,16 +6,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import updater.downloader.download.PatchDownloader;
-import updater.script.InvalidFormatException;
 import updater.downloader.util.Util;
 import updater.util.CommonUtil.GetClientScriptResult;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
-public class SoftwareUpdater {
+public class SoftwarePatchDownloader {
 
-    protected SoftwareUpdater() {
+    protected SoftwarePatchDownloader() {
     }
 
     public static void main(String[] args) throws IOException {
@@ -27,12 +26,9 @@ public class SoftwareUpdater {
             } else {
                 JOptionPane.showMessageDialog(null, "Config file not found, is empty or is invalid.");
             }
-        } catch (InvalidFormatException ex) {
-            Logger.getLogger(SoftwareUpdater.class.getName()).log(Level.SEVERE, null, ex);
-            JOptionPane.showMessageDialog(null, "Config file format invalid.");
         } catch (IOException ex) {
-            Logger.getLogger(SoftwareUpdater.class.getName()).log(Level.SEVERE, null, ex);
-            JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software-icon or root->information->updater-icon.");
+            Logger.getLogger(SoftwarePatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software->icon or root->information->downloader->icon.");
         }
     }
 }

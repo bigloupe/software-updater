@@ -45,7 +45,7 @@ public class SoftwareStarterTest {
     }
 
     /**
-     * Test of startSoftware method, of class SoftwareStarter.
+     * Test of startSoftware method, of class SoftwareLauncher.
      */
     @Test
     public void testStartSoftware() {
@@ -55,7 +55,7 @@ public class SoftwareStarterTest {
         testFile.delete();
         assertFalse(testFile.exists());
         try {
-            SoftwareStarter.startSoftware(packagePath + "SoftwareStarterLaunchTest.jar", "softwarestarterlaunchtest.SoftwareStarterLaunchTest", new String[]{"testLaunch_A9fD6"});
+            SoftwareLauncher.startSoftware(packagePath + "SoftwareStarterLaunchTest.jar", "softwarestarterlaunchtest.SoftwareStarterLaunchTest", new String[]{"testLaunch_A9fD6"});
         } catch (LaunchFailedException ex) {
             fail("! Launch failed.");
             Logger.getLogger(SoftwareStarterTest.class.getName()).log(Level.SEVERE, null, ex);

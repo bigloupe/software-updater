@@ -3,8 +3,7 @@ package updater.script;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import javax.xml.transform.TransformerException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -31,9 +30,11 @@ public class Catalog {
     }
 
     public static Catalog read(byte[] content) throws InvalidFormatException {
-        Document doc = XMLUtil.readDocument(content);
-        if (doc == null) {
-            throw new InvalidFormatException("XML format incorrect.");
+        Document doc;
+        try {
+            doc = XMLUtil.readDocument(content);
+        } catch (Exception ex) {
+            throw new InvalidFormatException("XML format incorrect. " + ex.getMessage());
         }
 
         Element _patchesNode = doc.getDocumentElement();
@@ -49,7 +50,7 @@ public class Catalog {
         return new Catalog(_patches);
     }
 
-    public String output() {
+    public String output() throws TransformerException {
         Document doc = XMLUtil.createEmptyDocument();
         if (doc == null) {
             return null;
@@ -69,8 +70,10 @@ public class Catalog {
         try {
             Catalog catalog = Catalog.read(CommonUtil.readFile(new File("catalog.xml")));
             System.out.println(catalog.output());
+        } catch (TransformerException ex) {
+            java.util.logging.Logger.getLogger(Catalog.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InvalidFormatException ex) {
-            Logger.getLogger(Catalog.class.getName()).log(Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Catalog.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
     }
 }

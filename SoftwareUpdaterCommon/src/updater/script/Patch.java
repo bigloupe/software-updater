@@ -3,8 +3,7 @@ package updater.script;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import javax.xml.transform.TransformerException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -148,9 +147,11 @@ public class Patch {
     }
 
     public static Patch read(byte[] content) throws InvalidFormatException {
-        Document doc = XMLUtil.readDocument(content);
-        if (doc == null) {
-            throw new InvalidFormatException("XML format incorrect.");
+        Document doc;
+        try {
+            doc = XMLUtil.readDocument(content);
+        } catch (Exception ex) {
+            throw new InvalidFormatException("XML format incorrect. " + ex.getMessage());
         }
 
         return read(doc.getDocumentElement());
@@ -222,7 +223,7 @@ public class Patch {
                 _operations, _validations);
     }
 
-    public String output() {
+    public String output() throws TransformerException {
         Document doc = XMLUtil.createEmptyDocument();
         if (doc == null) {
             return null;
@@ -596,8 +597,10 @@ public class Patch {
         try {
             Patch patch = Patch.read(CommonUtil.readFile(new File("patch.xml")));
             System.out.println(patch.output());
+        } catch (TransformerException ex) {
+            java.util.logging.Logger.getLogger(Client.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InvalidFormatException ex) {
-            Logger.getLogger(Patch.class.getName()).log(Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(Client.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
     }
 }
