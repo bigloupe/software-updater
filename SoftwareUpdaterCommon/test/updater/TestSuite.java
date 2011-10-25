@@ -8,7 +8,9 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    updater.script.ScriptTest.class
+    updater.patch.PatchLogTest.class,
+    updater.script.ScriptTest.class,
+    updater.util.CommonUtilTest.class
 })
 public class TestSuite {
 }

@@ -7,8 +7,16 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.channels.FileLock;
+import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.swing.UIManager;
 import javax.xml.transform.TransformerException;
 import updater.script.Client;
@@ -431,6 +439,120 @@ public class CommonUtil {
         if (!clientScriptFile.delete() || !clientScriptTemp.renameTo(clientScriptFile)) {
             throw new IOException("Failed to save to script to path: " + clientScriptFile.getAbsolutePath());
         }
+    }
+
+    public static boolean truncateFolder(File directory) {
+        File[] files = directory.listFiles();
+        for (File file : files) {
+            if (file.isDirectory()) {
+                if (!truncateFolderRecursively(file)) {
+                    return false;
+                }
+            } else {
+                file.delete();
+            }
+        }
+        return true;
+    }
+
+    protected static boolean truncateFolderRecursively(File directory) {
+        if (directory.isDirectory()) {
+            File[] files = directory.listFiles();
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    if (!truncateFolderRecursively(file)) {
+                        return false;
+                    }
+                } else {
+                    file.delete();
+                }
+            }
+        }
+        directory.delete();
+        return true;
+    }
+
+    public static byte[] rsaEncrypt(PrivateKey key, int blockSize, int contentBlockSize, byte[] b) throws IOException {
+        try {
+            ByteArrayOutputStream bout = new ByteArrayOutputStream(((b.length / contentBlockSize) * blockSize) + (b.length % contentBlockSize == 0 ? 0 : blockSize));
+
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+
+            for (int i = 0, iEnd = b.length; i < iEnd; i += contentBlockSize) {
+                int byteToRead = i + contentBlockSize > iEnd ? iEnd - i : contentBlockSize;
+                bout.write(cipher.doFinal(b, i, byteToRead));
+            }
+
+            return bout.toByteArray();
+        } catch (NoSuchAlgorithmException ex) {
+        } catch (NoSuchPaddingException ex) {
+        } catch (InvalidKeyException ex) {
+        } catch (IllegalBlockSizeException ex) {
+        } catch (BadPaddingException ex) {
+        }
+
+        return null;
+    }
+
+    public static byte[] rsaDecrypt(PublicKey key, int blockSize, byte[] b) throws IOException {
+        byte[] returnResult = null;
+
+        try {
+            if (b.length % blockSize != 0) {
+                throw new IOException("Data length is not a multiple of RSA block size. Data length: " + b.length + ", RSA block size: " + blockSize + ", data length % RSA block size: " + b.length % blockSize);
+            }
+
+            ByteArrayOutputStream bout = new ByteArrayOutputStream(b.length);
+
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.DECRYPT_MODE, key);
+
+            for (int i = 0, iEnd = b.length; i < iEnd; i += blockSize) {
+                bout.write(cipher.doFinal(b, i, blockSize));
+            }
+
+            returnResult = bout.toByteArray();
+        } catch (NoSuchAlgorithmException ex) {
+        } catch (NoSuchPaddingException ex) {
+        } catch (IllegalBlockSizeException ex) {
+        } catch (InvalidKeyException ex) {
+        } catch (BadPaddingException ex) {
+            throw new IOException(ex);
+        }
+
+        return returnResult;
+    }
+
+    public static boolean tryLock(File file) {
+        boolean returnResult = false;
+
+        FileOutputStream fout = null;
+        FileLock lock = null;
+        try {
+            fout = new FileOutputStream(file, true);
+            lock = fout.getChannel().tryLock();
+            if (lock == null) {
+                throw new IOException("Failed to acquire an exclusive lock on file: " + file.getAbsolutePath());
+            }
+            returnResult = true;
+        } catch (IOException ex) {
+            System.err.println(ex);
+            returnResult = false;
+        } finally {
+            try {
+                if (lock != null) {
+                    lock.release();
+                }
+                if (fout != null) {
+                    fout.close();
+                }
+            } catch (IOException ex) {
+                System.err.println(ex);
+            }
+        }
+
+        return returnResult;
     }
 
     /**

@@ -1,15 +1,6 @@
 package updater.downloader.util;
 
 import updater.TestCommon;
-import java.io.File;
-import java.security.spec.RSAPublicKeySpec;
-import java.security.PublicKey;
-import java.security.KeyFactory;
-import java.security.PrivateKey;
-import java.security.spec.RSAPrivateKeySpec;
-import java.math.BigInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -108,43 +99,5 @@ public class UtilTest {
         time = (60 * 0) + 59;
         assertEquals("59s", Util.humanReadableTimeCount(time, 1));
         assertEquals("59s", Util.humanReadableTimeCount(time, 2));
-    }
-
-    /**
-     * Test of rsaEncrypt & rsaDecrypt method, of class Util.
-     */
-    @Test
-    public void testRsaEnDecrypt() {
-        System.out.println("+++++ testRsaEnDecrypt +++++");
-        try {
-            BigInteger mod = new BigInteger(TestCommon.modulusString, 16);
-
-            RSAPrivateKeySpec privateKeySpec = new RSAPrivateKeySpec(mod, new BigInteger(TestCommon.privateExponentString, 16));
-            RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(mod, new BigInteger(TestCommon.publicExponentString, 16));
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
-            PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
-
-            File testFile = new File(packagePath + "UtilTest_rsaEnDecrypt.ico");
-            byte[] testData = Util.readFile(testFile);
-            assertNotNull(testData);
-            assertTrue(testData.length > 0);
-
-            // encrypt
-            int blockSize = mod.bitLength() / 8;
-            byte[] encrypted = Util.rsaEncrypt(privateKey, blockSize, blockSize - 11, testData);
-            assertNotNull(encrypted);
-            assertEquals(1280, encrypted.length);
-
-            // decrypt
-            byte[] decrypted = Util.rsaDecrypt(publicKey, blockSize, encrypted);
-            assertNotNull(decrypted);
-            assertEquals(1150, decrypted.length);
-
-            assertArrayEquals(testData, decrypted);
-        } catch (Exception ex) {
-            fail("! Exception caught.");
-            Logger.getLogger(UtilTest.class.getName()).log(Level.SEVERE, null, ex);
-        }
     }
 }

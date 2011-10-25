@@ -1,16 +1,11 @@
 package updater.script;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.xml.transform.TransformerException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import updater.util.CommonUtil;
 import updater.util.XMLUtil;
 
 /**
@@ -593,19 +588,6 @@ public class Patch {
             _file.appendChild(_length);
 
             return _file;
-        }
-    }
-
-    public static void main(String[] args) {
-        try {
-            Patch patch = Patch.read(CommonUtil.readFile(new File("patch.xml")));
-            System.out.println(patch.output());
-        } catch (IOException ex) {
-            Logger.getLogger(Patch.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (TransformerException ex) {
-            java.util.logging.Logger.getLogger(Client.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InvalidFormatException ex) {
-            java.util.logging.Logger.getLogger(Client.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
     }
 }

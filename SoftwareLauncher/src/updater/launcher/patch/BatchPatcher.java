@@ -9,13 +9,15 @@ import java.io.IOException;
 import java.nio.channels.FileLock;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import updater.launcher.patch.PatchLogReader.UnfinishedPatch;
 import updater.launcher.util.Util;
 import updater.gui.UpdaterWindow;
+import updater.patch.PatchLogReader;
+import updater.patch.PatchLogReader.UnfinishedPatch;
+import updater.patch.PatchLogWriter;
+import updater.patch.Patcher;
+import updater.patch.PatcherListener;
 import updater.script.Client;
 import updater.script.Patch;
 import watne.seis720.project.KeySize;
@@ -45,8 +47,8 @@ public class BatchPatcher {
     public static UpdateResult update(File clientScriptFile, Client clientScript, File tempDir, String windowTitle, Image windowIcon, String title, Image icon) {
         UpdateResult returnResult = new UpdateResult(false, false);
 
-        List<Patch> updates = clientScript.getPatches();
-        if (updates.isEmpty()) {
+        List<Patch> patches = clientScript.getPatches();
+        if (patches.isEmpty()) {
             return new UpdateResult(true, true);
         }
 
@@ -78,7 +80,7 @@ public class BatchPatcher {
             //<editor-fold defaultstate="collapsed" desc="read log">
             try {
                 patchLogReader = new PatchLogReader(logFile);
-            } catch (Exception ex) {
+            } catch (IOException ex) {
                 // ignore
             }
             if (patchLogReader != null) {
@@ -86,7 +88,7 @@ public class BatchPatcher {
 
                 List<Integer> finishedPatches = patchLogReader.getfinishedPatches();
                 for (Integer finishedPatch : finishedPatches) {
-                    Iterator<Patch> iterator = updates.iterator();
+                    Iterator<Patch> iterator = patches.iterator();
                     while (iterator.hasNext()) {
                         Patch _patch = iterator.next();
                         if (_patch.getId() == finishedPatch) {
@@ -97,11 +99,11 @@ public class BatchPatcher {
                 }
 
                 if (rewriteClientXML) {
-                    clientScript.setPatches(updates);
+                    clientScript.setPatches(patches);
                     Util.saveClientScript(clientScriptFile, clientScript);
                 }
 
-                if (updates.isEmpty()) {
+                if (patches.isEmpty()) {
                     return new UpdateResult(true, true);
                 }
             }
@@ -113,7 +115,7 @@ public class BatchPatcher {
             lockFileOut = new FileOutputStream(tempDir + "/update.lck");
             lock = lockFileOut.getChannel().tryLock();
             if (lock == null) {
-                throw new Exception("There is another updater running.");
+                throw new IOException("There is another updater running.");
             }
 
             updaterGUI.setProgress(2);
@@ -126,9 +128,9 @@ public class BatchPatcher {
             updaterGUI.setProgress(3);
             updaterGUI.setMessage("Starting ...");
             // iterate patches and do patch
-            final float stepSize = 97F / (float) updates.size();
+            final float stepSize = 97F / (float) patches.size();
             int count = -1;
-            Iterator<Patch> iterator = updates.iterator();
+            Iterator<Patch> iterator = patches.iterator();
             while (iterator.hasNext()) {
                 count++;
                 Patch _update = iterator.next();
@@ -138,7 +140,7 @@ public class BatchPatcher {
                     // normally should not reach here
                     iterator.remove();
                     // save the client scirpt
-                    clientScript.setPatches(updates);
+                    clientScript.setPatches(patches);
                     Util.saveClientScript(clientScriptFile, clientScript);
                     continue;
                 }
@@ -149,11 +151,10 @@ public class BatchPatcher {
                 }
 
                 // temporary storage folder for this patch
-                String tempDirPath = tempDir.getAbsolutePath() + "/" + _update.getId();
-                if (!Util.makeDir(tempDirPath)) {
-                    throw new Exception("Failed to create folder for patches.");
+                File tempDirForPatch = new File(tempDir.getAbsolutePath() + "/" + _update.getId());
+                if (!tempDirForPatch.isDirectory() && !tempDirForPatch.mkdirs()) {
+                    throw new IOException("Failed to create folder for patches.");
                 }
-                File tempDirForPatch = new File(tempDirPath);
 
                 File patchFile = new File(_update.getId() + ".patch");
                 File decryptedPatchFile = new File(_update.getId() + ".patch.decrypted");
@@ -170,8 +171,12 @@ public class BatchPatcher {
                     aesCipher.setPadding(Padding.PKCS5PADDING);
                     aesCipher.setKeySize(KeySize.BITS256);
                     aesCipher.setKey(Util.hexStringToByteArray(_update.getDownloadEncryptionKey()));
-                    aesCipher.setInitializationVector(Util.hexStringToByteArray(_update.getDownloadEncryptionIV()));
-                    aesCipher.decryptFile(patchFile, decryptedPatchFile);
+                    try {
+                        aesCipher.setInitializationVector(Util.hexStringToByteArray(_update.getDownloadEncryptionIV()));
+                        aesCipher.decryptFile(patchFile, decryptedPatchFile);
+                    } catch (Exception ex) {
+                        throw new IOException(ex.getMessage());
+                    }
                     patchFile.delete();
                     decryptedPatchFile.renameTo(patchFile);
                 }
@@ -197,20 +202,20 @@ public class BatchPatcher {
                     public void patchEnableCancel(boolean enable) {
                         updaterGUI.setEnableCancel(enable);
                     }
-                }, patchActionLogWriter, patchFile, tempDirForPatch);
+                }, patchActionLogWriter, patchFile, new File(""), tempDirForPatch);
 
                 // patch
-                boolean patchResult = _patcher.doPatch(getPatchStartIndex(_update, patchLogReader));
+                boolean patchResult = _patcher.doPatch(_update.getId(), getPatchStartIndex(_update, patchLogReader));
                 _patcher.close();
                 if (!patchResult) {
-                    throw new Exception("Do patch failed.");
+                    throw new IOException("Do patch failed.");
                 } else { // update succeed
                     // remove 'update' from updates list
                     iterator.remove();
 
                     // save the client scirpt
                     clientScript.setVersion(_update.getVersionTo());
-                    clientScript.setPatches(updates);
+                    clientScript.setPatches(patches);
                     Util.saveClientScript(clientScriptFile, clientScript);
 
                     Util.truncateFolder(tempDirForPatch);
@@ -237,7 +242,7 @@ public class BatchPatcher {
             }
 
             returnResult = new UpdateResult(false, launchSoftware);
-            Logger.getLogger(BatchPatcher.class.getName()).log(Level.SEVERE, null, ex);
+            System.err.println(ex);
         } finally {
             updaterFrame.setVisible(false);
             updaterFrame.dispose();
@@ -252,7 +257,7 @@ public class BatchPatcher {
                     patchActionLogWriter.close();
                 }
             } catch (IOException ex) {
-                Logger.getLogger(BatchPatcher.class.getName()).log(Level.SEVERE, null, ex);
+                System.err.println(ex);
             }
             if (returnResult.isUpdateSucceed()) {
                 // remove log

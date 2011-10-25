@@ -35,11 +35,14 @@ public class SoftwareLauncher {
         }
     }
 
-    public static void start(File clientScriptFile, Client client, String[] args) throws IOException, InvalidFormatException, LaunchFailedException {
+    public static void start(File clientScriptFile, Client client, String[] args) throws IOException, LaunchFailedException {
+        String launchType = client.getLaunchType();
+        String afterLaunchOperation = client.getLaunchAfterLaunch();
         String jarPath = client.getLaunchJarPath();
         String mainClass = client.getLaunchMainClass();
-        String storagePath = client.getStoragePath();
+        String command = client.getLaunchCommand();
 
+        String storagePath = client.getStoragePath();
         Information clientInfo = client.getInformation();
 
         Image softwareIcon = null;
@@ -71,7 +74,15 @@ public class SoftwareLauncher {
 
         UpdateResult updateResult = BatchPatcher.update(clientScriptFile, client, new File(storagePath), clientInfo.getSoftwareName(), softwareIcon, clientInfo.getLauncherTitle(), updaterIcon);
         if (updateResult.isUpdateSucceed() || updateResult.isLaunchSoftware()) {
-            startSoftware(jarPath, mainClass, args);
+            if (launchType.equals("jar")) {
+                startSoftware(jarPath, mainClass, args);
+            } else {
+                command = command.replace("{java}", System.getProperty("java.home") + File.separator + "bin" + File.separator + "java");
+                Runtime.getRuntime().exec(command);
+                if (afterLaunchOperation.equals("exit")) {
+                    System.exit(0);
+                }
+            }
         }
     }
 
@@ -86,7 +97,7 @@ public class SoftwareLauncher {
                 }
             }
         } catch (Exception ex) {
-            throw new LaunchFailedException();
+            throw new LaunchFailedException(ex);
         }
     }
 
