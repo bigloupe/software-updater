@@ -23,9 +23,10 @@ mklink ..\SoftwareLauncher\src\updater\script\Patch.java %workingDirectory%\src\
 
 mkdir ..\SoftwareLauncher\src\updater\util\
 mklink ..\SoftwareLauncher\src\updater\util\CommonUtil.java %workingDirectory%\src\updater\util\CommonUtil.java
-mklink ..\SoftwareLauncher\src\updater\util\XMLUtil.java %workingDirectory%\src\updater\util\XMLUtil.java
 mklink ..\SoftwareLauncher\src\updater\util\InterruptibleInputStream.java %workingDirectory%\src\updater\util\InterruptibleInputStream.java
 mklink ..\SoftwareLauncher\src\updater\util\InterruptibleOutputStream.java %workingDirectory%\src\updater\util\InterruptibleOutputStream.java
+mklink ..\SoftwareLauncher\src\updater\util\PatchUtil.java %workingDirectory%\src\updater\util\PatchUtil.java
+mklink ..\SoftwareLauncher\src\updater\util\XMLUtil.java %workingDirectory%\src\updater\util\XMLUtil.java
 
 mkdir ..\SoftwareLauncher\test\updater\
 mklink ..\SoftwareLauncher\test\updater\TestCommon.java %workingDirectory%\test\updater\TestCommon.java
@@ -48,6 +49,7 @@ mklink ..\SoftwarePatchBuilder\src\updater\script\Patch.java %workingDirectory%\
 
 mkdir ..\SoftwarePatchBuilder\src\updater\util\
 mklink ..\SoftwarePatchBuilder\src\updater\util\CommonUtil.java %workingDirectory%\src\updater\util\CommonUtil.java
+mklink ..\SoftwarePatchBuilder\src\updater\util\PatchUtil.java %workingDirectory%\src\updater\util\PatchUtil.java
 mklink ..\SoftwarePatchBuilder\src\updater\util\XMLUtil.java %workingDirectory%\src\updater\util\XMLUtil.java
 
 mkdir ..\SoftwarePatchBuilder\test\updater\

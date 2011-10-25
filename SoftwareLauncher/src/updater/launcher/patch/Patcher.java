@@ -121,13 +121,13 @@ public class Patcher {
             if (!oldFile.exists()) {
                 throw new Exception("Old file not exist: " + operation.getOldFilePath());
             }
-            if (!Util.getSHA256(oldFile).equals(operation.getOldFileChecksum()) || oldFile.length() != operation.getOldFileLength()) {
+            if (!Util.getSHA256String(oldFile).equals(operation.getOldFileChecksum()) || oldFile.length() != operation.getOldFileLength()) {
                 throw new Exception("Checksum or length does not match (old file): " + operation.getOldFilePath());
             }
         }
 
         // check if it is patched and waiting for move already
-        if (tempNewFile.exists() && Util.getSHA256(tempNewFile).equals(operation.getNewFileChecksum()) && tempNewFile.length() == operation.getNewFileLength()) {
+        if (tempNewFile.exists() && Util.getSHA256String(tempNewFile).equals(operation.getNewFileChecksum()) && tempNewFile.length() == operation.getNewFileLength()) {
             return;
         }
 
@@ -225,7 +225,7 @@ public class Patcher {
 
         // check new file checksum and length
         if (!operation.getType().equals("new")) {
-            String tempNewFileSHA256 = Util.getSHA256(tempNewFile);
+            String tempNewFileSHA256 = Util.getSHA256String(tempNewFile);
             if (!tempNewFileSHA256.equals(operation.getNewFileChecksum()) || tempNewFile.length() != operation.getNewFileLength()) {
                 throw new Exception("Checksum or length does not match (new file): " + tempNewFile.getAbsolutePath() + ", old file path: " + operation.getOldFilePath() + ", expected checksum: " + operation.getNewFileChecksum() + ", actual checksum: " + tempNewFileSHA256 + ", expected length: " + operation.getNewFileLength() + ", actual length: " + tempNewFile.length());
             }
@@ -351,7 +351,7 @@ public class Patcher {
                     if (_file.length() != _validationFile.getFileLength()) {
                         throw new Exception("File length not matched, file: " + _validationFile.getFilePath() + ", expected: " + _validationFile.getFileLength() + ", found: " + _file.length());
                     }
-                    if (!Util.getSHA256(_file).equals(_validationFile.getFileChecksum())) {
+                    if (!Util.getSHA256String(_file).equals(_validationFile.getFileChecksum())) {
                         throw new Exception("File checksum incorrect: " + _validationFile.getFilePath());
                     }
                 }

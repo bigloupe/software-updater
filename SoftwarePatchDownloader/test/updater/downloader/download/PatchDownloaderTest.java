@@ -1,5 +1,6 @@
 package updater.downloader.download;
 
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.io.File;
@@ -15,6 +16,7 @@ import updater.script.Catalog;
 import updater.script.InvalidFormatException;
 import updater.downloader.util.Util;
 import updater.script.Patch;
+import updater.util.CommonUtil.InvalidVersionException;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -53,10 +55,15 @@ public class PatchDownloaderTest {
      * Test of getSuitablePatches method, of class SoftwareUpdater.
      */
     @Test
-    public void testGetPatches_Catalog_String() {
+    public void testGetPatches_Catalog_String() throws InvalidVersionException {
         System.out.println("+++++ testGetPatches_Catalog_String +++++");
 
-        byte[] catalogData = Util.readFile(new File(packagePath + "PatchDownloaderTest_getPatches.xml"));
+        byte[] catalogData = null;
+        try {
+            catalogData = Util.readFile(new File(packagePath + "PatchDownloaderTest_getPatches.xml"));
+        } catch (IOException ex) {
+            Logger.getLogger(PatchDownloaderTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
         assertNotNull(catalogData);
         assertTrue(catalogData.length != 0);
 

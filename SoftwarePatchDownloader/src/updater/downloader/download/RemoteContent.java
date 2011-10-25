@@ -197,7 +197,7 @@ public class RemoteContent {
 
             // check saveToFile with fileLength and expectedLength
             if (fileLength != 0) {
-                if ((fileLength == expectedLength && !Util.getSHA256(saveToFile).equals(fileSHA256))
+                if ((fileLength == expectedLength && !Util.getSHA256String(saveToFile).equals(fileSHA256))
                         || fileLength > expectedLength) {
                     // truncate/delete the file
                     try {

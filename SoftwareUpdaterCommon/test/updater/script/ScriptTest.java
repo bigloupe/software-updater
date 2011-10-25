@@ -1,10 +1,9 @@
 package updater.script;
 
+import java.io.IOException;
+import javax.xml.transform.TransformerException;
 import updater.TestCommon;
 import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -47,7 +46,7 @@ public class ScriptTest {
     }
 
     @Test
-    public void clientTest() {
+    public void clientTest() throws IOException, InvalidFormatException, TransformerException {
         System.out.println("+++++ clientTest +++++");
 
         byte[] client1Data = CommonUtil.readFile(new File(packagePath + "ScriptTest_client1.xml"));
@@ -59,33 +58,25 @@ public class ScriptTest {
         assertNotNull(client3Data);
         assertNotNull(client4Data);
 
-        try {
-            Client clientScript = Client.read(client1Data);
-            assertNotNull(clientScript);
-            assertArrayEquals(clientScript.output(), client1Data, clientScript.output().getBytes("UTF-8"));
+        Client clientScript = Client.read(client1Data);
+        assertNotNull(clientScript);
+        assertArrayEquals(clientScript.output(), client1Data, clientScript.output().getBytes("UTF-8"));
 
-            clientScript = Client.read(client2Data);
-            assertNotNull(clientScript);
-            assertArrayEquals(clientScript.output(), client2Data, clientScript.output().getBytes("UTF-8"));
+        clientScript = Client.read(client2Data);
+        assertNotNull(clientScript);
+        assertArrayEquals(clientScript.output(), client2Data, clientScript.output().getBytes("UTF-8"));
 
-            clientScript = Client.read(client3Data);
-            assertNotNull(clientScript);
-            assertArrayEquals(clientScript.output(), client3Data, clientScript.output().getBytes("UTF-8"));
+        clientScript = Client.read(client3Data);
+        assertNotNull(clientScript);
+        assertArrayEquals(clientScript.output(), client3Data, clientScript.output().getBytes("UTF-8"));
 
-            clientScript = Client.read(client4Data);
-            assertNotNull(clientScript);
-            assertArrayEquals(clientScript.output(), client4Data, clientScript.output().getBytes("UTF-8"));
-        } catch (InvalidFormatException ex) {
-            Logger.getLogger(ScriptTest.class.getName()).log(Level.SEVERE, null, ex);
-            fail("! Invalid format exception");
-        } catch (UnsupportedEncodingException ex) {
-            Logger.getLogger(ScriptTest.class.getName()).log(Level.SEVERE, null, ex);
-            fail("! UTF-8 encoding not supported.");
-        }
+        clientScript = Client.read(client4Data);
+        assertNotNull(clientScript);
+        assertArrayEquals(clientScript.output(), client4Data, clientScript.output().getBytes("UTF-8"));
     }
 
     @Test
-    public void catalogTest() {
+    public void catalogTest() throws IOException, InvalidFormatException, TransformerException {
         System.out.println("+++++ catalogTest +++++");
 
         byte[] catalog1Data = CommonUtil.readFile(new File(packagePath + "ScriptTest_catalog1.xml"));
@@ -93,25 +84,17 @@ public class ScriptTest {
         assertNotNull(catalog1Data);
         assertNotNull(catalog2Data);
 
-        try {
-            Catalog catalogScript = Catalog.read(catalog1Data);
-            assertNotNull(catalogScript);
-            assertArrayEquals(catalogScript.output(), catalog1Data, catalogScript.output().getBytes("UTF-8"));
+        Catalog catalogScript = Catalog.read(catalog1Data);
+        assertNotNull(catalogScript);
+        assertArrayEquals(catalogScript.output(), catalog1Data, catalogScript.output().getBytes("UTF-8"));
 
-            catalogScript = Catalog.read(catalog2Data);
-            assertNotNull(catalogScript);
-            assertArrayEquals(catalogScript.output(), catalog2Data, catalogScript.output().getBytes("UTF-8"));
-        } catch (InvalidFormatException ex) {
-            Logger.getLogger(ScriptTest.class.getName()).log(Level.SEVERE, null, ex);
-            fail("! Invalid format exception");
-        } catch (UnsupportedEncodingException ex) {
-            Logger.getLogger(ScriptTest.class.getName()).log(Level.SEVERE, null, ex);
-            fail("! UTF-8 encoding not supported.");
-        }
+        catalogScript = Catalog.read(catalog2Data);
+        assertNotNull(catalogScript);
+        assertArrayEquals(catalogScript.output(), catalog2Data, catalogScript.output().getBytes("UTF-8"));
     }
 
     @Test
-    public void patchTest() {
+    public void patchTest() throws IOException, InvalidFormatException, TransformerException {
         System.out.println("+++++ patchTest +++++");
 
         byte[] patch1Data = CommonUtil.readFile(new File(packagePath + "ScriptTest_patch1.xml"));
@@ -123,28 +106,20 @@ public class ScriptTest {
         assertNotNull(patch3Data);
         assertNotNull(patch4Data);
 
-        try {
-            Patch patchScript = Patch.read(patch1Data);
-            assertNotNull(patchScript);
-            assertArrayEquals(patchScript.output(), patch1Data, patchScript.output().getBytes("UTF-8"));
+        Patch patchScript = Patch.read(patch1Data);
+        assertNotNull(patchScript);
+        assertArrayEquals(patchScript.output(), patch1Data, patchScript.output().getBytes("UTF-8"));
 
-            patchScript = Patch.read(patch2Data);
-            assertNotNull(patchScript);
-            assertArrayEquals(patchScript.output(), patch2Data, patchScript.output().getBytes("UTF-8"));
+        patchScript = Patch.read(patch2Data);
+        assertNotNull(patchScript);
+        assertArrayEquals(patchScript.output(), patch2Data, patchScript.output().getBytes("UTF-8"));
 
-            patchScript = Patch.read(patch3Data);
-            assertNotNull(patchScript);
-            assertArrayEquals(patchScript.output(), patch3Data, patchScript.output().getBytes("UTF-8"));
+        patchScript = Patch.read(patch3Data);
+        assertNotNull(patchScript);
+        assertArrayEquals(patchScript.output(), patch3Data, patchScript.output().getBytes("UTF-8"));
 
-            patchScript = Patch.read(patch4Data);
-            assertNotNull(patchScript);
-            assertArrayEquals(patchScript.output(), patch4Data, patchScript.output().getBytes("UTF-8"));
-        } catch (InvalidFormatException ex) {
-            Logger.getLogger(ScriptTest.class.getName()).log(Level.SEVERE, null, ex);
-            fail("! Invalid format exception");
-        } catch (UnsupportedEncodingException ex) {
-            Logger.getLogger(ScriptTest.class.getName()).log(Level.SEVERE, null, ex);
-            fail("! UTF-8 encoding not supported.");
-        }
+        patchScript = Patch.read(patch4Data);
+        assertNotNull(patchScript);
+        assertArrayEquals(patchScript.output(), patch4Data, patchScript.output().getBytes("UTF-8"));
     }
 }

@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import updater.downloader.download.PatchDownloader;
 import updater.downloader.util.Util;
+import updater.script.InvalidFormatException;
 import updater.util.CommonUtil.GetClientScriptResult;
 
 /**
@@ -18,7 +19,12 @@ public class SoftwarePatchDownloader {
     }
 
     public static void main(String[] args) throws IOException {
-        Util.setLookAndFeel();
+        try {
+            Util.setLookAndFeel();
+        } catch (Exception ex) {
+            Logger.getLogger(SoftwarePatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
         try {
             GetClientScriptResult result = Util.getClientScript(args.length > 0 ? args[0] : null);
             if (result.getClientScript() != null) {
@@ -29,6 +35,9 @@ public class SoftwarePatchDownloader {
         } catch (IOException ex) {
             Logger.getLogger(SoftwarePatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
             JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software->icon or root->information->downloader->icon.");
+        } catch (InvalidFormatException ex) {
+            Logger.getLogger(SoftwarePatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(null, "Config file format invalid.");
         }
     }
 }

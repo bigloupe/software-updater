@@ -1,11 +1,15 @@
 package updater.downloader.util;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import updater.util.CommonUtil;
 
 /**
@@ -97,9 +101,7 @@ public class Util extends CommonUtil {
         return sb.toString();
     }
 
-    public static byte[] rsaEncrypt(PrivateKey key, int blockSize, int contentBlockSize, byte[] b) {
-        byte[] returnResult = null;
-
+    public static byte[] rsaEncrypt(PrivateKey key, int blockSize, int contentBlockSize, byte[] b) throws IOException {
         try {
             ByteArrayOutputStream bout = new ByteArrayOutputStream(((b.length / contentBlockSize) * blockSize) + (b.length % contentBlockSize == 0 ? 0 : blockSize));
 
@@ -111,20 +113,23 @@ public class Util extends CommonUtil {
                 bout.write(cipher.doFinal(b, i, byteToRead));
             }
 
-            returnResult = bout.toByteArray();
-        } catch (Exception ex) {
-            Logger.getLogger(Util.class.getName()).log(Level.WARNING, null, ex);
+            return bout.toByteArray();
+        } catch (NoSuchAlgorithmException ex) {
+        } catch (NoSuchPaddingException ex) {
+        } catch (InvalidKeyException ex) {
+        } catch (IllegalBlockSizeException ex) {
+        } catch (BadPaddingException ex) {
         }
 
-        return returnResult;
+        return null;
     }
 
-    public static byte[] rsaDecrypt(PublicKey key, int blockSize, byte[] b) {
+    public static byte[] rsaDecrypt(PublicKey key, int blockSize, byte[] b) throws IOException {
         byte[] returnResult = null;
 
         try {
             if (b.length % blockSize != 0) {
-                throw new Exception("Data length is not a multiple of RSA block size. Data length: " + b.length + ", RSA block size: " + blockSize + ", data length % RSA block size: " + b.length % blockSize);
+                throw new IOException("Data length is not a multiple of RSA block size. Data length: " + b.length + ", RSA block size: " + blockSize + ", data length % RSA block size: " + b.length % blockSize);
             }
 
             ByteArrayOutputStream bout = new ByteArrayOutputStream(b.length);
@@ -137,8 +142,12 @@ public class Util extends CommonUtil {
             }
 
             returnResult = bout.toByteArray();
-        } catch (Exception ex) {
-            Logger.getLogger(Util.class.getName()).log(Level.WARNING, null, ex);
+        } catch (NoSuchAlgorithmException ex) {
+        } catch (NoSuchPaddingException ex) {
+        } catch (IllegalBlockSizeException ex) {
+        } catch (InvalidKeyException ex) {
+        } catch (BadPaddingException ex) {
+            throw new IOException(ex);
         }
 
         return returnResult;

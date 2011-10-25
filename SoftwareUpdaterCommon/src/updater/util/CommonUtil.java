@@ -8,11 +8,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.security.NoSuchAlgorithmException;
 import javax.swing.UIManager;
 import javax.xml.transform.TransformerException;
 import updater.script.Client;
+import updater.script.InvalidFormatException;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -21,22 +21,28 @@ public class CommonUtil {
 
     protected CommonUtil() {
     }
-    protected static final byte[] HEX_CHAR_TABLE = {
-        (byte) '0', (byte) '1', (byte) '2', (byte) '3',
-        (byte) '4', (byte) '5', (byte) '6', (byte) '7',
-        (byte) '8', (byte) '9', (byte) 'a', (byte) 'b',
-        (byte) 'c', (byte) 'd', (byte) 'e', (byte) 'f'
-    };
 
+    /**
+     * Convert byte array to hex string representation. In the output, a to f are in lowercase.
+     * @param raw the byte array to convert
+     * @return the hex string
+     */
     public static String byteArrayToHexString(byte[] raw) {
+        byte[] hexCharTable = {
+            (byte) '0', (byte) '1', (byte) '2', (byte) '3',
+            (byte) '4', (byte) '5', (byte) '6', (byte) '7',
+            (byte) '8', (byte) '9', (byte) 'a', (byte) 'b',
+            (byte) 'c', (byte) 'd', (byte) 'e', (byte) 'f'
+        };
+
         byte[] hex = new byte[2 * raw.length];
         int index = 0;
 
         for (byte b : raw) {
             int v = b & 0xFF;
-            hex[index] = HEX_CHAR_TABLE[v >>> 4];
+            hex[index] = hexCharTable[v >>> 4];
             index++;
-            hex[index] = HEX_CHAR_TABLE[v & 0xF];
+            hex[index] = hexCharTable[v & 0xF];
             index++;
         }
 
@@ -45,19 +51,50 @@ public class CommonUtil {
             result = new String(hex, "US-ASCII");
         } catch (UnsupportedEncodingException ex) {
             // should not happen
+            System.err.println(ex);
         }
 
         return result;
     }
 
-    public static String getSHA256(File file) {
-        String returnResult = null;
+    /**
+     * Convert the hex string to a byte array. This function will not check the validity of the <code>hexString</code>.
+     * @param hexString the hex string to convert
+     * @return the byte array
+     */
+    public static byte[] hexStringToByteArray(String hexString) {
+        int len = hexString.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4) + Character.digit(hexString.charAt(i + 1), 16));
+        }
+        return data;
+    }
 
+    /**
+     * Get the SHA-256 digest of a file.
+     * @param file the file to digest
+     * @return the SHA-256 in hex string representation or null if SHA-256 algorithm not found
+     * @throws IOException error occurred when reading the file
+     */
+    public static String getSHA256String(File file) throws IOException {
+        return byteArrayToHexString(getSHA256(file));
+    }
+
+    /**
+     * Get the SHA-256 digest of a file.
+     * @param file the file to digest
+     * @return the SHA-256 digest or null if SHA-256 algorithm not found
+     * @throws IOException error occurred when reading the file
+     */
+    public static byte[] getSHA256(File file) throws IOException {
         InputStream fin = null;
         try {
             long fileLength = file.length();
             fin = new FileInputStream(file);
-            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+
+            MessageDigest messageDigest;
+            messageDigest = MessageDigest.getInstance("SHA-256");
 
             int byteRead, cumulateByteRead = 0;
             byte[] b = new byte[8192];
@@ -70,47 +107,36 @@ public class CommonUtil {
             }
 
             if (cumulateByteRead != fileLength) {
-                throw new Exception("The total number of bytes read does not match the file size. Actual file size: " + fileLength + ", bytes read: " + cumulateByteRead + ", path: " + file.getAbsolutePath());
+                throw new IOException("The total number of bytes read does not match the file size. Actual file size: " + fileLength + ", bytes read: " + cumulateByteRead + ", path: " + file.getAbsolutePath());
             }
-            returnResult = byteArrayToHexString(messageDigest.digest());
-        } catch (Exception ex) {
-            returnResult = null;
-            Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+
+            return messageDigest.digest();
+        } catch (NoSuchAlgorithmException ex) {
+            // should not happen
+            System.err.println(ex);
         } finally {
-            try {
-                if (fin != null) {
-                    fin.close();
-                }
-            } catch (IOException ex) {
+            if (fin != null) {
+                fin.close();
             }
         }
 
-        return returnResult;
+        return null;
     }
 
     /**
      * Set UI look & feel to system look & feel.
      */
-    public static void setLookAndFeel() {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ex) {
-            Logger.getLogger(CommonUtil.class.getName()).log(Level.INFO, "Failed to set system look and feel.", ex);
-        }
+    public static void setLookAndFeel() throws Exception {
+        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
     }
 
     /**
      * If the file is a directory, return the directory path; if the file is not a directory, return the directory path that contain the file.
      * @param file the file
-     * @return the file parent path or null if error occurred
+     * @return the file parent path
      */
     public static String getFileDirectory(File file) {
-        String returnResult = null;
-        try {
-            returnResult = file.isDirectory() ? file.getAbsolutePath() : getFileDirectory(file.getAbsolutePath());
-        } catch (Exception ex) {
-        }
-        return returnResult;
+        return file.isDirectory() ? file.getAbsolutePath() : getFileDirectory(file.getAbsolutePath());
     }
 
     /**
@@ -119,54 +145,45 @@ public class CommonUtil {
      * @return the file parent path
      */
     public static String getFileDirectory(String filePath) {
-        int pos = filePath.replace((CharSequence) File.separator, (CharSequence) "/").lastIndexOf('/');
+        int pos = filePath.replace(File.separator, "/").lastIndexOf('/');
         return pos != -1 ? filePath.substring(0, pos) : filePath;
     }
 
-    public static byte[] hexStringToByteArray(String hexString) {
-        int len = hexString.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4) + Character.digit(hexString.charAt(i + 1), 16));
-        }
-        return data;
+    /**
+     * Write the string into the file.
+     * @param file the file to write to
+     * @param content the content to write into the file
+     * @throws IOException error occurred when writing the content into the file
+     */
+    public static void writeFile(File file, String content) throws IOException {
+        writeFile(file, content.getBytes("UTF-8"));
     }
 
-    public static boolean writeFile(File file, String content) {
-        byte[] byteContent = null;
-        try {
-            byteContent = content.getBytes("UTF-8");
-        } catch (Exception ex) {
-            return false;
-        }
-
-        return writeFile(file, byteContent);
-    }
-
-    public static boolean writeFile(File file, byte[] content) {
-        boolean returnResult = true;
-
+    /**
+     * Write the byte array into the file.
+     * @param file the file to write to
+     * @param content the content to write into the file
+     * @throws IOException error occurred when writing the content into the file
+     */
+    public static void writeFile(File file, byte[] content) throws IOException {
         FileOutputStream fout = null;
         try {
             fout = new FileOutputStream(file);
             fout.write(content);
-        } catch (Exception ex) {
-            returnResult = false;
         } finally {
-            try {
-                if (fout != null) {
-                    fout.close();
-                }
-            } catch (IOException ex) {
+            if (fout != null) {
+                fout.close();
             }
         }
-
-        return returnResult;
     }
 
-    public static boolean copyFile(File fromFile, File toFile) {
-        boolean returnResult = true;
-
+    /**
+     * Copy a file to another location.
+     * @param fromFile the file to copy form
+     * @param toFile the file/location to copy to
+     * @throws IOException error occurred when reading/writing the content from/into the file
+     */
+    public static void copyFile(File fromFile, File toFile) throws IOException {
         FileInputStream fromFileStream = null;
         FileOutputStream toFileStream = null;
         try {
@@ -185,28 +202,26 @@ public class CommonUtil {
                 }
             }
 
-            if (cumulateByteRead != fromFile.length()) {
-                throw new Exception("The total number of bytes read does not match the file size. Actual file size: " + fromFileLength + ", bytes read: " + cumulateByteRead + ", path: " + fromFile.getAbsolutePath());
+            if (cumulateByteRead != fromFileLength) {
+                throw new IOException("The total number of bytes read does not match the file size. Actual file size: " + fromFileLength + ", bytes read: " + cumulateByteRead + ", path: " + fromFile.getAbsolutePath());
             }
-        } catch (Exception ex) {
-            returnResult = false;
-            Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
-            try {
-                if (fromFileStream != null) {
-                    fromFileStream.close();
-                }
-                if (toFileStream != null) {
-                    toFileStream.close();
-                }
-            } catch (IOException ex) {
+            if (fromFileStream != null) {
+                fromFileStream.close();
+            }
+            if (toFileStream != null) {
+                toFileStream.close();
             }
         }
-
-        return returnResult;
     }
 
-    public static byte[] readFile(File file) {
+    /**
+     * Read the whole file and return the content in byte array.
+     * @param file the file to read
+     * @return the content of the file in byte array
+     * @throws IOException error occurred when reading the content from the file
+     */
+    public static byte[] readFile(File file) throws IOException {
         long fileLength = file.length();
         byte[] content = new byte[(int) fileLength];
 
@@ -222,25 +237,25 @@ public class CommonUtil {
                 }
             }
 
-            if (cumulateByteRead != content.length) {
-                throw new Exception("The total number of bytes read does not match the file size. Actual file size: " + fileLength + ", bytes read: " + cumulateByteRead + ", path: " + file.getAbsolutePath());
+            if (cumulateByteRead != fileLength) {
+                throw new IOException("The total number of bytes read does not match the file size. Actual file size: " + fileLength + ", bytes read: " + cumulateByteRead + ", path: " + file.getAbsolutePath());
             }
-        } catch (Exception ex) {
-            content = null;
-            Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
-            try {
-                if (fin != null) {
-                    fin.close();
-                }
-            } catch (IOException ex) {
+            if (fin != null) {
+                fin.close();
             }
         }
 
         return content;
     }
 
-    public static byte[] readResourceFile(String path) {
+    /**
+     * Read the resource file from the jar.
+     * @param path the resource path
+     * @return the content of the resource file in byte array
+     * @throws IOException error occurred when reading the content from the file
+     */
+    public static byte[] readResourceFile(String path) throws IOException {
         byte[] returnResult = null;
 
         int byteRead = 0;
@@ -251,7 +266,7 @@ public class CommonUtil {
         try {
             in = CommonUtil.class.getResourceAsStream(path);
             if (in == null) {
-                throw new Exception("Resources not found: " + path);
+                throw new IOException("Resources not found: " + path);
             }
 
             while ((byteRead = in.read(b)) != -1) {
@@ -259,22 +274,23 @@ public class CommonUtil {
             }
 
             returnResult = bout.toByteArray();
-        } catch (Exception ex) {
-            returnResult = null;
-            Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
-            try {
-                if (in != null) {
-                    in.close();
-                }
-            } catch (IOException ex) {
+            if (in != null) {
+                in.close();
             }
         }
 
         return returnResult;
     }
 
-    public static long compareVersion(String version1, String version2) {
+    /**
+     * Compare <code>version1</code> and <code>version2</code>. Format: [0-9]{1,3}(\.[0-9]{1,3})*
+     * @param version1 version string
+     * @param version2 version string to compare to
+     * @return 0 if two version are equal, > 0 if <code>version1</code> is larger than <code>version2</code>, < 0 if <code>version1</code> is smaller than <code>version2</code>
+     * @throws updater.util.CommonUtil.InvalidVersionException version string is not a valid format
+     */
+    public static long compareVersion(String version1, String version2) throws InvalidVersionException {
         String[] version1Parted = version1.split("\\.");
         String[] version2Parted = version2.split("\\.");
 
@@ -283,98 +299,106 @@ public class CommonUtil {
         for (int i = 0, iEnd = Math.min(version1Parted.length, version2Parted.length); i < iEnd; i++) {
             try {
                 returnValue += (Integer.parseInt(version1Parted[i]) - Integer.parseInt(version2Parted[i])) * Math.pow(10000, iEnd - i);
-            } catch (Exception ex) {
+            } catch (NumberFormatException ex) {
+                throw new InvalidVersionException();
             }
         }
 
         return returnValue;
     }
 
-    public static GetClientScriptResult getClientScript(String inputPath) {
+    /**
+     * Exception for {@link #compareVersion(java.lang.String, java.lang.String)}.
+     */
+    public static class InvalidVersionException extends Exception {
+    }
+
+    /**
+     * Get the client script.
+     * @param inputPath the default path, can be null
+     * @return the result
+     * @throws InvalidFormatException the format of the client script or the version number is invalid
+     * @throws IOException error occurred when reading the content from the file
+     */
+    public static GetClientScriptResult getClientScript(String inputPath) throws InvalidFormatException, IOException {
         Client clientScript = null;
         String clientScriptPath = null;
 
+        if (inputPath != null) {
+            File inputFile = new File(inputPath);
+            if (inputFile.exists()) {
+                return new GetClientScriptResult(Client.read(readFile(inputFile)), inputFile.getAbsolutePath());
+            } else {
+                throw new IOException("Client script file not found: " + inputPath);
+            }
+        }
+
+        byte[] configPathByte = null;
         try {
-            if (inputPath != null) {
-                File inputFile = new File(inputPath);
-                if (inputFile.exists()) {
-                    byte[] inputFileData = readFile(inputFile);
-                    if (inputFileData != null && (clientScript = Client.read(inputFileData)) != null) {
-                        return new GetClientScriptResult(clientScript, inputFile.getAbsolutePath());
+            configPathByte = readResourceFile("/config");
+        } catch (IOException ex) {
+            throw new IOException("File/resource '/config' not found in the jar.");
+        }
+        String configPath = new String(configPathByte, "US-ASCII").replace("{home}", System.getProperty("user.home") + File.separator).replace("{tmp}", System.getProperty("java.io.tmpdir") + File.separator);
+
+        File configFile = new File(configPath);
+        File newConfigFile = new File(getFileDirectory(configFile) + File.separator + configFile.getName() + ".new");
+
+        if (configFile.exists()) {
+            try {
+                clientScript = Client.read(readFile(configFile));
+            } catch (InvalidFormatException ex) {
+                // allow this file be incorrect at this stage
+            }
+            clientScriptPath = configFile.getAbsolutePath();
+
+            if (newConfigFile.exists()) {
+                if (clientScript != null) {
+                    Client newConfigClientScript = null;
+
+                    try {
+                        newConfigClientScript = Client.read(readFile(newConfigFile));
+                    } catch (InvalidFormatException ex) {
+                        // allow this file be incorrect at this stage
                     }
-                } else {
-                    throw new Exception("Client script file not found: " + inputPath);
-                }
-            }
 
-
-            byte[] configPathByte = readResourceFile("/config");
-            if (configPathByte == null || configPathByte.length == 0) {
-                throw new Exception("File/resource '/config' not found in the jar.");
-            }
-
-            String configPath = new String(configPathByte, "US-ASCII");
-            configPath.replace("{home}", System.getProperty("user.home") + File.separator).replace("{tmp}", System.getProperty("java.io.tmpdir") + File.separator);
-
-            File configFile = new File(configPath);
-            File newConfigFile = new File(getFileDirectory(configFile) + File.separator + configFile.getName() + ".new");
-
-            if (configFile.exists()) {
-                byte[] configFileData = readFile(configFile);
-                if (configFileData != null) {
-                    clientScript = Client.read(configFileData);
-                }
-
-                clientScriptPath = configFile.getAbsolutePath();
-                if (newConfigFile.exists()) {
-                    if (clientScript != null) {
-                        Client newConfigClientScript = null;
-
-                        byte[] _newConfigFileData = readFile(newConfigFile);
-                        if (_newConfigFileData != null) {
-                            newConfigClientScript = Client.read(_newConfigFileData);
-                        }
-
-                        if (newConfigClientScript != null) {
-                            if (compareVersion(newConfigClientScript.getVersion(), clientScript.getVersion()) > 0) {
+                    if (newConfigClientScript != null) {
+                        try {
+                            long compareVersionResult = compareVersion(newConfigClientScript.getVersion(), clientScript.getVersion());
+                            if (compareVersionResult > 0) {
                                 configFile.delete();
                                 newConfigFile.renameTo(configFile);
 
                                 clientScript = newConfigClientScript;
                                 clientScriptPath = newConfigFile.getAbsolutePath();
                             }
-                        }
-                    } else {
-                        configFile.delete();
-                        newConfigFile.renameTo(configFile);
-
-                        byte[] _newConfigFileData = readFile(configFile);
-                        if (_newConfigFileData != null) {
-                            clientScript = Client.read(_newConfigFileData);
+                        } catch (InvalidVersionException ex) {
+                            throw new InvalidFormatException(ex.getMessage());
                         }
                     }
-                }
-            } else {
-                if (newConfigFile.exists()) {
+                } else {
+                    configFile.delete();
                     newConfigFile.renameTo(configFile);
-
-                    byte[] _newConfigFileData = readFile(configFile);
-                    if (_newConfigFileData != null) {
-                        clientScript = Client.read(_newConfigFileData);
-                    }
+                    clientScript = Client.read(readFile(configFile));
                 }
             }
-
-            if (clientScript == null) {
-                throw new Exception("Config file not found according to the path stated in '/config'.");
+        } else {
+            if (newConfigFile.exists()) {
+                newConfigFile.renameTo(configFile);
+                clientScript = Client.read(readFile(configFile));
             }
-        } catch (Exception ex) {
-            Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        if (clientScript == null) {
+            throw new IOException("Config file not found according to the path stated in '/config'.");
         }
 
         return new GetClientScriptResult(clientScript, clientScriptPath);
     }
 
+    /**
+     * Return result for {@link #getClientScript(java.lang.String)}.
+     */
     public static class GetClientScriptResult {
 
         protected Client clientScript;
@@ -394,13 +418,24 @@ public class CommonUtil {
         }
     }
 
+    /**
+     * Save the client script.
+     * @param clientScriptFile the file to save the client script into
+     * @param clientScript the client script to save
+     * @throws IOException error occurred when writing the content into the file
+     * @throws TransformerException the format of the client is invalid
+     */
     public static void saveClientScript(File clientScriptFile, Client clientScript) throws IOException, TransformerException {
         File clientScriptTemp = new File(getFileDirectory(clientScriptFile) + File.separator + clientScriptFile.getName() + ".new");
-        if (!writeFile(clientScriptTemp, clientScript.output()) || !clientScriptFile.delete() || !clientScriptTemp.renameTo(clientScriptFile)) {
+        writeFile(clientScriptTemp, clientScript.output());
+        if (!clientScriptFile.delete() || !clientScriptTemp.renameTo(clientScriptFile)) {
             throw new IOException("Failed to save to script to path: " + clientScriptFile.getAbsolutePath());
         }
     }
 
+    /**
+     * Simple wrapper class to do 'primitive data passing by reference'.
+     */
     public static class ObjectReference<T> {
 
         protected T obj;

@@ -82,7 +82,7 @@ public class XMLUtil {
             DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
             doc = docBuilder.parse(new ByteArrayInputStream(content));
         } catch (ParserConfigurationException ex) {
-//            Logger.getLogger(XMLUtil.class.getName()).log(Level.SEVERE, null, ex);
+            System.err.println(ex);
         }
         return doc;
     }
@@ -94,7 +94,7 @@ public class XMLUtil {
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
             doc = docBuilder.newDocument();
         } catch (Exception ex) {
-//            Logger.getLogger(XMLUtil.class.getName()).log(Level.SEVERE, null, ex);
+            System.err.println(ex);
         }
         return doc;
     }

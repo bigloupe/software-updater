@@ -33,6 +33,7 @@ import updater.downloader.util.Util;
 import updater.script.Patch;
 import updater.script.Patch.Operation;
 import updater.script.Patch.ValidationFile;
+import updater.util.CommonUtil.InvalidVersionException;
 import updater.util.CommonUtil.ObjectReference;
 
 /**
@@ -126,7 +127,14 @@ public class PatchDownloader {
             return;
         }
 
-        List<Patch> updatePatches = getSuitablePatches(catalog, clientScript.getVersion());
+        List<Patch> updatePatches = null;
+        try {
+            updatePatches = getSuitablePatches(catalog, clientScript.getVersion());
+        } catch (InvalidVersionException ex) {
+            Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+            disposeWindow(updaterFrame);
+            return;
+        }
         if (updatePatches.isEmpty()) {
             JOptionPane.showMessageDialog(updaterFrame, "There are no updates available.");
             disposeWindow(updaterFrame);
@@ -293,7 +301,14 @@ public class PatchDownloader {
             return;
         }
 
-        List<Patch> updatePatches = getSuitablePatches(catalog, clientScript.getVersion());
+        List<Patch> updatePatches = null;
+        try {
+            updatePatches = getSuitablePatches(catalog, clientScript.getVersion());
+        } catch (InvalidVersionException ex) {
+            Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+            disposeWindow(updaterFrame);
+            return;
+        }
         if (updatePatches.isEmpty()) {
             JOptionPane.showMessageDialog(updaterFrame, "There are no updates available.");
             disposeWindow(updaterFrame);
@@ -515,11 +530,11 @@ public class PatchDownloader {
         void downloadPatchesMessage(String message);
     }
 
-    public static List<Patch> getSuitablePatches(Catalog catalog, String currentVersion) {
+    public static List<Patch> getSuitablePatches(Catalog catalog, String currentVersion) throws InvalidVersionException {
         return getSuitablePatches(catalog.getPatchs(), currentVersion);
     }
 
-    protected static List<Patch> getSuitablePatches(List<Patch> allPatches, String fromVersion) {
+    protected static List<Patch> getSuitablePatches(List<Patch> allPatches, String fromVersion) throws InvalidVersionException {
         List<Patch> returnResult = new ArrayList<Patch>();
 
         String maxVersion = fromVersion;
