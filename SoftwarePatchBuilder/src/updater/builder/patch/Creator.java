@@ -395,6 +395,7 @@ public class Creator {
 
             // get delta/diff
             File diffFile = new File(tempDir + File.separator + Integer.toString(count));
+            diffFile.deleteOnExit();
             FileOutputStream fout = new FileOutputStream(diffFile);
             DiffWriter diffOut = new GDiffWriter(fout);
             delta.compute(_oldFile, _newFile, diffOut);

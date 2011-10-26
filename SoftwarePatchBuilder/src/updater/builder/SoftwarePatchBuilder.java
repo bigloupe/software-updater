@@ -196,6 +196,8 @@ public class SoftwarePatchBuilder {
         }
         File patchFile = new File(extractArg);
         File decryptedPatchFile = new File("tmp/" + patchFile.getName() + ".decrypted");
+        decryptedPatchFile.delete();
+        decryptedPatchFile.deleteOnExit();
 
         try {
             Creator.extractXMLFromPatch(patchFile, new File(outputArg), aesKey, decryptedPatchFile);
@@ -294,6 +296,8 @@ public class SoftwarePatchBuilder {
         }
         File patchFile = new File(outputArg);
         File encryptedPatchFile = new File("tmp/" + patchFile.getName() + ".encrypted");
+        encryptedPatchFile.delete();
+        encryptedPatchFile.deleteOnExit();
 
         try {
             Creator.createPatch(new File(patchArgs[0]), new File(patchArgs[1]), new File("tmp/"), patchFile, -1, fromArg, toArg, aesKey, encryptedPatchFile);
@@ -345,6 +349,8 @@ public class SoftwarePatchBuilder {
         }
         File patchFile = new File(outputArg);
         File encryptedPatchFile = new File("tmp/" + patchFile.getName() + ".encrypted");
+        encryptedPatchFile.delete();
+        encryptedPatchFile.deleteOnExit();
 
         File tempDir = new File("tmp/" + System.nanoTime());
         tempDir.mkdirs();
@@ -352,7 +358,7 @@ public class SoftwarePatchBuilder {
         Creator.createFullPatch(new File(fullArg), tempDir, new File(outputArg), -1, fromArg, fromSubsequentArg, toArg, aesKey, encryptedPatchFile);
 
         Util.truncateFolder(tempDir);
-        tempDir.delete();
+//        tempDir.delete();
 
         System.out.println("Patch created.");
     }
@@ -400,6 +406,7 @@ public class SoftwarePatchBuilder {
 
             File decryptedPatchFile = new File("tmp/" + patchFile.getName() + ".decrypted");
             decryptedPatchFile.delete();
+            decryptedPatchFile.deleteOnExit();
 
             try {
                 WatneAES_Implementer aesCipher = new WatneAES_Implementer();
@@ -439,7 +446,7 @@ public class SoftwarePatchBuilder {
         patcher.close();
 
         Util.truncateFolder(tempDir);
-        tempDir.delete();
+//        tempDir.delete();
 
         System.out.println();
         System.out.println("Patch applied successfully.");

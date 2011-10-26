@@ -347,12 +347,13 @@ public class AES_Utilities
     public static boolean wishToOverwrite(File f) throws HeadlessException,
                                                  IOException
     {
-        int rc =
-            JOptionPane.showConfirmDialog(null,
-                "Do you wish to overwrite the existing file?", "The file "
-                                + f.getName() + " already exists",
-                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-        return (rc == JOptionPane.YES_OPTION);
+        return true;
+//        int rc =
+//            JOptionPane.showConfirmDialog(null,
+//                "Do you wish to overwrite the existing file?", "The file "
+//                                + f.getName() + " already exists",
+//                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+//        return (rc == JOptionPane.YES_OPTION);
     } // public static boolean wishToOverwrite(File f)
 
     /**
