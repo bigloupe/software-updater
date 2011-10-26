@@ -135,6 +135,7 @@ public class RemoteContentTest {
         assertTrue(largerFile.exists());
 
         File tempFile = new File(originalFileName + ".kh6am");
+        tempFile.deleteOnExit();
         final ObjectReference<Long> startingPosition = new ObjectReference<Long>(0L);
         final ObjectReference<Integer> cumulativeByteDownloaded = new ObjectReference<Integer>(0);
 
@@ -288,7 +289,7 @@ public class RemoteContentTest {
         result = RemoteContent.getPatch(listener, url, saveToFile, fileSHA1, expectedLength);
 
         assertTrue(result.getResult());
-        assertEquals(0, (long) startingPosition.getObj());
+        assertEquals(7007, (long) startingPosition.getObj());
         assertEquals(originalFile.length() - initFileSize, (int) cumulativeByteDownloaded.getObj());
         assertEquals(originalFile.length(), saveToFile.length());
         assertEquals(Util.getSHA256String(originalFile), Util.getSHA256String(saveToFile));

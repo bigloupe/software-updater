@@ -11,6 +11,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import updater.script.InvalidFormatException;
 import updater.script.Patch;
 import updater.script.Patch.Operation;
@@ -25,27 +27,30 @@ import updater.util.SeekableFile;
  */
 public class Patcher {
 
+    /**
+     * Indicate whether it is in debug mode or not.
+     */
+    protected final static boolean debug;
+
+    static {
+        String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
+        debug = debugMode == null || !debugMode.equals("true") ? false : true;
+    }
     protected PatcherListener listener;
     protected PatchLogWriter log;
-    protected File patchFile;
     protected File tempDir;
-    protected String baseDir;
+    protected String softwareDir;
     private byte[] buf;
     protected float progress;
 
-    public Patcher(PatcherListener listener, PatchLogWriter log, File patchFile, File baseDir, File tempDir) throws IOException {
+    public Patcher(PatcherListener listener, PatchLogWriter log, File softwareDir, File tempDir) throws IOException {
         this.listener = listener;
         this.log = log;
 
-        this.patchFile = patchFile;
-        if (baseDir == null || !baseDir.isDirectory()) {
-            this.baseDir = new File("").getAbsolutePath() + File.separator;
-        } else {
-            this.baseDir = baseDir.getAbsolutePath() + File.separator;
+        if (!softwareDir.exists() || !softwareDir.isDirectory()) {
+            throw new IOException("software directory not exist or not a directory");
         }
-        if (!patchFile.exists() || patchFile.isDirectory()) {
-            throw new IOException("patch file not exist or not a file");
-        }
+        this.softwareDir = softwareDir.getAbsolutePath() + File.separator;
 
         this.tempDir = tempDir;
         if (!tempDir.exists() || !tempDir.isDirectory()) {
@@ -54,16 +59,6 @@ public class Patcher {
 
         buf = new byte[32768];
         progress = 0;
-    }
-
-    public void close() {
-        if (log != null) {
-            try {
-                log.close();
-            } catch (IOException ex) {
-                System.err.println(ex);
-            }
-        }
     }
 
     protected void doOperation(Operation operation, InputStream patchIn, File tempNewFile) throws IOException {
@@ -83,17 +78,21 @@ public class Patcher {
         File oldFile = null;
         if (operation.getOldFilePath() != null) {
             // check old file checksum and length
-            oldFile = new File(baseDir + operation.getOldFilePath());
+            oldFile = new File(softwareDir + operation.getOldFilePath());
             if (!oldFile.exists()) {
-                throw new IOException("Old file not exist: " + baseDir + operation.getOldFilePath());
+                throw new IOException("Old file not exist: " + softwareDir + operation.getOldFilePath());
             }
             if (!CommonUtil.getSHA256String(oldFile).equals(operation.getOldFileChecksum()) || oldFile.length() != operation.getOldFileLength()) {
-                throw new IOException("Checksum or length does not match (old file): " + baseDir + operation.getOldFilePath());
+                throw new IOException("Checksum or length does not match (old file): " + softwareDir + operation.getOldFilePath());
             }
         }
 
         // check if it is patched and waiting for move already
         if (tempNewFile.exists() && CommonUtil.getSHA256String(tempNewFile).equals(operation.getNewFileChecksum()) && tempNewFile.length() == operation.getNewFileLength()) {
+            long byteSkipped = patchIn.skip(operation.getPatchLength());
+            if (byteSkipped != operation.getPatchLength()) {
+                throw new IOException("Failed to skip remaining bytes in 'patchIn'.");
+            }
             return;
         }
 
@@ -122,7 +121,9 @@ public class Patcher {
                             _interruptiblePatchIn.close();
                             _randomAccessOldFile.close();
                         } catch (IOException ex) {
-                            System.err.println(ex);
+                            if (debug) {
+                                Logger.getLogger(Patcher.class.getName()).log(Level.SEVERE, null, ex);
+                            }
                         }
                     }
                 };
@@ -144,7 +145,9 @@ public class Patcher {
                             _tempNewFileOut.close();
                             _interruptiblePatchIn.close();
                         } catch (IOException ex) {
-                            System.err.println(ex);
+                            if (debug) {
+                                Logger.getLogger(Patcher.class.getName()).log(Level.SEVERE, null, ex);
+                            }
                         }
                     }
                 };
@@ -183,7 +186,9 @@ public class Patcher {
                     tempNewFileOut.close();
                 }
             } catch (IOException ex) {
-                System.err.println(ex);
+                if (debug) {
+                    Logger.getLogger(Patcher.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
 
@@ -191,7 +196,7 @@ public class Patcher {
         if (!operation.getType().equals("new")) {
             String tempNewFileSHA256 = CommonUtil.getSHA256String(tempNewFile);
             if (!tempNewFileSHA256.equals(operation.getNewFileChecksum()) || tempNewFile.length() != operation.getNewFileLength()) {
-                throw new IOException("Checksum or length does not match (new file): " + tempNewFile.getAbsolutePath() + ", old file path: " + baseDir + operation.getOldFilePath() + ", expected checksum: " + operation.getNewFileChecksum() + ", actual checksum: " + tempNewFileSHA256 + ", expected length: " + operation.getNewFileLength() + ", actual length: " + tempNewFile.length());
+                throw new IOException("Checksum or length does not match (new file): " + tempNewFile.getAbsolutePath() + ", old file path: " + softwareDir + operation.getOldFilePath() + ", expected checksum: " + operation.getNewFileChecksum() + ", actual checksum: " + tempNewFileSHA256 + ", expected length: " + operation.getNewFileLength() + ", actual length: " + tempNewFile.length());
             }
         }
     }
@@ -201,8 +206,8 @@ public class Patcher {
             Operation _operation = operations.get(i);
 
             if (_operation.getOldFilePath() != null) {
-                if (!CommonUtil.tryLock(new File(baseDir + _operation.getOldFilePath()))) {
-                    throw new IOException("Failed to acquire lock on (old file): " + baseDir + _operation.getOldFilePath());
+                if (!CommonUtil.tryLock(new File(softwareDir + _operation.getOldFilePath()))) {
+                    throw new IOException("Failed to acquire lock on (old file): " + softwareDir + _operation.getOldFilePath());
                 }
             }
 
@@ -225,16 +230,16 @@ public class Patcher {
 
             if (_operation.getType().equals("remove")) {
                 listener.patchProgress((int) progress, "Removing " + _operation.getOldFilePath() + " ...");
-                new File(baseDir + _operation.getOldFilePath()).delete();
+                new File(softwareDir + _operation.getOldFilePath()).delete();
             } else if (_operation.getType().equals("new") || _operation.getType().equals("force")) {
                 listener.patchProgress((int) progress, "Copying new file to " + _operation.getNewFilePath() + " ...");
                 if (_operation.getFileType().equals("folder")) {
-                    File newFolder = new File(baseDir + _operation.getNewFilePath());
+                    File newFolder = new File(softwareDir + _operation.getNewFilePath());
                     if (!newFolder.isDirectory() && !newFolder.mkdirs()) {
-                        throw new IOException("Create folder failed: " + baseDir + _operation.getNewFilePath());
+                        throw new IOException("Create folder failed: " + softwareDir + _operation.getNewFilePath());
                     }
                 } else {
-                    File newFile = new File(baseDir + _operation.getNewFilePath());
+                    File newFile = new File(softwareDir + _operation.getNewFilePath());
                     new File(CommonUtil.getFileDirectory(newFile)).mkdirs();
                     newFile.delete();
                     new File(tempDir + File.separator + i).renameTo(newFile);
@@ -242,8 +247,8 @@ public class Patcher {
             } else {
                 // patch or replace
                 listener.patchProgress((int) progress, "Copying from " + _operation.getOldFilePath() + " to " + _operation.getNewFilePath() + " ...");
-                new File(baseDir + _operation.getNewFilePath()).delete();
-                new File(tempDir + File.separator + i).renameTo(new File(baseDir + _operation.getNewFilePath()));
+                new File(softwareDir + _operation.getNewFilePath()).delete();
+                new File(tempDir + File.separator + i).renameTo(new File(softwareDir + _operation.getNewFilePath()));
             }
 
             log.logPatch(PatchLogWriter.Action.FINISH, i, PatchLogWriter.OperationType.get(_operation.getType()), _operation.getOldFilePath(), _operation.getNewFilePath());
@@ -251,7 +256,11 @@ public class Patcher {
         }
     }
 
-    public boolean doPatch(int patchId, int startFromFileIndex) throws IOException {
+    public boolean doPatch(File patchFile, int patchId, int startFromFileIndex) throws IOException {
+        if (!patchFile.exists() || patchFile.isDirectory()) {
+            throw new IOException("patch file not exist or not a file");
+        }
+
         boolean returnResult = true;
 
         InputStream patchIn = null;
@@ -303,20 +312,20 @@ public class Patcher {
             for (ValidationFile _validationFile : validations) {
                 listener.patchProgress((int) progress, "Validating file: " + _validationFile.getFilePath());
 
-                File _file = new File(baseDir + _validationFile.getFilePath());
+                File _file = new File(softwareDir + _validationFile.getFilePath());
                 if (_validationFile.getFileLength() == -1) {
                     if (!_file.isDirectory()) {
-                        throw new IOException("Folder missed: " + baseDir + _validationFile.getFilePath());
+                        throw new IOException("Folder missed: " + softwareDir + _validationFile.getFilePath());
                     }
                 } else {
                     if (!_file.exists()) {
-                        throw new IOException("File missed: " + baseDir + _validationFile.getFilePath());
+                        throw new IOException("File missed: " + softwareDir + _validationFile.getFilePath());
                     }
                     if (_file.length() != _validationFile.getFileLength()) {
-                        throw new IOException("File length not matched, file: " + baseDir + _validationFile.getFilePath() + ", expected: " + _validationFile.getFileLength() + ", found: " + _file.length());
+                        throw new IOException("File length not matched, file: " + softwareDir + _validationFile.getFilePath() + ", expected: " + _validationFile.getFileLength() + ", found: " + _file.length());
                     }
                     if (!CommonUtil.getSHA256String(_file).equals(_validationFile.getFileChecksum())) {
-                        throw new IOException("File checksum incorrect: " + baseDir + _validationFile.getFilePath());
+                        throw new IOException("File checksum incorrect: " + softwareDir + _validationFile.getFilePath());
                     }
                 }
 
@@ -326,14 +335,18 @@ public class Patcher {
             listener.patchProgress(100, "Finished.");
             log.logEnd();
         } catch (InvalidFormatException ex) {
-            System.err.println(ex);
+            if (debug) {
+                Logger.getLogger(Patcher.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } finally {
             try {
                 if (patchIn != null) {
                     patchIn.close();
                 }
             } catch (IOException ex) {
-                System.err.println(ex);
+                if (debug) {
+                    Logger.getLogger(Patcher.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
 

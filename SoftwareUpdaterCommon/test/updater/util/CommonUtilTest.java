@@ -4,6 +4,8 @@
  */
 package updater.util;
 
+import java.security.interfaces.RSAPublicKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.spec.RSAPrivateKeySpec;
@@ -12,8 +14,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import updater.TestCommon;
 import java.io.File;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -26,7 +26,7 @@ import static org.junit.Assert.*;
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class CommonUtilTest {
-    
+
     protected final String packagePath = TestCommon.pathToTestPackage + this.getClass().getCanonicalName().replace('.', '/') + "/";
 
     public CommonUtilTest() {
@@ -50,7 +50,7 @@ public class CommonUtilTest {
     @Before
     public void setUp() {
     }
-    
+
     @After
     public void tearDown() {
     }
@@ -67,8 +67,8 @@ public class CommonUtilTest {
             RSAPrivateKeySpec privateKeySpec = new RSAPrivateKeySpec(mod, new BigInteger(TestCommon.privateExponentString, 16));
             RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(mod, new BigInteger(TestCommon.publicExponentString, 16));
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
-            PublicKey publicKey = keyFactory.generatePublic(publicKeySpec);
+            RSAPrivateKey privateKey = (RSAPrivateKey) keyFactory.generatePrivate(privateKeySpec);
+            RSAPublicKey publicKey = (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
 
             File testFile = new File(packagePath + "UtilTest_rsaEnDecrypt.ico");
             byte[] testData = CommonUtil.readFile(testFile);

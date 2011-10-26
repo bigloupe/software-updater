@@ -33,6 +33,16 @@ import updater.downloader.util.Util;
  */
 public class RemoteContent {
 
+    /**
+     * Indicate whether it is in debug mode or not.
+     */
+    protected final static boolean debug;
+
+    static {
+        String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
+        debug = debugMode == null || !debugMode.equals("true") ? false : true;
+    }
+
     protected RemoteContent() {
     }
 
@@ -76,7 +86,7 @@ public class RemoteContent {
             if (contentLengthString != null) {
                 try {
                     contentLength = Integer.parseInt(contentLengthString.trim());
-                } catch (Exception ex) {
+                } catch (NumberFormatException ex) {
                     // ignore
                 }
             }
@@ -137,7 +147,9 @@ public class RemoteContent {
 
             returnResult = new GetCatalogResult(Catalog.read(content), false);
         } catch (Exception ex) {
-            Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
+            if (debug) {
+                Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } finally {
             try {
                 if (in != null) {
@@ -147,7 +159,9 @@ public class RemoteContent {
                     httpConn.disconnect();
                 }
             } catch (IOException ex) {
-                Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
+                if (debug) {
+                    Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
 
@@ -202,11 +216,12 @@ public class RemoteContent {
                     // truncate/delete the file
                     try {
                         new FileOutputStream(saveToFile).close();
-                    } catch (Exception ex2) {
+                    } catch (IOException ex) {
                         saveToFile.delete();
                     }
                     fileLength = 0;
                 } else if (fileLength == expectedLength) {
+                    listener.byteStart(fileLength);
                     return new GetPatchResult(true, false);
                 }
             }
@@ -261,7 +276,7 @@ public class RemoteContent {
                 } else {
                     try {
                         contentLength = Integer.parseInt(contentLengthString.trim());
-                    } catch (Exception ex) {
+                    } catch (NumberFormatException ex) {
                     }
                 }
             }
@@ -323,7 +338,9 @@ public class RemoteContent {
             return new GetPatchResult(false, true);
         } catch (Exception ex) {
             returnResult = new GetPatchResult(false, false);
-            Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
+            if (debug) {
+                Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } finally {
             try {
                 if (in != null) {
@@ -336,7 +353,9 @@ public class RemoteContent {
                     fout.close();
                 }
             } catch (IOException ex) {
-                Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
+                if (debug) {
+                    Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
 
@@ -406,7 +425,9 @@ public class RemoteContent {
                 KeyFactory keyFactory = KeyFactory.getInstance("RSA");
                 return keyFactory.generatePublic(keySpec);
             } catch (Exception ex) {
-                Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
+                if (debug) {
+                    Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
             return null;
         }

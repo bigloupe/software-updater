@@ -11,6 +11,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.xml.transform.TransformerException;
 import updater.script.InvalidFormatException;
 
@@ -18,6 +20,16 @@ import updater.script.InvalidFormatException;
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class KeyGenerator {
+
+    /**
+     * Indicate whether it is in debug mode or not.
+     */
+    protected final static boolean debug;
+
+    static {
+        String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
+        debug = debugMode == null || !debugMode.equals("true") ? false : true;
+    }
 
     protected KeyGenerator() {
     }
@@ -36,13 +48,21 @@ public class KeyGenerator {
 
             Util.writeFile(saveTo, rsaKey.output());
         } catch (InvalidKeySpecException ex) {
-            System.err.println(ex);
+            if (debug) {
+                Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (NoSuchAlgorithmException ex) {
-            System.err.println(ex);
+            if (debug) {
+                Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (UnsupportedEncodingException ex) {
-            System.err.println(ex);
+            if (debug) {
+                Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (TransformerException ex) {
-            System.err.println(ex);
+            if (debug) {
+                Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
 
@@ -59,7 +79,9 @@ public class KeyGenerator {
         try {
             Util.writeFile(saveTo, aesKey.output());
         } catch (TransformerException ex) {
-            System.err.println(ex);
+            if (debug) {
+                Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
 
@@ -75,7 +97,9 @@ public class KeyGenerator {
         try {
             Util.writeFile(file, aesKey.output());
         } catch (TransformerException ex) {
-            System.err.println(ex);
+            if (debug) {
+                Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
 }

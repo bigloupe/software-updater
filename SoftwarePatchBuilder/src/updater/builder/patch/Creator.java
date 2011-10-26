@@ -15,8 +15,8 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import org.tukaani.xz.XZOutputStream;
@@ -46,6 +48,16 @@ import watne.seis720.project.WatneAES_Implementer;
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class Creator {
+
+    /**
+     * Indicate whether it is in debug mode or not.
+     */
+    protected final static boolean debug;
+
+    static {
+        String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
+        debug = debugMode == null || !debugMode.equals("true") ? false : true;
+    }
 
     protected Creator() {
     }
@@ -84,7 +96,9 @@ public class Creator {
 
             Util.writeFile(saveToFile, patchXML.output().getBytes("UTF-8"));
         } catch (TransformerException ex) {
-            System.err.println(ex);
+            if (debug) {
+                Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } finally {
             if (in != null) {
                 in.close();
@@ -193,7 +207,9 @@ public class Creator {
         try {
             patchScriptOutput = patchScript.output().getBytes("UTF-8");
         } catch (TransformerException ex) {
-            System.err.println(ex);
+            if (debug) {
+                Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
 
         FileOutputStream fout = null;
@@ -457,7 +473,9 @@ public class Creator {
         try {
             patchScriptOutput = patchScript.output().getBytes("UTF-8");
         } catch (TransformerException ex) {
-            System.err.println(ex);
+            if (debug) {
+                Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
 
         FileOutputStream fout = null;
@@ -610,15 +628,19 @@ public class Creator {
     }
 
     public static void encryptCatalog(File in, File out, BigInteger mod, BigInteger privateExp) throws IOException {
-        PrivateKey privateKey = null;
+        RSAPrivateKey privateKey = null;
         try {
             RSAPrivateKeySpec keySpec = new RSAPrivateKeySpec(mod, privateExp);
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            privateKey = keyFactory.generatePrivate(keySpec);
+            privateKey = (RSAPrivateKey) keyFactory.generatePrivate(keySpec);
         } catch (NoSuchAlgorithmException ex) {
-            System.err.println(ex);
+            if (debug) {
+                Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (InvalidKeySpecException ex) {
-            System.err.println(ex);
+            if (debug) {
+                Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
 
         // compress
@@ -637,15 +659,19 @@ public class Creator {
     }
 
     public static void decryptCatalog(File in, File out, BigInteger mod, BigInteger publicExp) throws IOException {
-        PublicKey publicKey = null;
+        RSAPublicKey publicKey = null;
         try {
             RSAPublicKeySpec keySpec = new RSAPublicKeySpec(mod, publicExp);
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            publicKey = keyFactory.generatePublic(keySpec);
+            publicKey = (RSAPublicKey) keyFactory.generatePublic(keySpec);
         } catch (NoSuchAlgorithmException ex) {
-            System.err.println(ex);
+            if (debug) {
+                Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (InvalidKeySpecException ex) {
-            System.err.println(ex);
+            if (debug) {
+                Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
 
         // decrypt

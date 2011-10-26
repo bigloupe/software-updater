@@ -30,6 +30,11 @@ import watne.seis720.project.WatneAES_Implementer;
  */
 public class SoftwarePatchBuilder {
 
+    static {
+        // set debug mode
+        System.setProperty("SyntaxHighlighterDebugMode", "false");
+    }
+
     protected SoftwarePatchBuilder() {
     }
 
@@ -358,7 +363,7 @@ public class SoftwarePatchBuilder {
         Creator.createFullPatch(new File(fullArg), tempDir, new File(outputArg), -1, fromArg, fromSubsequentArg, toArg, aesKey, encryptedPatchFile);
 
         Util.truncateFolder(tempDir);
-//        tempDir.delete();
+        tempDir.delete();
 
         System.out.println("Patch created.");
     }
@@ -426,6 +431,7 @@ public class SoftwarePatchBuilder {
         File tempDir = new File("tmp/" + System.nanoTime());
         tempDir.mkdirs();
 
+        PatchLogWriter logger = new PatchLogWriter(new File(tempDir.getAbsolutePath() + "/action.log"));
         Patcher patcher = new Patcher(new PatcherListener() {
 
             @Override
@@ -441,12 +447,12 @@ public class SoftwarePatchBuilder {
             @Override
             public void patchEnableCancel(boolean enable) {
             }
-        }, new PatchLogWriter(new File(tempDir.getAbsolutePath() + "/action.log")), patchFile, new File(doArgs[0]), tempDir);
-        patcher.doPatch(0, 0);
-        patcher.close();
+        }, logger, new File(doArgs[0]), tempDir);
+        patcher.doPatch(patchFile, 0, 0);
+        logger.close();
 
         Util.truncateFolder(tempDir);
-//        tempDir.delete();
+        tempDir.delete();
 
         System.out.println();
         System.out.println("Patch applied successfully.");

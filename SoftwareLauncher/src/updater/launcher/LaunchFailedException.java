@@ -5,6 +5,8 @@ package updater.launcher;
  */
 public class LaunchFailedException extends Exception {
 
+    private static final long serialVersionUID = 1L;
+
     public LaunchFailedException() {
         super();
     }

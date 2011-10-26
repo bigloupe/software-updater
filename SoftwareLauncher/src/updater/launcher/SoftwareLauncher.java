@@ -24,6 +24,11 @@ import updater.util.CommonUtil.GetClientScriptResult;
  */
 public class SoftwareLauncher {
 
+    static {
+        // set debug mode
+        System.setProperty("SyntaxHighlighterDebugMode", "false");
+    }
+
     protected SoftwareLauncher() {
     }
 

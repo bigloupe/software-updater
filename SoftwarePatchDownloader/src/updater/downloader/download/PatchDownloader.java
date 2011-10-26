@@ -40,6 +40,16 @@ import updater.util.CommonUtil.ObjectReference;
  */
 public class PatchDownloader {
 
+    /**
+     * Indicate whether it is in debug mode or not.
+     */
+    protected final static boolean debug;
+
+    static {
+        String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
+        debug = debugMode == null || !debugMode.equals("true") ? false : true;
+    }
+
     protected PatchDownloader() {
     }
 
@@ -52,7 +62,7 @@ public class PatchDownloader {
         checkForUpdates(new File(clientScriptPath), Client.read(clientScriptData));
     }
 
-    public static void checkForUpdates(File clientScriptFile, Client clientScript) {
+    public static void checkForUpdates(final File clientScriptFile, final Client clientScript) {
         Information clientInfo = clientScript.getInformation();
 
         Image softwareIcon = null;
@@ -132,6 +142,15 @@ public class PatchDownloader {
         }
         if (updatePatches.isEmpty()) {
             JOptionPane.showMessageDialog(updaterFrame, "There are no updates available.");
+
+            clientScript.setCatalogLastUpdated(System.currentTimeMillis());
+            try {
+                Util.saveClientScript(clientScriptFile, clientScript);
+            } catch (Exception ex) {
+                // not a fatal problem
+                Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
             disposeWindow(updaterFrame);
             return;
         }
@@ -162,6 +181,15 @@ public class PatchDownloader {
                     case COMPLETED:
                         JOptionPane.showMessageDialog(updaterFrame, "Download patches finished.");
                         JOptionPane.showMessageDialog(updaterFrame, "You have to restart the application to make the update take effect.");
+
+                        clientScript.setCatalogLastUpdated(System.currentTimeMillis());
+                        try {
+                            Util.saveClientScript(clientScriptFile, clientScript);
+                        } catch (Exception ex) {
+                            // not a fatal problem
+                            Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+
                         disposeWindow(updaterFrame);
                         break;
                 }
@@ -210,6 +238,9 @@ public class PatchDownloader {
                 throw new IOException("Acquire exclusive lock failed");
             }
         } catch (IOException ex) {
+            if (debug) {
+                Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+            }
             try {
                 if (lock != null) {
                     lock.release();
@@ -218,6 +249,9 @@ public class PatchDownloader {
                     lockFileOut.close();
                 }
             } catch (IOException ex1) {
+                if (debug) {
+                    Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex1);
+                }
             }
             listener.downloadPatchesResult(DownloadPatchesListener.DownloadPatchesResult.MULTIPLE_UPDATER_RUNNING);
             return;
@@ -307,14 +341,17 @@ public class PatchDownloader {
                 }
 
                 existingUpdates.add(new Patch(update.getId(),
-                        update.getVersionFrom(), null, update.getVersionTo(),
-                        saveToFile.getAbsolutePath(), update.getDownloadChecksum(), update.getDownloadLength(),
-                        update.getDownloadEncryptionType(), update.getDownloadEncryptionKey(), update.getDownloadEncryptionIV(),
+                        update.getVersionFrom(), update.getVersionFromSubsequent(), update.getVersionTo(),
+                        null, null, -1,
+                        null, null, null,
                         new ArrayList<Operation>(), new ArrayList<ValidationFile>()));
                 clientScript.setPatches(existingUpdates);
                 try {
                     Util.saveClientScript(clientScriptFile, clientScript);
                 } catch (Exception ex) {
+                    if (debug) {
+                        Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                     listener.downloadPatchesResult(DownloadPatchesListener.DownloadPatchesResult.SAVE_TO_CLIENT_SCRIPT_FAIL);
                     return;
                 }
@@ -333,6 +370,9 @@ public class PatchDownloader {
                     lockFileOut.close();
                 }
             } catch (IOException ex) {
+                if (debug) {
+                    Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
     }
@@ -361,7 +401,7 @@ public class PatchDownloader {
         String maxVersion = fromVersion;
         for (Patch patch : allPatches) {
             if ((patch.getVersionFrom() != null && patch.getVersionFrom().equals(fromVersion))
-                    || (patch.getVersionFromSubsequent() != null && Util.compareVersion(fromVersion, patch.getVersionFromSubsequent()) >= 0)) {
+                    || (patch.getVersionFromSubsequent() != null && Util.compareVersion(fromVersion, patch.getVersionFromSubsequent()) >= 0 && Util.compareVersion(patch.getVersionTo(), fromVersion) > 0)) {
                 List<Patch> tempResult = new ArrayList<Patch>();
 
                 tempResult.add(patch);
@@ -412,7 +452,7 @@ public class PatchDownloader {
 
         RSAPublicKey publicKey = null;
         if (client.getCatalogPublicKeyModulus() != null) {
-            publicKey = new RSAPublicKey(new BigInteger(client.getCatalogPublicKeyModulus()), new BigInteger(client.getCatalogPublicKeyExponent(), 16));
+            publicKey = new RSAPublicKey(new BigInteger(client.getCatalogPublicKeyModulus(), 16), new BigInteger(client.getCatalogPublicKeyExponent(), 16));
         }
 
         GetCatalogResult getCatalogResult = RemoteContent.getCatalog(catalogURL, client.getCatalogLastUpdated(), publicKey);

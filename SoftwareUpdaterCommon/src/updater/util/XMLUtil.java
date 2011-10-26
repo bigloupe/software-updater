@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -25,6 +27,16 @@ import updater.script.InvalidFormatException;
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class XMLUtil {
+
+    /**
+     * Indicate whether it is in debug mode or not.
+     */
+    protected final static boolean debug;
+
+    static {
+        String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
+        debug = debugMode == null || !debugMode.equals("true") ? false : true;
+    }
 
     protected XMLUtil() {
     }
@@ -82,7 +94,10 @@ public class XMLUtil {
             DocumentBuilder docBuilder = dbFactory.newDocumentBuilder();
             doc = docBuilder.parse(new ByteArrayInputStream(content));
         } catch (ParserConfigurationException ex) {
-            System.err.println(ex);
+            // should not get this exception
+            if (debug) {
+                Logger.getLogger(XMLUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         return doc;
     }
@@ -94,7 +109,10 @@ public class XMLUtil {
             DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
             doc = docBuilder.newDocument();
         } catch (Exception ex) {
-            System.err.println(ex);
+            // create empty document, should not get any exception
+            if (debug) {
+                Logger.getLogger(XMLUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         return doc;
     }

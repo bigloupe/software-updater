@@ -7,8 +7,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileLock;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import updater.launcher.util.Util;
@@ -29,6 +32,16 @@ import watne.seis720.project.WatneAES_Implementer;
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class BatchPatcher {
+
+    /**
+     * Indicate whether it is in debug mode or not.
+     */
+    protected final static boolean debug;
+
+    static {
+        String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
+        debug = debugMode == null || !debugMode.equals("true") ? false : true;
+    }
 
     protected BatchPatcher() {
     }
@@ -156,10 +169,18 @@ public class BatchPatcher {
                     throw new IOException("Failed to create folder for patches.");
                 }
 
-                File patchFile = new File(_update.getId() + ".patch");
+                File patchFile = new File(tempDir.getAbsolutePath() + File.separator + _update.getId() + ".patch");
                 File decryptedPatchFile = new File(_update.getId() + ".patch.decrypted");
-                if (!patchFile.exists() && decryptedPatchFile.exists()) {
-                    decryptedPatchFile.renameTo(patchFile);
+                if (!patchFile.exists()) {
+                    if (decryptedPatchFile.exists()) {
+                        decryptedPatchFile.renameTo(patchFile);
+                    } else {
+                        // if the patch not exist, remove all patches
+                        // save the client scirpt
+                        clientScript.setPatches(new ArrayList<Patch>());
+                        Util.saveClientScript(clientScriptFile, clientScript);
+                        throw new IOException("Patch file not found: " + patchFile.getAbsolutePath());
+                    }
                 }
 
                 // need modification to allow cancel or make it an output stream
@@ -202,11 +223,11 @@ public class BatchPatcher {
                     public void patchEnableCancel(boolean enable) {
                         updaterGUI.setEnableCancel(enable);
                     }
-                }, patchActionLogWriter, patchFile, new File(""), tempDirForPatch);
+                }, patchActionLogWriter, new File(""), tempDirForPatch);
 
                 // patch
-                boolean patchResult = _patcher.doPatch(_update.getId(), getPatchStartIndex(_update, patchLogReader));
-                _patcher.close();
+                boolean patchResult = _patcher.doPatch(patchFile, _update.getId(), getPatchStartIndex(_update, patchLogReader));
+                patchActionLogWriter.close();
                 if (!patchResult) {
                     throw new IOException("Do patch failed.");
                 } else { // update succeed
@@ -242,7 +263,10 @@ public class BatchPatcher {
             }
 
             returnResult = new UpdateResult(false, launchSoftware);
-            System.err.println(ex);
+
+            if (debug) {
+                Logger.getLogger(BatchPatcher.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } finally {
             updaterFrame.setVisible(false);
             updaterFrame.dispose();
@@ -257,7 +281,9 @@ public class BatchPatcher {
                     patchActionLogWriter.close();
                 }
             } catch (IOException ex) {
-                System.err.println(ex);
+                if (debug) {
+                    Logger.getLogger(BatchPatcher.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
             if (returnResult.isUpdateSucceed()) {
                 // remove log

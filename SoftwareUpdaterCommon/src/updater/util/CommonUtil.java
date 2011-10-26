@@ -11,8 +11,10 @@ import java.nio.channels.FileLock;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -26,6 +28,16 @@ import updater.script.InvalidFormatException;
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class CommonUtil {
+
+    /**
+     * Indicate whether it is in debug mode or not.
+     */
+    protected final static boolean debug;
+
+    static {
+        String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
+        debug = debugMode == null || !debugMode.equals("true") ? false : true;
+    }
 
     protected CommonUtil() {
     }
@@ -58,8 +70,10 @@ public class CommonUtil {
         try {
             result = new String(hex, "US-ASCII");
         } catch (UnsupportedEncodingException ex) {
-            // should not happen
-            System.err.println(ex);
+            // US-ASCII should always exist
+            if (debug) {
+                Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
 
         return result;
@@ -120,8 +134,10 @@ public class CommonUtil {
 
             return messageDigest.digest();
         } catch (NoSuchAlgorithmException ex) {
-            // should not happen
-            System.err.println(ex);
+            // should have SHA-256
+            if (debug) {
+                Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } finally {
             if (fin != null) {
                 fin.close();
@@ -308,7 +324,7 @@ public class CommonUtil {
             try {
                 returnValue += (Integer.parseInt(version1Parted[i]) - Integer.parseInt(version2Parted[i])) * Math.pow(10000, iEnd - i);
             } catch (NumberFormatException ex) {
-                throw new InvalidVersionException();
+                throw new InvalidVersionException("Valid version number should be [0-9]{1,3}(\\.[0-9]{1,3})*, found: " + version1 + ", " + version2);
             }
         }
 
@@ -319,6 +335,24 @@ public class CommonUtil {
      * Exception for {@link #compareVersion(java.lang.String, java.lang.String)}.
      */
     public static class InvalidVersionException extends Exception {
+
+        private static final long serialVersionUID = 1L;
+
+        public InvalidVersionException() {
+            super();
+        }
+
+        public InvalidVersionException(String message) {
+            super(message);
+        }
+
+        public InvalidVersionException(String message, Throwable cause) {
+            super(message, cause);
+        }
+
+        public InvalidVersionException(Throwable cause) {
+            super(cause);
+        }
     }
 
     /**
@@ -345,7 +379,7 @@ public class CommonUtil {
         try {
             configPathByte = readResourceFile("/config");
         } catch (IOException ex) {
-            throw new IOException("File/resource '/config' not found in the jar.");
+            throw new IOException("File '/config' not found in the jar.");
         }
         String configPath = new String(configPathByte, "US-ASCII").replace("{home}", System.getProperty("user.home") + File.separator).replace("{tmp}", System.getProperty("java.io.tmpdir") + File.separator);
 
@@ -381,7 +415,7 @@ public class CommonUtil {
                                 clientScriptPath = newConfigFile.getAbsolutePath();
                             }
                         } catch (InvalidVersionException ex) {
-                            throw new InvalidFormatException(ex.getMessage());
+                            throw new InvalidFormatException(ex);
                         }
                     }
                 } else {
@@ -449,7 +483,9 @@ public class CommonUtil {
                     return false;
                 }
             } else {
-                file.delete();
+                if (!file.delete()) {
+                    return false;
+                }
             }
         }
         return true;
@@ -464,15 +500,16 @@ public class CommonUtil {
                         return false;
                     }
                 } else {
-                    file.delete();
+                    if (!file.delete()) {
+                        return false;
+                    }
                 }
             }
         }
-        directory.delete();
-        return true;
+        return directory.delete();
     }
 
-    public static byte[] rsaEncrypt(PrivateKey key, int blockSize, int contentBlockSize, byte[] b) throws IOException {
+    public static byte[] rsaEncrypt(RSAPrivateKey key, int blockSize, int contentBlockSize, byte[] b) throws IOException {
         try {
             ByteArrayOutputStream bout = new ByteArrayOutputStream(((b.length / contentBlockSize) * blockSize) + (b.length % contentBlockSize == 0 ? 0 : blockSize));
 
@@ -486,16 +523,36 @@ public class CommonUtil {
 
             return bout.toByteArray();
         } catch (NoSuchAlgorithmException ex) {
+            // it should be included in JCE
+            if (debug) {
+                Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (NoSuchPaddingException ex) {
+            // no special padding is specified
+            if (debug) {
+                Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (InvalidKeyException ex) {
+            // the key is RSAPrivateKey
+            if (debug) {
+                Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (IllegalBlockSizeException ex) {
+            // it is handled
+            if (debug) {
+                Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (BadPaddingException ex) {
+            // encryption should not have this problem
+            if (debug) {
+                Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
 
         return null;
     }
 
-    public static byte[] rsaDecrypt(PublicKey key, int blockSize, byte[] b) throws IOException {
+    public static byte[] rsaDecrypt(RSAPublicKey key, int blockSize, byte[] b) throws IOException {
         byte[] returnResult = null;
 
         try {
@@ -514,9 +571,25 @@ public class CommonUtil {
 
             returnResult = bout.toByteArray();
         } catch (NoSuchAlgorithmException ex) {
+            // it should be included in JCE
+            if (debug) {
+                Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (NoSuchPaddingException ex) {
+            // no special padding is specified
+            if (debug) {
+                Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (IllegalBlockSizeException ex) {
+            // it is checked
+            if (debug) {
+                Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (InvalidKeyException ex) {
+            // the key is RSAPublicKey
+            if (debug) {
+                Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } catch (BadPaddingException ex) {
             throw new IOException(ex);
         }
@@ -525,20 +598,17 @@ public class CommonUtil {
     }
 
     public static boolean tryLock(File file) {
-        boolean returnResult = false;
-
         FileOutputStream fout = null;
         FileLock lock = null;
         try {
             fout = new FileOutputStream(file, true);
             lock = fout.getChannel().tryLock();
-            if (lock == null) {
-                throw new IOException("Failed to acquire an exclusive lock on file: " + file.getAbsolutePath());
-            }
-            returnResult = true;
+            return lock != null;
         } catch (IOException ex) {
-            System.err.println(ex);
-            returnResult = false;
+            // if any IOException caught, consider it as failure and no exception is thrown
+            if (debug) {
+                Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
         } finally {
             try {
                 if (lock != null) {
@@ -548,11 +618,12 @@ public class CommonUtil {
                     fout.close();
                 }
             } catch (IOException ex) {
-                System.err.println(ex);
+                if (debug) {
+                    Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
-
-        return returnResult;
+        return false;
     }
 
     /**
