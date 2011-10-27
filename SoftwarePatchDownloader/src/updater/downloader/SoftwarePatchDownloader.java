@@ -15,6 +15,11 @@ import updater.util.CommonUtil.GetClientScriptResult;
  */
 public class SoftwarePatchDownloader {
 
+    static {
+        // set debug mode
+        System.setProperty("SyntaxHighlighterDebugMode", "false");
+    }
+
     protected SoftwarePatchDownloader() {
     }
 
