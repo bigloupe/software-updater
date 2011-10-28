@@ -1,11 +1,18 @@
 package updater.patch;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.GZIPInputStream;
 import org.tukaani.xz.XZInputStream;
 import updater.script.InvalidFormatException;
 import updater.script.Patch;
+import updater.util.AESKey;
+import watne.seis720.project.KeySize;
+import watne.seis720.project.Mode;
+import watne.seis720.project.Padding;
+import watne.seis720.project.WatneAES_Implementer;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -52,5 +59,47 @@ public class PatchReadUtil {
             throw new IOException("Reach the end of stream.");
         }
         return Patch.read(xmlData);
+    }
+
+    public static void readToFile(File saveTo, InputStream in, int length) throws IOException {
+        FileOutputStream fout = null;
+        try {
+            byte[] b = new byte[32768];
+            int byteRead, cumulativeByteRead = 0, byteToRead;
+            fout = new FileOutputStream(saveTo);
+
+            byteToRead = length > b.length ? b.length : length;
+
+            while ((byteRead = in.read(b, 0, byteToRead)) != -1) {
+                fout.write(b, 0, byteRead);
+
+                cumulativeByteRead += byteRead;
+                if (cumulativeByteRead >= length) {
+                    break;
+                }
+
+                byteToRead = length - cumulativeByteRead > b.length ? b.length : length - cumulativeByteRead;
+            }
+        } finally {
+            if (fout != null) {
+                fout.close();
+            }
+        }
+    }
+
+    public static void decrypt(AESKey aesKey, File patchFile, File tempFileForDecryption) throws IOException {
+        tempFileForDecryption.delete();
+
+        try {
+            WatneAES_Implementer aesCipher = new WatneAES_Implementer();
+            aesCipher.setMode(Mode.CBC);
+            aesCipher.setPadding(Padding.PKCS5PADDING);
+            aesCipher.setKeySize(KeySize.BITS256);
+            aesCipher.setKey(aesKey.getKey());
+            aesCipher.setInitializationVector(aesKey.getIV());
+            aesCipher.decryptFile(patchFile, tempFileForDecryption);
+        } catch (Exception ex) {
+            throw new IOException("Error occurred when decrypting the patch: " + ex.getMessage());
+        }
     }
 }

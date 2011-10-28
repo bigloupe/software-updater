@@ -1,10 +1,9 @@
-package updater.builder.util;
+package updater.util;
 
 import javax.xml.transform.TransformerException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import updater.script.InvalidFormatException;
-import updater.util.XMLUtil;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -54,7 +53,7 @@ public class AESKey {
         String _key = XMLUtil.getTextContent(_aesNode, "key", true);
         String _IV = XMLUtil.getTextContent(_aesNode, "IV", true);
 
-        return new AESKey(Util.hexStringToByteArray(_key), Util.hexStringToByteArray(_IV));
+        return new AESKey(CommonUtil.hexStringToByteArray(_key), CommonUtil.hexStringToByteArray(_IV));
     }
 
     public String output() throws TransformerException {
@@ -67,11 +66,11 @@ public class AESKey {
         doc.appendChild(aesElement);
 
         Element keyElement = doc.createElement("key");
-        keyElement.setTextContent(Util.byteArrayToHexString(key));
+        keyElement.setTextContent(CommonUtil.byteArrayToHexString(key));
         aesElement.appendChild(keyElement);
 
         Element IVElement = doc.createElement("IV");
-        IVElement.setTextContent(Util.byteArrayToHexString(IV));
+        IVElement.setTextContent(CommonUtil.byteArrayToHexString(IV));
         aesElement.appendChild(IVElement);
 
         return XMLUtil.getOutput(doc);

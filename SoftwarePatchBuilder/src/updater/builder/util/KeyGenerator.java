@@ -15,6 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.transform.TransformerException;
 import updater.script.InvalidFormatException;
+import updater.util.AESKey;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>

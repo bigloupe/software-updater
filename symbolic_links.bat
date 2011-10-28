@@ -42,6 +42,8 @@ set file=src\updater\patch\PatcherListener.java
 call:linkFile
 
 mkdir %softwareDirectory%\src\updater\util\
+set file=src\updater\util\AESKey.java
+call:linkFile
 set file=src\updater\util\CommonUtil.java
 call:linkFile
 set file=src\updater\util\InterruptibleInputStream.java
@@ -96,6 +98,8 @@ set file=src\updater\patch\PatcherListener.java
 call:linkFile
 
 mkdir %softwareDirectory%\src\updater\util\
+set file=src\updater\util\AESKey.java
+call:linkFile
 set file=src\updater\util\CommonUtil.java
 call:linkFile
 set file=src\updater\util\InterruptibleInputStream.java

@@ -5,21 +5,10 @@ import updater.builder.util.Util;
 import com.nothome.delta.Delta;
 import com.nothome.delta.DiffWriter;
 import com.nothome.delta.GDiffWriter;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigInteger;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPrivateKeySpec;
-import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -29,25 +18,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 import org.tukaani.xz.XZOutputStream;
-import updater.builder.util.AESKey;
-import updater.patch.PatchReadUtil;
 import updater.patch.PatchWriteUtil;
-import updater.script.InvalidFormatException;
 import updater.script.Patch;
 import updater.script.Patch.Operation;
 import updater.script.Patch.ValidationFile;
-import watne.seis720.project.KeySize;
-import watne.seis720.project.Mode;
-import watne.seis720.project.Padding;
-import watne.seis720.project.WatneAES_Implementer;
+import updater.util.AESKey;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
-public class Creator {
+public class PatchCreator {
 
     /**
      * Indicate whether it is in debug mode or not.
@@ -59,54 +40,7 @@ public class Creator {
         debug = debugMode == null || !debugMode.equals("true") ? false : true;
     }
 
-    protected Creator() {
-    }
-
-    public static void extractXMLFromPatch(File patchFile, File saveToFile, AESKey aesKey, File tempFileForDecryption) throws IOException, InvalidFormatException {
-        File _patchFile = patchFile;
-        boolean deletePatch = false;
-
-        if (aesKey != null) {
-            tempFileForDecryption.delete();
-
-            try {
-                WatneAES_Implementer aesCipher = new WatneAES_Implementer();
-                aesCipher.setMode(Mode.CBC);
-                aesCipher.setPadding(Padding.PKCS5PADDING);
-                aesCipher.setKeySize(KeySize.BITS256);
-                aesCipher.setKey(aesKey.getKey());
-                aesCipher.setInitializationVector(aesKey.getIV());
-                aesCipher.decryptFile(patchFile, tempFileForDecryption);
-            } catch (Exception ex) {
-                throw new IOException("Error occurred when encrypting the patch: " + ex.getMessage());
-            }
-
-            _patchFile = tempFileForDecryption;
-            _patchFile.deleteOnExit();
-            deletePatch = true;
-        }
-
-        FileInputStream in = null;
-        try {
-            in = new FileInputStream(_patchFile);
-
-            PatchReadUtil.readHeader(in);
-            InputStream decompressedIn = PatchReadUtil.readCompressionMethod(in);
-            Patch patchXML = PatchReadUtil.readXML(decompressedIn);
-
-            Util.writeFile(saveToFile, patchXML.output().getBytes("UTF-8"));
-        } catch (TransformerException ex) {
-            if (debug) {
-                Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        } finally {
-            if (in != null) {
-                in.close();
-            }
-            if (deletePatch) {
-                _patchFile.delete();
-            }
-        }
+    protected PatchCreator() {
     }
 
     public static void createFullPatch(File softwareDirectory, File tempDir, File patch, int patchId, String fromVersion, String fromSubsequentVersion, String toVersion, AESKey aesKey, File tempFileForEncryption) throws IOException {
@@ -168,7 +102,7 @@ public class Creator {
         sortNewFileList(forceFileList);
 
 
-        int pos = 0;
+        int pos = 0, operationIdCounter = 1;
         // record those file with their content needed to put into the patch
         List<File> patchForceFileList = new ArrayList<File>();
 
@@ -189,7 +123,8 @@ public class Creator {
                 patchForceFileList.add(_forceFile);
             }
 
-            Operation _operation = new Operation("force", pos, fileLength, fileType, null, null, -1, _forceFile.getAbsolutePath().replace(softwarePath, "").replace(File.separator, "/"), fileSHA256, fileLength);
+            Operation _operation = new Operation(operationIdCounter, "force", pos, fileLength, fileType, null, null, -1, _forceFile.getAbsolutePath().replace(softwarePath, "").replace(File.separator, "/"), fileSHA256, fileLength);
+            operationIdCounter++;
             operations.add(_operation);
 
             pos += fileLength;
@@ -208,7 +143,7 @@ public class Creator {
             patchScriptOutput = patchScript.output().getBytes("UTF-8");
         } catch (TransformerException ex) {
             if (debug) {
-                Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(PatchCreator.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
 
@@ -233,19 +168,7 @@ public class Creator {
         }
 
         if (aesKey != null) {
-            tempFileForEncryption.delete();
-
-            try {
-                WatneAES_Implementer aesCipher = new WatneAES_Implementer();
-                aesCipher.setMode(Mode.CBC);
-                aesCipher.setPadding(Padding.PKCS5PADDING);
-                aesCipher.setKeySize(KeySize.BITS256);
-                aesCipher.setKey(aesKey.getKey());
-                aesCipher.setInitializationVector(aesKey.getIV());
-                aesCipher.encryptFile(patch, tempFileForEncryption);
-            } catch (Exception ex) {
-                throw new IOException("Error occurred when encrypting the patch: " + ex.getMessage());
-            }
+            PatchWriteUtil.encrypt(aesKey, patch, tempFileForEncryption);
 
             patch.delete();
             tempFileForEncryption.renameTo(patch);
@@ -353,7 +276,7 @@ public class Creator {
         sortRemoveFileList(removeFileList);
 
 
-        int pos = 0;
+        int pos = 0, operationIdCounter = 1;
         // three list that record those file with their content needed to put into the patch
         List<File> patchNewFileList = new ArrayList<File>();
         List<File> patchPatchFileList = new ArrayList<File>();
@@ -371,7 +294,8 @@ public class Creator {
                 fileSHA256 = Util.getSHA256String(_oldFile);
             }
 
-            Operation _operation = new Operation("remove", 0, 0, fileType, _oldFile.getAbsolutePath().replace(oldVersionPath, "").replace(File.separator, "/"), fileSHA256, fileLength, null, null, -1);
+            Operation _operation = new Operation(operationIdCounter, "remove", 0, 0, fileType, _oldFile.getAbsolutePath().replace(oldVersionPath, "").replace(File.separator, "/"), fileSHA256, fileLength, null, null, -1);
+            operationIdCounter++;
             operations.add(_operation);
         }
 
@@ -392,7 +316,8 @@ public class Creator {
                 patchNewFileList.add(_newFile);
             }
 
-            Operation _operation = new Operation("new", pos, fileLength, fileType, null, null, -1, _newFile.getAbsolutePath().replace(newVersionPath, "").replace(File.separator, "/"), fileSHA256, fileLength);
+            Operation _operation = new Operation(operationIdCounter, "new", pos, fileLength, fileType, null, null, -1, _newFile.getAbsolutePath().replace(newVersionPath, "").replace(File.separator, "/"), fileSHA256, fileLength);
+            operationIdCounter++;
             operations.add(_operation);
 
             pos += fileLength;
@@ -431,7 +356,8 @@ public class Creator {
                     newFileSHA256 = Util.getSHA256String(_newFile);
                 }
                 patchPatchFileList.add(diffFile);
-                _operation = new Operation("patch", pos, fileLength, "file", _oldFile.getAbsolutePath().replace(oldVersionPath, "").replace(File.separator, "/"), Util.getSHA256String(_oldFile), (int) _oldFile.length(), _newFile.getAbsolutePath().replace(newVersionPath, "").replace(File.separator, "/"), newFileSHA256, newFileLength);
+                _operation = new Operation(operationIdCounter, "patch", pos, fileLength, "file", _oldFile.getAbsolutePath().replace(oldVersionPath, "").replace(File.separator, "/"), Util.getSHA256String(_oldFile), (int) _oldFile.length(), _newFile.getAbsolutePath().replace(newVersionPath, "").replace(File.separator, "/"), newFileSHA256, newFileLength);
+                operationIdCounter++;
             }
             operations.add(_operation);
 
@@ -452,7 +378,8 @@ public class Creator {
 
             patchReplaceFileList.add(_newFile);
 
-            Operation _operation = new Operation("replace", pos, fileLength, "file", _oldFile.getAbsolutePath().replace(oldVersionPath, "").replace(File.separator, "/"), Util.getSHA256String(_oldFile), (int) _oldFile.length(), _newFile.getAbsolutePath().replace(newVersionPath, "").replace(File.separator, "/"), newFileSHA256, newFileLength);
+            Operation _operation = new Operation(operationIdCounter, "replace", pos, fileLength, "file", _oldFile.getAbsolutePath().replace(oldVersionPath, "").replace(File.separator, "/"), Util.getSHA256String(_oldFile), (int) _oldFile.length(), _newFile.getAbsolutePath().replace(newVersionPath, "").replace(File.separator, "/"), newFileSHA256, newFileLength);
+            operationIdCounter++;
             operations.add(_operation);
 
             pos += fileLength;
@@ -474,7 +401,7 @@ public class Creator {
             patchScriptOutput = patchScript.output().getBytes("UTF-8");
         } catch (TransformerException ex) {
             if (debug) {
-                Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(PatchCreator.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
 
@@ -506,19 +433,7 @@ public class Creator {
         }
 
         if (aesKey != null) {
-            tempFileForEncryption.delete();
-
-            try {
-                WatneAES_Implementer aesCipher = new WatneAES_Implementer();
-                aesCipher.setMode(Mode.CBC);
-                aesCipher.setPadding(Padding.PKCS5PADDING);
-                aesCipher.setKeySize(KeySize.BITS256);
-                aesCipher.setKey(aesKey.getKey());
-                aesCipher.setInitializationVector(aesKey.getIV());
-                aesCipher.encryptFile(patch, tempFileForEncryption);
-            } catch (Exception ex) {
-                throw new IOException("Error occurred when encrypting the patch: " + ex.getMessage());
-            }
+            PatchWriteUtil.encrypt(aesKey, patch, tempFileForEncryption);
 
             patch.delete();
             tempFileForEncryption.renameTo(patch);
@@ -625,72 +540,5 @@ public class Creator {
         }
 
         return true;
-    }
-
-    public static void encryptCatalog(File in, File out, BigInteger mod, BigInteger privateExp) throws IOException {
-        RSAPrivateKey privateKey = null;
-        try {
-            RSAPrivateKeySpec keySpec = new RSAPrivateKeySpec(mod, privateExp);
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            privateKey = (RSAPrivateKey) keyFactory.generatePrivate(keySpec);
-        } catch (NoSuchAlgorithmException ex) {
-            if (debug) {
-                Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        } catch (InvalidKeySpecException ex) {
-            if (debug) {
-                Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-
-        // compress
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        GZIPOutputStream gout = new GZIPOutputStream(bout);
-        gout.write(Util.readFile(in));
-        gout.finish();
-        byte[] compressedData = bout.toByteArray();
-
-        // encrypt
-        int blockSize = mod.bitLength() / 8;
-        byte[] encrypted = Util.rsaEncrypt(privateKey, blockSize, blockSize - 11, compressedData);
-
-        // write to file
-        Util.writeFile(out, encrypted);
-    }
-
-    public static void decryptCatalog(File in, File out, BigInteger mod, BigInteger publicExp) throws IOException {
-        RSAPublicKey publicKey = null;
-        try {
-            RSAPublicKeySpec keySpec = new RSAPublicKeySpec(mod, publicExp);
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            publicKey = (RSAPublicKey) keyFactory.generatePublic(keySpec);
-        } catch (NoSuchAlgorithmException ex) {
-            if (debug) {
-                Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        } catch (InvalidKeySpecException ex) {
-            if (debug) {
-                Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-
-        // decrypt
-        int blockSize = mod.bitLength() / 8;
-        byte[] decrypted = Util.rsaDecrypt(publicKey, blockSize, Util.readFile(in));
-
-        // decompress
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        ByteArrayInputStream bin = new ByteArrayInputStream(decrypted);
-        GZIPInputStream gin = new GZIPInputStream(bin);
-
-        int byteRead;
-        byte[] b = new byte[1024];
-        while ((byteRead = gin.read(b)) != -1) {
-            bout.write(b, 0, byteRead);
-        }
-        byte[] decompressedData = bout.toByteArray();
-
-        // write to file
-        Util.writeFile(out, decompressedData);
     }
 }

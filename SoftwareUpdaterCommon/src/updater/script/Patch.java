@@ -308,6 +308,7 @@ public class Patch {
 
     public static class Operation {
 
+        protected int id;
         protected String type;
         //
         protected int patchPos;
@@ -323,7 +324,8 @@ public class Patch {
         protected String newFileChecksum;
         protected int newFileLength;
 
-        public Operation(String type, int patchPos, int patchLength, String fileType, String oldFilePath, String oldFileChecksum, int oldFileLength, String newFilePath, String newFileChecksum, int newFileLength) {
+        public Operation(int id, String type, int patchPos, int patchLength, String fileType, String oldFilePath, String oldFileChecksum, int oldFileLength, String newFilePath, String newFileChecksum, int newFileLength) {
+            this.id = id;
             this.type = type;
             this.patchPos = patchPos;
             this.patchLength = patchLength;
@@ -334,6 +336,14 @@ public class Patch {
             this.newFilePath = newFilePath;
             this.newFileChecksum = newFileChecksum;
             this.newFileLength = newFileLength;
+        }
+
+        public int getId() {
+            return id;
+        }
+
+        public void setId(int id) {
+            this.id = id;
         }
 
         public String getType() {
@@ -421,10 +431,21 @@ public class Patch {
                 throw new NullPointerException();
             }
 
+            int _id = 0;
+            String idString = operationElement.getAttribute("id");
+            if (idString == null) {
+                throw new InvalidFormatException("No id found for <operation>");
+            }
+            try {
+                _id = Integer.parseInt(idString);
+            } catch (NumberFormatException ex) {
+                throw new InvalidFormatException("id for <operation> is not a valid integer, found: " + idString);
+            }
+
             String _type = XMLUtil.getTextContent(operationElement, "type", true);
 
-            int pos = -1;
-            int length = -1;
+            int pos = 0;
+            int length = 0;
             if (_type.equals("patch") || _type.equals("replace") || _type.equals("new") || _type.equals("force")) {
                 Element _contentElement = XMLUtil.getElement(operationElement, "content", true);
                 pos = Integer.parseInt(XMLUtil.getTextContent(_contentElement, "pos", true));
@@ -453,11 +474,12 @@ public class Patch {
                 newLength = Integer.parseInt(XMLUtil.getTextContent(_newFileElement, "length", true));
             }
 
-            return new Operation(_type, pos, length, _fileType, oldPath, oldChecksum, oldLength, newPath, newChecksum, newLength);
+            return new Operation(_id, _type, pos, length, _fileType, oldPath, oldChecksum, oldLength, newPath, newChecksum, newLength);
         }
 
         protected Element getElement(Document doc) {
             Element _operation = doc.createElement("operation");
+            _operation.setAttribute("id", Integer.toString(id));
 
             Element _type = doc.createElement("type");
             _type.appendChild(doc.createTextNode(type));

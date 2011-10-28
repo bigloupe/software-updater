@@ -19,14 +19,12 @@ import updater.gui.UpdaterWindow;
 import updater.patch.PatchLogReader;
 import updater.patch.PatchLogReader.UnfinishedPatch;
 import updater.patch.PatchLogWriter;
+import updater.patch.PatchReadUtil;
 import updater.patch.Patcher;
 import updater.patch.PatcherListener;
 import updater.script.Client;
 import updater.script.Patch;
-import watne.seis720.project.KeySize;
-import watne.seis720.project.Mode;
-import watne.seis720.project.Padding;
-import watne.seis720.project.WatneAES_Implementer;
+import updater.util.AESKey;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -187,17 +185,8 @@ public class BatchPatcher {
                 updaterGUI.setEnableCancel(false);
                 updaterGUI.setMessage("Decrypting patch ...");
                 if (_update.getDownloadEncryptionKey() != null) {
-                    WatneAES_Implementer aesCipher = new WatneAES_Implementer();
-                    aesCipher.setMode(Mode.CBC);
-                    aesCipher.setPadding(Padding.PKCS5PADDING);
-                    aesCipher.setKeySize(KeySize.BITS256);
-                    aesCipher.setKey(Util.hexStringToByteArray(_update.getDownloadEncryptionKey()));
-                    try {
-                        aesCipher.setInitializationVector(Util.hexStringToByteArray(_update.getDownloadEncryptionIV()));
-                        aesCipher.decryptFile(patchFile, decryptedPatchFile);
-                    } catch (Exception ex) {
-                        throw new IOException(ex.getMessage());
-                    }
+                    PatchReadUtil.decrypt(new AESKey(Util.hexStringToByteArray(_update.getDownloadEncryptionKey()), Util.hexStringToByteArray(_update.getDownloadEncryptionIV())), patchFile, decryptedPatchFile);
+
                     patchFile.delete();
                     decryptedPatchFile.renameTo(patchFile);
                 }

@@ -7,6 +7,11 @@ import java.io.OutputStream;
 import java.util.zip.GZIPOutputStream;
 import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.XZOutputStream;
+import updater.util.AESKey;
+import watne.seis720.project.KeySize;
+import watne.seis720.project.Mode;
+import watne.seis720.project.Padding;
+import watne.seis720.project.WatneAES_Implementer;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -88,6 +93,22 @@ public class PatchWriteUtil {
             if (fin != null) {
                 fin.close();
             }
+        }
+    }
+
+    public static void encrypt(AESKey aesKey, File patchFile, File tempFileForEncryption) throws IOException {
+        tempFileForEncryption.delete();
+
+        try {
+            WatneAES_Implementer aesCipher = new WatneAES_Implementer();
+            aesCipher.setMode(Mode.CBC);
+            aesCipher.setPadding(Padding.PKCS5PADDING);
+            aesCipher.setKeySize(KeySize.BITS256);
+            aesCipher.setKey(aesKey.getKey());
+            aesCipher.setInitializationVector(aesKey.getIV());
+            aesCipher.encryptFile(patchFile, tempFileForEncryption);
+        } catch (Exception ex) {
+            throw new IOException("Error occurred when encrypting the patch: " + ex.getMessage());
         }
     }
 }
