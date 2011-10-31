@@ -216,6 +216,9 @@ public class SoftwarePatchBuilder {
         int keySize = 0;
         try {
             keySize = Integer.parseInt(genkeyArgs[1]);
+            if (genkeyArgs[0].equals("rsa") && keySize < 512) {
+                throw new IOException("Key length should at least 512 bits for RSA.");
+            }
             if (keySize % 8 != 0) {
                 throw new ParseException("Key length should be a multiple of 8.");
             }
@@ -229,7 +232,7 @@ public class SoftwarePatchBuilder {
         System.out.println();
 
         try {
-            if (genkeyArgs[0].equals("AES")) {
+            if (genkeyArgs[0].equals("aes")) {
                 KeyGenerator.generateAES(keySize, new File(outputArg));
             } else {
                 KeyGenerator.generateRSA(keySize, new File(outputArg));
@@ -750,7 +753,7 @@ public class SoftwarePatchBuilder {
         }
         Element rootElement = doc.getDocumentElement();
 
-        String contentToOutput = null;
+        byte[] contentToOutput = null;
         String rootElementTag = rootElement.getTagName();
         try {
             if (rootElementTag.equals("patches")) {

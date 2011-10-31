@@ -1,8 +1,8 @@
 package updater.util;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -71,20 +71,19 @@ public class XMLUtil {
         return resultElement == null ? null : resultElement.getTextContent();
     }
 
-    public static String getOutput(Document doc) throws TransformerException {
+    public static byte[] getOutput(Document doc) throws TransformerException {
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
-        Transformer transformer = transformerFactory.newTransformer();
-        DOMSource source = new DOMSource(doc);
 
-        StringWriter writer = new StringWriter();
-        StreamResult result = new StreamResult(writer);
+        Transformer transformer = transformerFactory.newTransformer();
         transformer.setOutputProperty(OutputKeys.METHOD, "xml");
         transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
         transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-        transformer.transform(source, result);
 
-        return writer.toString();
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        transformer.transform(new DOMSource(doc), new StreamResult(bout));
+
+        return bout.toByteArray();
     }
 
     public static Document readDocument(byte[] content) throws SAXException, IOException {

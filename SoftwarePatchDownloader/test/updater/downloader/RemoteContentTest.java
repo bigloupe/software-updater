@@ -85,7 +85,7 @@ public class RemoteContentTest {
         assertFalse(result.isNotModified());
         assertNotNull(result.getCatalog());
         try {
-            assertEquals(originalFileString, result.getCatalog().output());
+            assertEquals(originalFileString, new String(result.getCatalog().output(), "UTF-8"));
         } catch (TransformerException ex) {
             Logger.getLogger(RemoteContentTest.class.getName()).log(Level.SEVERE, null, ex);
             fail("! Invalid output format.");

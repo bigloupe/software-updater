@@ -60,19 +60,19 @@ public class ScriptTest {
 
         Client clientScript = Client.read(client1Data);
         assertNotNull(clientScript);
-        assertArrayEquals(clientScript.output(), client1Data, clientScript.output().getBytes("UTF-8"));
+        assertArrayEquals(new String(clientScript.output(), "UTF-8"), client1Data, clientScript.output());
 
         clientScript = Client.read(client2Data);
         assertNotNull(clientScript);
-        assertArrayEquals(clientScript.output(), client2Data, clientScript.output().getBytes("UTF-8"));
+        assertArrayEquals(new String(clientScript.output(), "UTF-8"), client2Data, clientScript.output());
 
         clientScript = Client.read(client3Data);
         assertNotNull(clientScript);
-        assertArrayEquals(clientScript.output(), client3Data, clientScript.output().getBytes("UTF-8"));
+        assertArrayEquals(new String(clientScript.output(), "UTF-8"), client3Data, clientScript.output());
 
         clientScript = Client.read(client4Data);
         assertNotNull(clientScript);
-        assertArrayEquals(clientScript.output(), client4Data, clientScript.output().getBytes("UTF-8"));
+        assertArrayEquals(new String(clientScript.output(), "UTF-8"), client4Data, clientScript.output());
     }
 
     @Test
@@ -86,11 +86,11 @@ public class ScriptTest {
 
         Catalog catalogScript = Catalog.read(catalog1Data);
         assertNotNull(catalogScript);
-        assertArrayEquals(catalogScript.output(), catalog1Data, catalogScript.output().getBytes("UTF-8"));
+        assertArrayEquals(new String(catalogScript.output(), "UTF-8"), catalog1Data, catalogScript.output());
 
         catalogScript = Catalog.read(catalog2Data);
         assertNotNull(catalogScript);
-        assertArrayEquals(catalogScript.output(), catalog2Data, catalogScript.output().getBytes("UTF-8"));
+        assertArrayEquals(new String(catalogScript.output(), "UTF-8"), catalog2Data, catalogScript.output());
     }
 
     @Test
@@ -108,18 +108,18 @@ public class ScriptTest {
 
         Patch patchScript = Patch.read(patch1Data);
         assertNotNull(patchScript);
-        assertArrayEquals(patchScript.output(), patch1Data, patchScript.output().getBytes("UTF-8"));
+        assertArrayEquals(new String(patchScript.output(), "UTF-8"), patch1Data, patchScript.output());
 
         patchScript = Patch.read(patch2Data);
         assertNotNull(patchScript);
-        assertArrayEquals(patchScript.output(), patch2Data, patchScript.output().getBytes("UTF-8"));
+        assertArrayEquals(new String(patchScript.output(), "UTF-8"), patch2Data, patchScript.output());
 
         patchScript = Patch.read(patch3Data);
         assertNotNull(patchScript);
-        assertArrayEquals(patchScript.output(), patch3Data, patchScript.output().getBytes("UTF-8"));
+        assertArrayEquals(new String(patchScript.output(), "UTF-8"), patch3Data, patchScript.output());
 
         patchScript = Patch.read(patch4Data);
         assertNotNull(patchScript);
-        assertArrayEquals(patchScript.output(), patch4Data, patchScript.output().getBytes("UTF-8"));
+        assertArrayEquals(new String(patchScript.output(), "UTF-8"), patch4Data, patchScript.output());
     }
 }

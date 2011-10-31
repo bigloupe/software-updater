@@ -139,7 +139,7 @@ public class PatchCreator {
 //        }
         byte[] patchScriptOutput = null;
         try {
-            patchScriptOutput = patchScript.output().getBytes("UTF-8");
+            patchScriptOutput = patchScript.output();
         } catch (TransformerException ex) {
             if (debug) {
                 Logger.getLogger(PatchCreator.class.getName()).log(Level.SEVERE, null, ex);
@@ -397,7 +397,7 @@ public class PatchCreator {
 //        }
         byte[] patchScriptOutput = null;
         try {
-            patchScriptOutput = patchScript.output().getBytes("UTF-8");
+            patchScriptOutput = patchScript.output();
         } catch (TransformerException ex) {
             if (debug) {
                 Logger.getLogger(PatchCreator.class.getName()).log(Level.SEVERE, null, ex);

@@ -238,7 +238,7 @@ public class Client {
                 patches);
     }
 
-    public String output() throws TransformerException {
+    public byte[] output() throws TransformerException {
         Document doc = XMLUtil.createEmptyDocument();
         if (doc == null) {
             return null;

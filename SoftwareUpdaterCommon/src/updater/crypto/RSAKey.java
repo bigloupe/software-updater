@@ -8,14 +8,32 @@ import updater.util.CommonUtil;
 import updater.util.XMLUtil;
 
 /**
+ * The RSA key.
+ * <p>This read and write the modulus and exponents in XML format.<br />
+ * Operations are not thread-safe.</p>
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class RSAKey {
 
+    /**
+     * The modulus.
+     */
     protected byte[] modulus;
+    /**
+     * The public exponent.
+     */
     protected byte[] publicExponent;
+    /**
+     * The private exponent.
+     */
     protected byte[] privateExponent;
 
+    /**
+     * Constructor.
+     * @param modulus see {@link #modulus}
+     * @param publicExponent see {@link #publicExponent}
+     * @param privateExponent  see {@link #privateExponent}
+     */
     public RSAKey(byte[] modulus, byte[] publicExponent, byte[] privateExponent) {
         setModulus(modulus);
         setPublicExponent(publicExponent);
@@ -55,6 +73,12 @@ public class RSAKey {
         System.arraycopy(privateExponent, 0, this.privateExponent, 0, privateExponent.length);
     }
 
+    /**
+     * Read the XML file.
+     * @param content the content of the XML file
+     * @return the {@link RSAKey} object with the information read
+     * @throws InvalidFormatException the format of the XML file is invalid
+     */
     public static RSAKey read(byte[] content) throws InvalidFormatException {
         Document doc;
         try {
@@ -74,7 +98,12 @@ public class RSAKey {
         return new RSAKey(CommonUtil.hexStringToByteArray(_modulus), CommonUtil.hexStringToByteArray(_publicExponent), CommonUtil.hexStringToByteArray(_privateExponent));
     }
 
-    public String output() throws TransformerException {
+    /**
+     * Output the object in UTF-8 XML format.
+     * @return the content in byte array
+     * @throws TransformerException some information is missing
+     */
+    public byte[] output() throws TransformerException {
         Document doc = XMLUtil.createEmptyDocument();
         if (doc == null) {
             return null;

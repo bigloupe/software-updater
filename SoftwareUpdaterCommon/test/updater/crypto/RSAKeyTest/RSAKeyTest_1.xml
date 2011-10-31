@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<rsa>
+  <modulus>00c86caffa6d6f05fa62b6784008a7c7f9d5a9b1afe191f91757ea4dfb7538875d5e1c04c5ca64a291f2a1d6b0884dcd778fecb297b0af6d1012fc10ecf19c6e49</modulus>
+  <exponent>
+    <public>010001</public>
+    <private>00a108fb083abf56cd4c5d1217591cfe0755ce47cf6a6d6ff77a92eedf58daf79ef75429b8418966cea5506794bba93d602a928d3d11c51cd37783b9dbd5012845</private>
+  </exponent>
+</rsa>

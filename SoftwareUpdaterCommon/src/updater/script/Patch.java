@@ -221,7 +221,7 @@ public class Patch {
                 _operations, _validations);
     }
 
-    public String output() throws TransformerException {
+    public byte[] output() throws TransformerException {
         Document doc = XMLUtil.createEmptyDocument();
         if (doc == null) {
             return null;

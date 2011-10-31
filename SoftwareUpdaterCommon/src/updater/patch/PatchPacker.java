@@ -47,7 +47,7 @@ public class PatchPacker {
             PatchWriteUtil.writeHeader(fout);
             XZOutputStream xzOut = (XZOutputStream) PatchWriteUtil.writeCompressionMethod(fout, PatchWriteUtil.Compression.LZMA2);
             try {
-                PatchWriteUtil.writeXML(xzOut, patch.output().getBytes("UTF-8"));
+                PatchWriteUtil.writeXML(xzOut, patch.output());
             } catch (TransformerException ex) {
                 throw new IOException("patch.xml format invalid");
             }

@@ -59,7 +59,7 @@ public class PatchExtractor {
             InputStream decompressedIn = PatchReadUtil.readCompressionMethod(in);
             Patch patchXML = PatchReadUtil.readXML(decompressedIn);
 
-            CommonUtil.writeFile(new File(saveToFolder.getAbsolutePath() + File.separator + "patch.xml"), patchXML.output().getBytes("UTF-8"));
+            CommonUtil.writeFile(new File(saveToFolder.getAbsolutePath() + File.separator + "patch.xml"), patchXML.output());
 
             int id = 1;
             List<Operation> operations = patchXML.getOperations();

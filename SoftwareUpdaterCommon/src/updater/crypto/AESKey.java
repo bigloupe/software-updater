@@ -1,19 +1,34 @@
 package updater.crypto;
 
-import updater.util.*;
 import javax.xml.transform.TransformerException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import updater.script.InvalidFormatException;
+import updater.util.CommonUtil;
+import updater.util.XMLUtil;
 
 /**
+ * The AES key.
+ * <p>This read and write the key and IV in XML format.<br />
+ * Operations are not thread-safe.</p>
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class AESKey {
 
+    /**
+     * The cipher key.
+     */
     protected byte[] key;
+    /**
+     * The initial vector, should be exactly 16 bytes (128 bits).
+     */
     protected byte[] IV;
 
+    /**
+     * Constructor.
+     * @param key see {@link #key}
+     * @param IV see {@link #IV}
+     */
     public AESKey(byte[] key, byte[] IV) {
         setKey(key);
         setIV(IV);
@@ -36,11 +51,21 @@ public class AESKey {
         return returnKey;
     }
 
+    /**
+     * Set the initial vector. This will not check the length of the IV is 128 bits or not.
+     * @param IV see {@link #IV}
+     */
     public void setIV(byte[] IV) {
         this.IV = new byte[IV.length];
         System.arraycopy(IV, 0, this.IV, 0, IV.length);
     }
 
+    /**
+     * Read the XML file.
+     * @param content the content of the XML file
+     * @return the {@link AESKey} object with the information read
+     * @throws InvalidFormatException the format of the XML file is invalid
+     */
     public static AESKey read(byte[] content) throws InvalidFormatException {
         Document doc;
         try {
@@ -57,7 +82,12 @@ public class AESKey {
         return new AESKey(CommonUtil.hexStringToByteArray(_key), CommonUtil.hexStringToByteArray(_IV));
     }
 
-    public String output() throws TransformerException {
+    /**
+     * Output the object in UTF-8 XML format.
+     * @return the content in byte array
+     * @throws TransformerException some information is missing
+     */
+    public byte[] output() throws TransformerException {
         Document doc = XMLUtil.createEmptyDocument();
         if (doc == null) {
             return null;
