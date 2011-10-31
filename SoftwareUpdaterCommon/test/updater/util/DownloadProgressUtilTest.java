@@ -1,4 +1,4 @@
-package updater.downloader.util;
+package updater.util;
 
 import updater.TestCommon;
 import org.junit.After;
@@ -11,11 +11,11 @@ import static org.junit.Assert.*;
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
-public class DownloadProgessUtilTest {
+public class DownloadProgressUtilTest {
 
     protected final String packagePath = TestCommon.pathToTestPackage + this.getClass().getCanonicalName().replace('.', '/') + "/";
 
-    public DownloadProgessUtilTest() {
+    public DownloadProgressUtilTest() {
     }
 
     protected static String getClassName() {
@@ -49,7 +49,7 @@ public class DownloadProgessUtilTest {
         // simple test only
         System.out.println("+++++ test +++++");
 
-        DownloadProgessUtil instance = new DownloadProgessUtil();
+        DownloadProgressUtil instance = new DownloadProgressUtil();
 
         instance.setTotalSize(1000000);
         instance.setDownloadedSize(1000);

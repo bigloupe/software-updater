@@ -1,5 +1,6 @@
-package updater.downloader.download;
+package updater.downloader;
 
+import updater.downloader.PatchDownloader;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,7 +15,7 @@ import static org.junit.Assert.*;
 import updater.TestCommon;
 import updater.script.Catalog;
 import updater.script.InvalidFormatException;
-import updater.downloader.util.Util;
+import updater.downloader.Util;
 import updater.script.Patch;
 import updater.util.CommonUtil.InvalidVersionException;
 

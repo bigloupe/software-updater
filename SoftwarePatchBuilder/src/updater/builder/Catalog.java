@@ -1,4 +1,4 @@
-package updater.builder.util;
+package updater.builder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -16,7 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-import updater.builder.patch.PatchCreator;
+import updater.patch.PatchCreator;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>

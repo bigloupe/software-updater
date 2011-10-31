@@ -1,9 +1,10 @@
-package updater.builder.util;
+package updater.crypto;
 
 import javax.xml.transform.TransformerException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import updater.script.InvalidFormatException;
+import updater.util.CommonUtil;
 import updater.util.XMLUtil;
 
 /**
@@ -70,7 +71,7 @@ public class RSAKey {
         String _publicExponent = XMLUtil.getTextContent(_exponentNode, "public", true);
         String _privateExponent = XMLUtil.getTextContent(_exponentNode, "private", true);
 
-        return new RSAKey(Util.hexStringToByteArray(_modulus), Util.hexStringToByteArray(_publicExponent), Util.hexStringToByteArray(_privateExponent));
+        return new RSAKey(CommonUtil.hexStringToByteArray(_modulus), CommonUtil.hexStringToByteArray(_publicExponent), CommonUtil.hexStringToByteArray(_privateExponent));
     }
 
     public String output() throws TransformerException {
@@ -83,18 +84,18 @@ public class RSAKey {
         doc.appendChild(rsaElement);
 
         Element modulusElement = doc.createElement("modulus");
-        modulusElement.setTextContent(Util.byteArrayToHexString(modulus));
+        modulusElement.setTextContent(CommonUtil.byteArrayToHexString(modulus));
         rsaElement.appendChild(modulusElement);
 
         Element exponentElement = doc.createElement("exponent");
         rsaElement.appendChild(exponentElement);
 
         Element publicExponentElement = doc.createElement("public");
-        publicExponentElement.setTextContent(Util.byteArrayToHexString(publicExponent));
+        publicExponentElement.setTextContent(CommonUtil.byteArrayToHexString(publicExponent));
         exponentElement.appendChild(publicExponentElement);
 
         Element privateExponentElement = doc.createElement("private");
-        privateExponentElement.setTextContent(Util.byteArrayToHexString(privateExponent));
+        privateExponentElement.setTextContent(CommonUtil.byteArrayToHexString(privateExponent));
         exponentElement.appendChild(privateExponentElement);
 
         return XMLUtil.getOutput(doc);

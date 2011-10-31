@@ -1,4 +1,4 @@
-package updater.launcher.util;
+package updater.builder;
 
 import updater.util.CommonUtil;
 

@@ -1,4 +1,4 @@
-package updater.downloader.util;
+package updater.downloader;
 
 import updater.util.CommonUtil;
 

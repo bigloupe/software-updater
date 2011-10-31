@@ -1,5 +1,6 @@
-package updater.util;
+package updater.crypto;
 
+import updater.util.*;
 import javax.xml.transform.TransformerException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;

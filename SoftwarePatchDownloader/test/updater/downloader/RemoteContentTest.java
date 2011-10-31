@@ -1,4 +1,4 @@
-package updater.downloader.download;
+package updater.downloader;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,11 +14,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import updater.TestCommon;
-import updater.downloader.download.RemoteContent.GetCatalogResult;
-import updater.downloader.download.RemoteContent.GetPatchListener;
-import updater.downloader.download.RemoteContent.GetPatchResult;
-import updater.downloader.download.RemoteContent.RSAPublicKey;
-import updater.downloader.util.Util;
+import updater.downloader.RemoteContent.GetCatalogResult;
+import updater.downloader.RemoteContent.GetPatchListener;
+import updater.downloader.RemoteContent.GetPatchResult;
+import updater.downloader.RemoteContent.RSAPublicKey;
+import updater.downloader.Util;
 import updater.util.CommonUtil.ObjectReference;
 
 /**

@@ -1,7 +1,6 @@
-package updater.builder.patch;
+package updater.patch;
 
 import javax.xml.transform.TransformerException;
-import updater.builder.util.Util;
 import com.nothome.delta.Delta;
 import com.nothome.delta.DiffWriter;
 import com.nothome.delta.GDiffWriter;
@@ -19,11 +18,11 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.tukaani.xz.XZOutputStream;
-import updater.patch.PatchWriteUtil;
+import updater.crypto.AESKey;
 import updater.script.Patch;
 import updater.script.Patch.Operation;
 import updater.script.Patch.ValidationFile;
-import updater.util.AESKey;
+import updater.util.CommonUtil;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -79,7 +78,7 @@ public class PatchCreator {
             if (_newFile.isDirectory()) {
                 validationFile = new ValidationFile(_filePath, "", -1);
             } else {
-                String sha256 = Util.getSHA256String(_newFile);
+                String sha256 = CommonUtil.getSHA256String(_newFile);
                 softwareFilesChecksumMap.put(_filePath, sha256);
                 validationFile = new ValidationFile(_filePath, sha256, (int) _newFile.length());
             }
@@ -117,7 +116,7 @@ public class PatchCreator {
                 fileType = "file";
                 fileSHA256 = softwareFilesChecksumMap.get(_forceFile.getAbsolutePath());
                 if (fileSHA256 == null) {
-                    fileSHA256 = Util.getSHA256String(_forceFile);
+                    fileSHA256 = CommonUtil.getSHA256String(_forceFile);
                 }
 
                 patchForceFileList.add(_forceFile);
@@ -223,7 +222,7 @@ public class PatchCreator {
             if (_newFile.isDirectory()) {
                 validationFile = new ValidationFile(_filePath, "", -1);
             } else {
-                String sha256 = Util.getSHA256String(_newFile);
+                String sha256 = CommonUtil.getSHA256String(_newFile);
                 newVersionFilesChecksumMap.put(_filePath, sha256);
                 validationFile = new ValidationFile(_filePath, sha256, (int) _newFile.length());
             }
@@ -291,7 +290,7 @@ public class PatchCreator {
             if (!_oldFile.isDirectory()) {
                 fileLength = (int) _oldFile.length();
                 fileType = "file";
-                fileSHA256 = Util.getSHA256String(_oldFile);
+                fileSHA256 = CommonUtil.getSHA256String(_oldFile);
             }
 
             Operation _operation = new Operation(operationIdCounter, "remove", 0, 0, fileType, _oldFile.getAbsolutePath().replace(oldVersionPath, "").replace(File.separator, "/"), fileSHA256, fileLength, null, null, -1);
@@ -310,7 +309,7 @@ public class PatchCreator {
                 fileType = "file";
                 fileSHA256 = newVersionFilesChecksumMap.get(_newFile.getAbsolutePath());
                 if (fileSHA256 == null) {
-                    fileSHA256 = Util.getSHA256String(_newFile);
+                    fileSHA256 = CommonUtil.getSHA256String(_newFile);
                 }
 
                 patchNewFileList.add(_newFile);
@@ -353,10 +352,10 @@ public class PatchCreator {
             } else {
                 String newFileSHA256 = newVersionFilesChecksumMap.get(_newFile.getAbsolutePath());
                 if (newFileSHA256 == null) {
-                    newFileSHA256 = Util.getSHA256String(_newFile);
+                    newFileSHA256 = CommonUtil.getSHA256String(_newFile);
                 }
                 patchPatchFileList.add(diffFile);
-                _operation = new Operation(operationIdCounter, "patch", pos, fileLength, "file", _oldFile.getAbsolutePath().replace(oldVersionPath, "").replace(File.separator, "/"), Util.getSHA256String(_oldFile), (int) _oldFile.length(), _newFile.getAbsolutePath().replace(newVersionPath, "").replace(File.separator, "/"), newFileSHA256, newFileLength);
+                _operation = new Operation(operationIdCounter, "patch", pos, fileLength, "file", _oldFile.getAbsolutePath().replace(oldVersionPath, "").replace(File.separator, "/"), CommonUtil.getSHA256String(_oldFile), (int) _oldFile.length(), _newFile.getAbsolutePath().replace(newVersionPath, "").replace(File.separator, "/"), newFileSHA256, newFileLength);
                 operationIdCounter++;
             }
             operations.add(_operation);
@@ -373,12 +372,12 @@ public class PatchCreator {
             int fileLength = newFileLength;
             String newFileSHA256 = newVersionFilesChecksumMap.get(_newFile.getAbsolutePath());
             if (newFileSHA256 == null) {
-                newFileSHA256 = Util.getSHA256String(_newFile);
+                newFileSHA256 = CommonUtil.getSHA256String(_newFile);
             }
 
             patchReplaceFileList.add(_newFile);
 
-            Operation _operation = new Operation(operationIdCounter, "replace", pos, fileLength, "file", _oldFile.getAbsolutePath().replace(oldVersionPath, "").replace(File.separator, "/"), Util.getSHA256String(_oldFile), (int) _oldFile.length(), _newFile.getAbsolutePath().replace(newVersionPath, "").replace(File.separator, "/"), newFileSHA256, newFileLength);
+            Operation _operation = new Operation(operationIdCounter, "replace", pos, fileLength, "file", _oldFile.getAbsolutePath().replace(oldVersionPath, "").replace(File.separator, "/"), CommonUtil.getSHA256String(_oldFile), (int) _oldFile.length(), _newFile.getAbsolutePath().replace(newVersionPath, "").replace(File.separator, "/"), newFileSHA256, newFileLength);
             operationIdCounter++;
             operations.add(_operation);
 

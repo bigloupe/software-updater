@@ -1,4 +1,4 @@
-package updater.builder.patch;
+package updater.patch;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -8,12 +8,11 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.transform.TransformerException;
-import updater.builder.util.Util;
-import updater.patch.PatchReadUtil;
+import updater.crypto.AESKey;
 import updater.script.InvalidFormatException;
 import updater.script.Patch;
 import updater.script.Patch.Operation;
-import updater.util.AESKey;
+import updater.util.CommonUtil;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -60,7 +59,7 @@ public class PatchExtractor {
             InputStream decompressedIn = PatchReadUtil.readCompressionMethod(in);
             Patch patchXML = PatchReadUtil.readXML(decompressedIn);
 
-            Util.writeFile(new File(saveToFolder.getAbsolutePath() + File.separator + "patch.xml"), patchXML.output().getBytes("UTF-8"));
+            CommonUtil.writeFile(new File(saveToFolder.getAbsolutePath() + File.separator + "patch.xml"), patchXML.output().getBytes("UTF-8"));
 
             int id = 1;
             List<Operation> operations = patchXML.getOperations();

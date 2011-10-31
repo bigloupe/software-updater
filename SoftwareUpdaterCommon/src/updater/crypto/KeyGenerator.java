@@ -1,4 +1,4 @@
-package updater.builder.util;
+package updater.crypto;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.transform.TransformerException;
 import updater.script.InvalidFormatException;
-import updater.util.AESKey;
+import updater.util.CommonUtil;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -47,7 +47,7 @@ public class KeyGenerator {
 
             RSAKey rsaKey = new RSAKey(privateKeySpec.getModulus().toByteArray(), publicKeySpec.getPublicExponent().toByteArray(), privateKeySpec.getPrivateExponent().toByteArray());
 
-            Util.writeFile(saveTo, rsaKey.output());
+            CommonUtil.writeFile(saveTo, rsaKey.output());
         } catch (InvalidKeySpecException ex) {
             if (debug) {
                 Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);
@@ -78,7 +78,7 @@ public class KeyGenerator {
 
         AESKey aesKey = new AESKey(key, IV);
         try {
-            Util.writeFile(saveTo, aesKey.output());
+            CommonUtil.writeFile(saveTo, aesKey.output());
         } catch (TransformerException ex) {
             if (debug) {
                 Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);
@@ -92,11 +92,11 @@ public class KeyGenerator {
         byte[] IV = new byte[16];
         random.nextBytes(IV);
 
-        AESKey aesKey = AESKey.read(Util.readFile(file));
+        AESKey aesKey = AESKey.read(CommonUtil.readFile(file));
         aesKey.setIV(IV);
 
         try {
-            Util.writeFile(file, aesKey.output());
+            CommonUtil.writeFile(file, aesKey.output());
         } catch (TransformerException ex) {
             if (debug) {
                 Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);

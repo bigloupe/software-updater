@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.util.zip.GZIPOutputStream;
 import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.XZOutputStream;
-import updater.util.AESKey;
+import updater.crypto.AESKey;
 import watne.seis720.project.KeySize;
 import watne.seis720.project.Mode;
 import watne.seis720.project.Padding;
@@ -87,8 +87,6 @@ public class PatchWriteUtil {
             if (cumulativeByteRead != fileLength) {
                 throw new IOException("Number of bytes read not equals to the cumulative number of bytes read, from file: " + fromFile.getAbsolutePath() + ", cumulate: " + cumulativeByteRead + ", expected length: " + fileLength);
             }
-
-            fin.close();
         } finally {
             if (fin != null) {
                 fin.close();

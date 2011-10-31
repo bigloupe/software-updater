@@ -1,4 +1,4 @@
-package updater.launcher.patch;
+package updater.launcher;
 
 import java.awt.Image;
 import java.awt.event.ActionEvent;
@@ -14,7 +14,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import updater.launcher.util.Util;
+import updater.crypto.AESKey;
 import updater.gui.UpdaterWindow;
 import updater.patch.PatchLogReader;
 import updater.patch.PatchLogReader.UnfinishedPatch;
@@ -24,7 +24,6 @@ import updater.patch.Patcher;
 import updater.patch.PatcherListener;
 import updater.script.Client;
 import updater.script.Patch;
-import updater.util.AESKey;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>

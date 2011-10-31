@@ -9,11 +9,15 @@ set workingDirectory=%CD%
 set softwareDirectory=SoftwareLauncher
 
 mkdir %softwareDirectory%\src\org\apache\commons\
-rmdir %softwareDirectory%\src\org\apache\commons\codec\
-mklink /J %softwareDirectory%\src\org\apache\commons\codec\ %workingDirectory%\SoftwareUpdaterCommon\src\org\apache\commons\codec\
+set file=src\org\apache\commons\codec\
+call:linkDir
 
-rmdir %softwareDirectory%\src\watne\
-mklink /J %softwareDirectory%\src\watne\ %workingDirectory%\SoftwareUpdaterCommon\src\watne\
+set file=src\watne\
+call:linkDir
+
+mkdir %softwareDirectory%\src\updater\crypto\
+set file=src\updater\crypto\AESKey.java
+call:linkFile
 
 mkdir %softwareDirectory%\src\updater\gui\
 set file=src\updater\gui\JTitledPanel.java
@@ -42,8 +46,6 @@ set file=src\updater\patch\PatcherListener.java
 call:linkFile
 
 mkdir %softwareDirectory%\src\updater\util\
-set file=src\updater\util\AESKey.java
-call:linkFile
 set file=src\updater\util\CommonUtil.java
 call:linkFile
 set file=src\updater\util\InterruptibleInputStream.java
@@ -55,7 +57,7 @@ call:linkFile
 set file=src\updater\util\SeekableFile.java
 call:linkFile
 
-mkdir ..\SoftwareLauncher\test\updater\
+mkdir %softwareDirectory%\test\updater\
 set file=test\updater\TestCommon.java
 call:linkFile
 
@@ -67,11 +69,19 @@ call:linkFile
 set softwareDirectory=SoftwarePatchBuilder
 
 mkdir %softwareDirectory%\src\org\apache\commons\
-rmdir %softwareDirectory%\src\org\apache\commons\codec\
-mklink /J %softwareDirectory%\src\org\apache\commons\codec\ %workingDirectory%\SoftwareUpdaterCommon\src\org\apache\commons\codec\
+set file=src\org\apache\commons\codec\
+call:linkDir
 
-rmdir %softwareDirectory%\src\watne\
-mklink /J %softwareDirectory%\src\watne\ %workingDirectory%\SoftwareUpdaterCommon\src\watne\
+set file=src\watne\
+call:linkDir
+
+mkdir %softwareDirectory%\src\updater\crypto\
+set file=src\updater\crypto\AESKey.java
+call:linkFile
+set file=src\updater\crypto\KeyGenerator.java
+call:linkFile
+set file=src\updater\crypto\RSAKey.java
+call:linkFile
 
 mkdir %softwareDirectory%\src\updater\script\
 set file=src\updater\script\Catalog.java
@@ -84,6 +94,10 @@ set file=src\updater\script\Patch.java
 call:linkFile
 
 mkdir %softwareDirectory%\src\updater\patch\
+set file=src\updater\patch\PatchCreator.java
+call:linkFile
+set file=src\updater\patch\PatchExtractor.java
+call:linkFile
 set file=src\updater\patch\PatchReadUtil.java
 call:linkFile
 set file=src\updater\patch\PatchWriteUtil.java
@@ -92,14 +106,14 @@ set file=src\updater\patch\PatchLogReader.java
 call:linkFile
 set file=src\updater\patch\PatchLogWriter.java
 call:linkFile
+set file=src\updater\patch\PatchPacker.java
+call:linkFile
 set file=src\updater\patch\Patcher.java
 call:linkFile
 set file=src\updater\patch\PatcherListener.java
 call:linkFile
 
 mkdir %softwareDirectory%\src\updater\util\
-set file=src\updater\util\AESKey.java
-call:linkFile
 set file=src\updater\util\CommonUtil.java
 call:linkFile
 set file=src\updater\util\InterruptibleInputStream.java
@@ -141,6 +155,8 @@ call:linkFile
 mkdir %softwareDirectory%\src\updater\util\
 set file=src\updater\util\CommonUtil.java
 call:linkFile
+set file=src\updater\util\DownloadProgressUtil.java
+call:linkFile
 set file=src\updater\util\XMLUtil.java
 call:linkFile
 
@@ -153,4 +169,9 @@ call:linkFile
 :linkFile
 del %softwareDirectory%\%file%
 mklink %softwareDirectory%\%file% %workingDirectory%\SoftwareUpdaterCommon\%file%
+goto:eof
+
+:linkDir
+rmdir %softwareDirectory%\%file%
+mklink /J %softwareDirectory%\%file% %workingDirectory%\SoftwareUpdaterCommon\%file%
 goto:eof

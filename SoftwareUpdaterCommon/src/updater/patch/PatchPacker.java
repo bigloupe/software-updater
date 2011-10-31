@@ -1,4 +1,4 @@
-package updater.builder.patch;
+package updater.patch;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -6,12 +6,11 @@ import java.io.IOException;
 import java.util.List;
 import javax.xml.transform.TransformerException;
 import org.tukaani.xz.XZOutputStream;
-import updater.builder.util.Util;
-import updater.patch.PatchWriteUtil;
+import updater.crypto.AESKey;
 import updater.script.InvalidFormatException;
 import updater.script.Patch;
 import updater.script.Patch.Operation;
-import updater.util.AESKey;
+import updater.util.CommonUtil;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -37,7 +36,7 @@ public class PatchPacker {
         }
 
         File patchFile = new File(sourceFolder.getAbsolutePath() + File.separator + "patch.xml");
-        Patch patch = Patch.read(Util.readFile(patchFile));
+        Patch patch = Patch.read(CommonUtil.readFile(patchFile));
 
         String sourceFolderPath = sourceFolder.getAbsolutePath();
 

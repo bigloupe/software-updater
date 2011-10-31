@@ -1,4 +1,4 @@
-package updater.downloader.download;
+package updater.downloader;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -26,7 +26,6 @@ import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import javax.crypto.Cipher;
 import updater.script.Catalog;
-import updater.downloader.util.Util;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>

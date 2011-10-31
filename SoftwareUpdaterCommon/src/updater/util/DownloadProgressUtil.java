@@ -1,4 +1,4 @@
-package updater.downloader.util;
+package updater.util;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
-public class DownloadProgessUtil {
+public class DownloadProgressUtil {
 
     protected long downloadedSize;
     protected long totalSize;
@@ -15,7 +15,7 @@ public class DownloadProgessUtil {
     protected List<Record> records;
     protected long speed;
 
-    public DownloadProgessUtil() {
+    public DownloadProgressUtil() {
         downloadedSize = 0;
         totalSize = 0;
         averageTimeSpan = 5000;

@@ -1,5 +1,6 @@
-package updater.downloader.util;
+package updater.downloader;
 
+import updater.downloader.Util;
 import updater.TestCommon;
 import org.junit.After;
 import org.junit.AfterClass;

@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import javax.xml.transform.TransformerException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -20,19 +21,23 @@ import org.apache.commons.cli.ParseException;
 import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.XZInputStream;
 import org.tukaani.xz.XZOutputStream;
-import updater.builder.patch.PatchCreator;
-import updater.builder.patch.PatchExtractor;
-import updater.builder.patch.PatchPacker;
-import updater.builder.util.Catalog;
-import updater.builder.util.KeyGenerator;
-import updater.builder.util.RSAKey;
-import updater.builder.util.Util;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
+import updater.crypto.AESKey;
+import updater.crypto.KeyGenerator;
+import updater.crypto.RSAKey;
+import updater.patch.PatchCreator;
+import updater.patch.PatchExtractor;
 import updater.patch.PatchLogWriter;
+import updater.patch.PatchPacker;
 import updater.patch.PatchReadUtil;
 import updater.patch.Patcher;
 import updater.patch.PatcherListener;
+import updater.script.Client;
 import updater.script.InvalidFormatException;
-import updater.util.AESKey;
+import updater.script.Patch;
+import updater.util.XMLUtil;
 
 /**
  * Main class.
@@ -58,7 +63,7 @@ public class SoftwarePatchBuilder {
         // cipher key
         options.addOption(OptionBuilder.hasArgs(2).withArgName("method length").withValueSeparator(' ').
                 withDescription("AES|RSA for 'method'; generate cipher key with specified key length in bits").
-                create("keygen"));
+                create("genkey"));
         options.addOption(OptionBuilder.hasArg().withArgName("file").
                 withDescription("renew the IV in the AES key file").
                 create("renew"));
@@ -77,12 +82,10 @@ public class SoftwarePatchBuilder {
                 withDescription("decompress the 'file' using XZ/LZMA2").
                 create("decompress"));
 
+        // create & apply patch
         options.addOption(OptionBuilder.hasArgs(2).withArgName("folder patch").withValueSeparator(' ').
                 withDescription("apply the patch to the specified folder").
                 create("do"));
-        options.addOption(OptionBuilder.hasArgs(2).withArgName("mode file").withValueSeparator(' ').
-                withDescription("e|d for 'mode', e for encrypt, d for decrypt; 'file' is the catalog file").
-                create("catalog"));
         options.addOption(OptionBuilder.hasArg().withArgName("folder").
                 withDescription("create a full patch for upgrade from all version (unless specified)").
                 create("full"));
@@ -97,6 +100,16 @@ public class SoftwarePatchBuilder {
         options.addOption(OptionBuilder.hasArg().withArgName("folder").
                 withDescription("pack the folder to a patch").
                 create("pack"));
+
+        // catalog
+        options.addOption(OptionBuilder.hasArgs(2).withArgName("mode file").withValueSeparator(' ').
+                withDescription("e|d for 'mode', e for encrypt, d for decrypt; 'file' is the catalog file").
+                create("catalog"));
+
+        // script validation
+        options.addOption(OptionBuilder.hasArg().withArgName("file").
+                withDescription("validate a XML script file").
+                create("validate"));
 
         // subsidary options
         options.addOption(OptionBuilder.hasArg().withArgName("file").
@@ -123,8 +136,8 @@ public class SoftwarePatchBuilder {
             CommandLine line = parser.parse(options, args);
             if (line.hasOption("sha256")) {
                 sha256(line, options);
-            } else if (line.hasOption("keygen")) {
-                keygen(line, options);
+            } else if (line.hasOption("genkey")) {
+                genkey(line, options);
             } else if (line.hasOption("renew")) {
                 renew(line, options);
             } else if (line.hasOption("diff")) {
@@ -137,8 +150,6 @@ public class SoftwarePatchBuilder {
                 decompress(line, options);
             } else if (line.hasOption("do")) {
                 doPatch(line, options);
-            } else if (line.hasOption("catalog")) {
-                catalog(line, options);
             } else if (line.hasOption("full")) {
                 full(line, options);
             } else if (line.hasOption("patch")) {
@@ -147,6 +158,10 @@ public class SoftwarePatchBuilder {
                 extract(line, options);
             } else if (line.hasOption("pack")) {
                 pack(line, options);
+            } else if (line.hasOption("catalog")) {
+                catalog(line, options);
+            } else if (line.hasOption("validate")) {
+                validate(line, options);
             } else if (line.hasOption("version")) {
                 version();
             } else if (line.hasOption("help")) {
@@ -182,39 +197,39 @@ public class SoftwarePatchBuilder {
         System.out.println("Checksum: " + sha256);
     }
 
-    public static void keygen(CommandLine line, Options options) throws ParseException, IOException {
+    public static void genkey(CommandLine line, Options options) throws ParseException, IOException {
         if (!line.hasOption("output")) {
             throw new IOException("Please specify the path to output the key file using --output or -o");
         }
 
-        String[] keygenArgs = line.getOptionValues("keygen");
+        String[] genkeyArgs = line.getOptionValues("genkey");
         String outputArg = line.getOptionValue("output");
 
-        if (keygenArgs.length != 2) {
-            throw new ParseException("Wrong arguments for 'keygen', expecting 2 arguments");
+        if (genkeyArgs.length != 2) {
+            throw new ParseException("Wrong arguments for 'genkey', expecting 2 arguments");
         }
-        keygenArgs[0] = keygenArgs[0].toLowerCase();
-        if (!keygenArgs[0].equals("aes") && !keygenArgs[0].equals("rsa")) {
+        genkeyArgs[0] = genkeyArgs[0].toLowerCase();
+        if (!genkeyArgs[0].equals("aes") && !genkeyArgs[0].equals("rsa")) {
             throw new ParseException("Key generation only support AES and RSA.");
         }
 
         int keySize = 0;
         try {
-            keySize = Integer.parseInt(keygenArgs[1]);
+            keySize = Integer.parseInt(genkeyArgs[1]);
             if (keySize % 8 != 0) {
                 throw new ParseException("Key length should be a multiple of 8.");
             }
         } catch (NumberFormatException ex) {
-            throw new ParseException("Key length should be a valid integer, your input: " + keygenArgs[1]);
+            throw new ParseException("Key length should be a valid integer, your input: " + genkeyArgs[1]);
         }
 
-        System.out.println("Method: " + keygenArgs[0]);
+        System.out.println("Method: " + genkeyArgs[0]);
         System.out.println("Key size: " + keySize);
         System.out.println("Output path: " + outputArg);
         System.out.println();
 
         try {
-            if (keygenArgs[0].equals("AES")) {
+            if (genkeyArgs[0].equals("AES")) {
                 KeyGenerator.generateAES(keySize, new File(outputArg));
             } else {
                 KeyGenerator.generateRSA(keySize, new File(outputArg));
@@ -469,51 +484,6 @@ public class SoftwarePatchBuilder {
         System.out.println("Patch applied successfully.");
     }
 
-    public static void catalog(CommandLine line, Options options) throws ParseException, IOException {
-        if (!line.hasOption("key")) {
-            throw new IOException("Please specify the key file to use using --key");
-        }
-        if (!line.hasOption("output")) {
-            throw new IOException("Please specify the path to output the XML file using --output");
-        }
-
-        String[] catalogArgs = line.getOptionValues("catalog");
-        String keyArg = line.getOptionValue("key");
-        String outputArg = line.getOptionValue("output");
-
-        if (catalogArgs.length != 2) {
-            throw new ParseException("Wrong arguments for 'catalog', expecting 2 arguments");
-        }
-        if (!catalogArgs[0].equals("e") && !catalogArgs[0].equals("d")) {
-            throw new ParseException("Catalog mode should be either 'e' or 'd' but not " + catalogArgs[0]);
-        }
-
-        RSAKey rsaKey = null;
-        try {
-            rsaKey = RSAKey.read(Util.readFile(new File(keyArg)));
-        } catch (InvalidFormatException ex) {
-            throw new IOException("The file is not a valid RSA key file: " + catalogArgs[1]);
-        }
-
-        System.out.println("Mode: " + (catalogArgs[0].equals("e") ? "encrypt" : "decrypt"));
-        System.out.println("Catalog file: " + catalogArgs[1]);
-        System.out.println("Key file: " + keyArg);
-        System.out.println("Output file: " + outputArg);
-        System.out.println();
-
-        try {
-            if (catalogArgs[0].equals("e")) {
-                Catalog.encrypt(new File(catalogArgs[1]), new File(outputArg), new BigInteger(rsaKey.getModulus()), new BigInteger(rsaKey.getPrivateExponent()));
-            } else {
-                Catalog.decrypt(new File(catalogArgs[1]), new File(outputArg), new BigInteger(rsaKey.getModulus()), new BigInteger(rsaKey.getPublicExponent()));
-            }
-        } catch (IOException ex) {
-            throw new IOException("Error occurred when reading from " + catalogArgs[1] + " or outputting to " + outputArg);
-        }
-
-        System.out.println("Manipulation succeed.");
-    }
-
     public static void full(CommandLine line, Options options) throws ParseException, IOException {
         if (!line.hasOption("output")) {
             throw new IOException("Please specify the path to output the patch using --output");
@@ -713,6 +683,96 @@ public class SoftwarePatchBuilder {
         }
 
         System.out.println("Packing completed.");
+    }
+
+    public static void catalog(CommandLine line, Options options) throws ParseException, IOException {
+        if (!line.hasOption("key")) {
+            throw new IOException("Please specify the key file to use using --key");
+        }
+        if (!line.hasOption("output")) {
+            throw new IOException("Please specify the path to output the XML file using --output");
+        }
+
+        String[] catalogArgs = line.getOptionValues("catalog");
+        String keyArg = line.getOptionValue("key");
+        String outputArg = line.getOptionValue("output");
+
+        if (catalogArgs.length != 2) {
+            throw new ParseException("Wrong arguments for 'catalog', expecting 2 arguments");
+        }
+        if (!catalogArgs[0].equals("e") && !catalogArgs[0].equals("d")) {
+            throw new ParseException("Catalog mode should be either 'e' or 'd' but not " + catalogArgs[0]);
+        }
+
+        RSAKey rsaKey = null;
+        try {
+            rsaKey = RSAKey.read(Util.readFile(new File(keyArg)));
+        } catch (InvalidFormatException ex) {
+            throw new IOException("The file is not a valid RSA key file: " + catalogArgs[1]);
+        }
+
+        System.out.println("Mode: " + (catalogArgs[0].equals("e") ? "encrypt" : "decrypt"));
+        System.out.println("Catalog file: " + catalogArgs[1]);
+        System.out.println("Key file: " + keyArg);
+        System.out.println("Output file: " + outputArg);
+        System.out.println();
+
+        try {
+            if (catalogArgs[0].equals("e")) {
+                Catalog.encrypt(new File(catalogArgs[1]), new File(outputArg), new BigInteger(rsaKey.getModulus()), new BigInteger(rsaKey.getPrivateExponent()));
+            } else {
+                Catalog.decrypt(new File(catalogArgs[1]), new File(outputArg), new BigInteger(rsaKey.getModulus()), new BigInteger(rsaKey.getPublicExponent()));
+            }
+        } catch (IOException ex) {
+            throw new IOException("Error occurred when reading from " + catalogArgs[1] + " or outputting to " + outputArg);
+        }
+
+        System.out.println("Manipulation succeed.");
+    }
+
+    public static void validate(CommandLine line, Options options) throws ParseException, IOException {
+        String validateArg = line.getOptionValue("validate");
+        String outputArg = line.getOptionValue("output");
+
+        System.out.println("Script file: " + validateArg);
+        if (outputArg != null) {
+            System.out.println("Output file: " + outputArg);
+        }
+        System.out.println();
+
+        byte[] scriptContent = null;
+        Document doc = null;
+        try {
+            scriptContent = Util.readFile(new File(validateArg));
+            doc = XMLUtil.readDocument(scriptContent);
+        } catch (SAXException ex) {
+            throw new IOException(ex);
+        }
+        Element rootElement = doc.getDocumentElement();
+
+        String contentToOutput = null;
+        String rootElementTag = rootElement.getTagName();
+        try {
+            if (rootElementTag.equals("patches")) {
+                contentToOutput = updater.script.Catalog.read(scriptContent).output();
+            } else if (rootElementTag.equals("patch")) {
+                contentToOutput = Patch.read(scriptContent).output();
+            } else if (rootElementTag.equals("root")) {
+                contentToOutput = Client.read(scriptContent).output();
+            } else {
+                throw new IOException("Failed to recognize the script file.");
+            }
+        } catch (InvalidFormatException ex) {
+            throw new IOException(ex);
+        } catch (TransformerException ex) {
+            throw new IOException(ex);
+        }
+
+        if (outputArg != null) {
+            Util.writeFile(new File(outputArg), contentToOutput);
+        }
+
+        System.out.println("Validation finished.");
     }
 
     public static void version() {

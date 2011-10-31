@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
-import updater.downloader.download.PatchDownloader;
-import updater.downloader.util.Util;
 import updater.script.InvalidFormatException;
 import updater.util.CommonUtil.GetClientScriptResult;
 

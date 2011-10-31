@@ -5,7 +5,7 @@
     <to>1.0.1</to>
   </version>
   <operations>
-    <operation>
+    <operation id="1">
       <type>replace</type>
       <content>
         <pos>0</pos>
@@ -23,7 +23,7 @@
         <length>200</length>
       </new-file>
     </operation>
-    <operation>
+    <operation id="2">
       <type>patch</type>
       <content>
         <pos>1</pos>

@@ -1,4 +1,4 @@
-package updater.downloader.download;
+package updater.downloader;
 
 import java.awt.Image;
 import java.awt.Toolkit;
@@ -17,23 +17,22 @@ import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import updater.downloader.download.PatchDownloader.DownloadPatchesListener.DownloadPatchesResult;
-import updater.downloader.download.RemoteContent.GetCatalogResult;
-import updater.downloader.download.RemoteContent.GetPatchListener;
-import updater.downloader.download.RemoteContent.GetPatchResult;
-import updater.downloader.download.RemoteContent.RSAPublicKey;
+import updater.downloader.PatchDownloader.DownloadPatchesListener.DownloadPatchesResult;
+import updater.downloader.RemoteContent.GetCatalogResult;
+import updater.downloader.RemoteContent.GetPatchListener;
+import updater.downloader.RemoteContent.GetPatchResult;
+import updater.downloader.RemoteContent.RSAPublicKey;
 import updater.gui.UpdaterWindow;
 import updater.script.Catalog;
 import updater.script.Client;
 import updater.script.Client.Information;
 import updater.script.InvalidFormatException;
-import updater.downloader.util.DownloadProgessUtil;
-import updater.downloader.util.Util;
 import updater.script.Patch;
 import updater.script.Patch.Operation;
 import updater.script.Patch.ValidationFile;
 import updater.util.CommonUtil.InvalidVersionException;
 import updater.util.CommonUtil.ObjectReference;
+import updater.util.DownloadProgressUtil;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -271,7 +270,7 @@ public class PatchDownloader {
             final ObjectReference<Long> lastRefreshTime = new ObjectReference<Long>(0L);
             final ObjectReference<Integer> downloadedSizeSinceLastRefresh = new ObjectReference<Integer>(0);
             final long totalDownloadSize = calculateTotalLength(patches);
-            final DownloadProgessUtil downloadProgress = new DownloadProgessUtil();
+            final DownloadProgressUtil downloadProgress = new DownloadProgressUtil();
             downloadProgress.setTotalSize(totalDownloadSize);
             GetPatchListener getPatchListener = new GetPatchListener() {
 
