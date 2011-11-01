@@ -12,6 +12,8 @@ import java.net.URL;
 import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
@@ -30,8 +32,6 @@ import updater.script.InvalidFormatException;
 import updater.script.Patch;
 import updater.script.Patch.Operation;
 import updater.script.Patch.ValidationFile;
-import updater.util.CommonUtil.InvalidVersionException;
-import updater.util.CommonUtil.ObjectReference;
 import updater.util.DownloadProgressUtil;
 
 /**
@@ -130,15 +130,7 @@ public class PatchDownloader {
             return;
         }
 
-        List<Patch> updatePatches = null;
-        try {
-            updatePatches = getSuitablePatches(catalog, clientScript.getVersion());
-        } catch (InvalidVersionException ex) {
-            JOptionPane.showMessageDialog(updaterFrame, "Version number invalid.");
-            Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
-            disposeWindow(updaterFrame);
-            return;
-        }
+        List<Patch> updatePatches = getSuitablePatches(catalog, clientScript.getVersion());
         if (updatePatches.isEmpty()) {
             JOptionPane.showMessageDialog(updaterFrame, "There are no updates available.");
 
@@ -266,9 +258,9 @@ public class PatchDownloader {
                 return;
             }
 
-            final ObjectReference<Integer> downloadedSize = new ObjectReference<Integer>(0);
-            final ObjectReference<Long> lastRefreshTime = new ObjectReference<Long>(0L);
-            final ObjectReference<Integer> downloadedSizeSinceLastRefresh = new ObjectReference<Integer>(0);
+            final AtomicInteger downloadedSize = new AtomicInteger(0);
+            final AtomicLong lastRefreshTime = new AtomicLong(0L);
+            final AtomicInteger downloadedSizeSinceLastRefresh = new AtomicInteger(0);
             final long totalDownloadSize = calculateTotalLength(patches);
             final DownloadProgressUtil downloadProgress = new DownloadProgressUtil();
             downloadProgress.setTotalSize(totalDownloadSize);
@@ -282,14 +274,14 @@ public class PatchDownloader {
 
                 @Override
                 public void byteStart(long pos) {
-                    downloadedSize.setObj(downloadedSize.getObj() + (int) pos);
+                    downloadedSize.set(downloadedSize.get() + (int) pos);
                     downloadProgress.setDownloadedSize(downloadProgress.getDownloadedSize() + pos);
-                    listener.downloadPatchesProgress((int) ((float) downloadedSize.getObj() * 100F / (float) totalDownloadSize));
+                    listener.downloadPatchesProgress((int) ((float) downloadedSize.get() * 100F / (float) totalDownloadSize));
                 }
 
                 @Override
                 public void byteDownloaded(int numberOfBytes) {
-                    downloadedSizeSinceLastRefresh.setObj(downloadedSizeSinceLastRefresh.getObj() + numberOfBytes);
+                    downloadedSizeSinceLastRefresh.set(downloadedSizeSinceLastRefresh.get() + numberOfBytes);
 
 //                // for test purpose - slow down the download speed (from localhost) to observe or do operation
 //                try {
@@ -299,16 +291,16 @@ public class PatchDownloader {
 //                }
 
                     long currentTime = System.currentTimeMillis();
-                    if (currentTime - lastRefreshTime.getObj() > 10) {
-                        lastRefreshTime.setObj(currentTime);
+                    if (currentTime - lastRefreshTime.get() > 10) {
+                        lastRefreshTime.set(currentTime);
 
-                        downloadedSize.setObj(downloadedSize.getObj() + downloadedSizeSinceLastRefresh.getObj());
-                        downloadProgress.feed(downloadedSizeSinceLastRefresh.getObj());
-                        downloadedSizeSinceLastRefresh.setObj(0);
-                        listener.downloadPatchesProgress((int) ((float) downloadedSize.getObj() * 100F / (float) totalDownloadSize));
+                        downloadedSize.set(downloadedSize.get() + downloadedSizeSinceLastRefresh.get());
+                        downloadProgress.feed(downloadedSizeSinceLastRefresh.get());
+                        downloadedSizeSinceLastRefresh.set(0);
+                        listener.downloadPatchesProgress((int) ((float) downloadedSize.get() * 100F / (float) totalDownloadSize));
                         // Downloading: 1.6 MiB / 240 MiB, 2.6 MiB/s, 1m 32s remaining
                         listener.downloadPatchesMessage("Downloading: "
-                                + Util.humanReadableByteCount(downloadedSize.getObj(), false) + " / " + Util.humanReadableByteCount(totalDownloadSize, false) + ", "
+                                + Util.humanReadableByteCount(downloadedSize.get(), false) + " / " + Util.humanReadableByteCount(totalDownloadSize, false) + ", "
                                 + Util.humanReadableByteCount(downloadProgress.getSpeed(), false) + "/s" + ", "
                                 + Util.humanReadableTimeCount(downloadProgress.getTimeRemaining(), 3) + " remaining");
                     }
@@ -325,7 +317,7 @@ public class PatchDownloader {
                 if (!updateResult.isInterrupted() && !updateResult.getResult() && saveToFileLength != 0) {
                     // if download failed and saveToFile is not empty, delete it and download again
                     if (saveToFile.exists() && saveToFile.length() > saveToFileLength) {
-                        downloadedSize.setObj(downloadedSize.getObj() - (int) (saveToFile.length() - saveToFileLength));
+                        downloadedSize.set(downloadedSize.get() - (int) (saveToFile.length() - saveToFileLength));
                     }
                     saveToFile.delete();
                     updateResult = RemoteContent.getPatch(getPatchListener, update.getDownloadUrl(), saveToFile, update.getDownloadChecksum(), update.getDownloadLength());
@@ -390,11 +382,11 @@ public class PatchDownloader {
         void downloadPatchesMessage(String message);
     }
 
-    public static List<Patch> getSuitablePatches(Catalog catalog, String currentVersion) throws InvalidVersionException {
+    public static List<Patch> getSuitablePatches(Catalog catalog, String currentVersion) {
         return getSuitablePatches(catalog.getPatchs(), currentVersion);
     }
 
-    protected static List<Patch> getSuitablePatches(List<Patch> allPatches, String fromVersion) throws InvalidVersionException {
+    protected static List<Patch> getSuitablePatches(List<Patch> allPatches, String fromVersion) {
         List<Patch> returnResult = new ArrayList<Patch>();
 
         String maxVersion = fromVersion;

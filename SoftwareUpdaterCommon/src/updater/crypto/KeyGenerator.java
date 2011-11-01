@@ -43,6 +43,9 @@ public class KeyGenerator {
      * @throws IOException error occurred when writing to file
      */
     public static void generateRSA(int keySize, File saveTo) throws IOException {
+        if (saveTo == null) {
+            return;
+        }
         try {
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
             keyPairGenerator.initialize(keySize);
@@ -81,6 +84,9 @@ public class KeyGenerator {
      * @throws IOException error occurred when writing to file
      */
     public static void generateAES(int keySize, File saveTo) throws IOException {
+        if (saveTo == null) {
+            return;
+        }
         byte[] key = generateRandom(keySize / 8);
         byte[] IV = generateRandom(16);
 
@@ -101,6 +107,9 @@ public class KeyGenerator {
      * @throws InvalidFormatException the format of the content in the key file is invalid
      */
     public static void renewAESIV(File file) throws IOException, InvalidFormatException {
+        if (file == null) {
+            return;
+        }
         byte[] IV = generateRandom(16);
 
         AESKey aesKey = AESKey.read(CommonUtil.readFile(file));

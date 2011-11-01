@@ -65,11 +65,8 @@ public class InterruptibleInputStream extends FilterInputStream {
             return -1;
         }
 
-        if (sizeAvailable != -1 && len > sizeAvailable) {
-            len = sizeAvailable;
-        }
-
-        int result = in.read(b, off, len);
+        int lengthToRead = sizeAvailable != -1 && len > sizeAvailable ? sizeAvailable : len;
+        int result = in.read(b, off, lengthToRead);
         if (sizeAvailable != -1 && result != -1) {
             if (result > sizeAvailable) {
                 // error
@@ -85,11 +82,8 @@ public class InterruptibleInputStream extends FilterInputStream {
     public long skip(long n) throws IOException {
         checkInterrupted();
 
-        if (sizeAvailable != -1 && n > sizeAvailable) {
-            n = sizeAvailable;
-        }
-
-        long result = in.skip(n);
+        long byteToSkip = sizeAvailable != -1 && n > sizeAvailable ? sizeAvailable : n;
+        long result = in.skip(byteToSkip);
         if (sizeAvailable != -1 && result != -1) {
             if (result > sizeAvailable) {
                 // error

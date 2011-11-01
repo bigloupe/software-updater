@@ -23,6 +23,10 @@ public class PatchReadUtil {
     }
 
     public static void readHeader(InputStream in) throws IOException {
+        if (in == null) {
+            return;
+        }
+
         byte[] buf = new byte[5];
         if (in.read(buf, 0, 5) != 5) {
             throw new IOException("Reach the end of stream.");
@@ -33,6 +37,10 @@ public class PatchReadUtil {
     }
 
     public static InputStream readCompressionMethod(InputStream in) throws IOException {
+        if (in == null) {
+            return null;
+        }
+
         byte[] buf = new byte[1];
         if (in.read(buf, 0, 1) != 1) {
             throw new IOException("Reach the end of stream.");
@@ -49,6 +57,10 @@ public class PatchReadUtil {
     }
 
     public static Patch readXML(InputStream in) throws IOException, InvalidFormatException {
+        if (in == null) {
+            return null;
+        }
+
         byte[] buf = new byte[3];
         if (in.read(buf, 0, 3) != 3) {
             throw new IOException("Reach the end of stream.");
@@ -62,6 +74,13 @@ public class PatchReadUtil {
     }
 
     public static void readToFile(File saveTo, InputStream in, int length) throws IOException {
+        if (saveTo == null) {
+            return;
+        }
+        if (in == null) {
+            throw new NullPointerException("argument 'in' cannot be null");
+        }
+
         FileOutputStream fout = null;
         try {
             byte[] b = new byte[32768];
@@ -88,6 +107,16 @@ public class PatchReadUtil {
     }
 
     public static void decrypt(AESKey aesKey, File patchFile, File tempFileForDecryption) throws IOException {
+        if (patchFile == null) {
+            return;
+        }
+        if (aesKey == null) {
+            throw new NullPointerException("argument 'aesKey' cannot be null");
+        }
+        if (tempFileForDecryption == null) {
+            throw new NullPointerException("argument 'tempFileForDecryption' cannot be null");
+        }
+
         tempFileForDecryption.delete();
 
         try {

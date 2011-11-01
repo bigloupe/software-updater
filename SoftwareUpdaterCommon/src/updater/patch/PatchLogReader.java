@@ -40,6 +40,9 @@ public class PatchLogReader {
     protected UnfinishedPatch unfinishedPatch;
 
     public PatchLogReader(File file) throws IOException {
+        if (file == null) {
+            throw new NullPointerException("argument 'file' cannot be null");
+        }
         finishedPatches = new ArrayList<Integer>();
 
         Pattern logPattern = Pattern.compile("^\\(([0-9]+)\\s(?:(0|1)|(2|3)\\s([0-9]+))\\)\t.+?$");

@@ -33,6 +33,16 @@ public class PatchExtractor {
     }
 
     public static void extract(File patchFile, File saveToFolder, AESKey aesKey, File tempFileForDecryption) throws IOException, InvalidFormatException {
+        if (patchFile == null) {
+            return;
+        }
+        if (saveToFolder == null) {
+            throw new NullPointerException("argument 'patchFile' cannot be null");
+        }
+        if (aesKey != null && tempFileForDecryption == null) {
+            throw new NullPointerException("argument 'tempFileForDecryption' cannot be null while argument 'aesKey' is not null");
+        }
+
         File _patchFile = patchFile;
         boolean deletePatch = false;
 

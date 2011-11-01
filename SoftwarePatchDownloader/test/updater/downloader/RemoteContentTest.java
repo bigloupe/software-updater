@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.transform.TransformerException;
@@ -18,8 +20,6 @@ import updater.downloader.RemoteContent.GetCatalogResult;
 import updater.downloader.RemoteContent.GetPatchListener;
 import updater.downloader.RemoteContent.GetPatchResult;
 import updater.downloader.RemoteContent.RSAPublicKey;
-import updater.downloader.Util;
-import updater.util.CommonUtil.ObjectReference;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -136,15 +136,15 @@ public class RemoteContentTest {
 
         File tempFile = new File(originalFileName + ".kh6am");
         tempFile.deleteOnExit();
-        final ObjectReference<Long> startingPosition = new ObjectReference<Long>(0L);
-        final ObjectReference<Integer> cumulativeByteDownloaded = new ObjectReference<Integer>(0);
+        final AtomicLong startingPosition = new AtomicLong(0L);
+        final AtomicInteger cumulativeByteDownloaded = new AtomicInteger(0);
 
 
         //<editor-fold defaultstate="collapsed" desc="test fresh download">
         System.out.println("- test fresh download");
 
-        startingPosition.setObj(0L);
-        cumulativeByteDownloaded.setObj(0);
+        startingPosition.set(0L);
+        cumulativeByteDownloaded.set(0);
 
         GetPatchListener listener = new GetPatchListener() {
 
@@ -159,7 +159,7 @@ public class RemoteContentTest {
 
             @Override
             public void byteDownloaded(int numberOfBytes) {
-                cumulativeByteDownloaded.setObj(cumulativeByteDownloaded.getObj() + numberOfBytes);
+                cumulativeByteDownloaded.set(cumulativeByteDownloaded.get() + numberOfBytes);
             }
         };
         String url = TestCommon.urlRoot + originalFileName;
@@ -170,8 +170,8 @@ public class RemoteContentTest {
         GetPatchResult result = RemoteContent.getPatch(listener, url, saveToFile, fileSHA1, expectedLength);
 
         assertTrue(result.getResult());
-        assertEquals(0, (long) startingPosition.getObj());
-        assertEquals(originalFile.length(), (int) cumulativeByteDownloaded.getObj());
+        assertEquals(0, (long) startingPosition.get());
+        assertEquals(originalFile.length(), (int) cumulativeByteDownloaded.get());
         assertEquals(originalFile.length(), saveToFile.length());
         assertEquals(Util.getSHA256String(originalFile), Util.getSHA256String(saveToFile));
         //</editor-fold>
@@ -181,8 +181,8 @@ public class RemoteContentTest {
 
         Util.copyFile(partFile, tempFile);
         int initFileSize = (int) tempFile.length();
-        startingPosition.setObj(0L);
-        cumulativeByteDownloaded.setObj(0);
+        startingPosition.set(0L);
+        cumulativeByteDownloaded.set(0);
 
         listener = new GetPatchListener() {
 
@@ -193,12 +193,12 @@ public class RemoteContentTest {
 
             @Override
             public void byteStart(long pos) {
-                startingPosition.setObj(pos);
+                startingPosition.set(pos);
             }
 
             @Override
             public void byteDownloaded(int numberOfBytes) {
-                cumulativeByteDownloaded.setObj(cumulativeByteDownloaded.getObj() + numberOfBytes);
+                cumulativeByteDownloaded.set(cumulativeByteDownloaded.get() + numberOfBytes);
             }
         };
         url = TestCommon.urlRoot + originalFileName;
@@ -209,8 +209,8 @@ public class RemoteContentTest {
         result = RemoteContent.getPatch(listener, url, saveToFile, fileSHA1, expectedLength);
 
         assertTrue(result.getResult());
-        assertEquals(initFileSize, (long) startingPosition.getObj());
-        assertEquals(originalFile.length() - initFileSize, (int) cumulativeByteDownloaded.getObj());
+        assertEquals(initFileSize, (long) startingPosition.get());
+        assertEquals(originalFile.length() - initFileSize, (int) cumulativeByteDownloaded.get());
         assertEquals(originalFile.length(), saveToFile.length());
         assertEquals(Util.getSHA256String(originalFile), Util.getSHA256String(saveToFile));
         //</editor-fold>
@@ -220,8 +220,8 @@ public class RemoteContentTest {
 
         Util.copyFile(partBrokenFile, tempFile);
         initFileSize = (int) tempFile.length();
-        startingPosition.setObj(0L);
-        cumulativeByteDownloaded.setObj(0);
+        startingPosition.set(0L);
+        cumulativeByteDownloaded.set(0);
 
         listener = new GetPatchListener() {
 
@@ -232,12 +232,12 @@ public class RemoteContentTest {
 
             @Override
             public void byteStart(long pos) {
-                startingPosition.setObj(pos);
+                startingPosition.set(pos);
             }
 
             @Override
             public void byteDownloaded(int numberOfBytes) {
-                cumulativeByteDownloaded.setObj(cumulativeByteDownloaded.getObj() + numberOfBytes);
+                cumulativeByteDownloaded.set(cumulativeByteDownloaded.get() + numberOfBytes);
             }
         };
         url = TestCommon.urlRoot + originalFileName;
@@ -250,8 +250,8 @@ public class RemoteContentTest {
         TestCommon.restoreErrorOutput();
 
         assertFalse(result.getResult());
-        assertEquals(initFileSize, (long) startingPosition.getObj());
-        assertEquals(originalFile.length() - initFileSize, (int) cumulativeByteDownloaded.getObj());
+        assertEquals(initFileSize, (long) startingPosition.get());
+        assertEquals(originalFile.length() - initFileSize, (int) cumulativeByteDownloaded.get());
         assertEquals(originalFile.length(), saveToFile.length());
         assertFalse(Util.getSHA256String(originalFile).equals(Util.getSHA256String(saveToFile)));
         //</editor-fold>
@@ -261,8 +261,8 @@ public class RemoteContentTest {
 
         Util.copyFile(originalFile, tempFile);
         initFileSize = (int) tempFile.length();
-        startingPosition.setObj(0L);
-        cumulativeByteDownloaded.setObj(0);
+        startingPosition.set(0L);
+        cumulativeByteDownloaded.set(0);
 
         listener = new GetPatchListener() {
 
@@ -273,12 +273,12 @@ public class RemoteContentTest {
 
             @Override
             public void byteStart(long pos) {
-                startingPosition.setObj(pos);
+                startingPosition.set(pos);
             }
 
             @Override
             public void byteDownloaded(int numberOfBytes) {
-                cumulativeByteDownloaded.setObj(cumulativeByteDownloaded.getObj() + numberOfBytes);
+                cumulativeByteDownloaded.set(cumulativeByteDownloaded.get() + numberOfBytes);
             }
         };
         url = TestCommon.urlRoot + originalFileName;
@@ -289,8 +289,8 @@ public class RemoteContentTest {
         result = RemoteContent.getPatch(listener, url, saveToFile, fileSHA1, expectedLength);
 
         assertTrue(result.getResult());
-        assertEquals(7007, (long) startingPosition.getObj());
-        assertEquals(originalFile.length() - initFileSize, (int) cumulativeByteDownloaded.getObj());
+        assertEquals(7007, (long) startingPosition.get());
+        assertEquals(originalFile.length() - initFileSize, (int) cumulativeByteDownloaded.get());
         assertEquals(originalFile.length(), saveToFile.length());
         assertEquals(Util.getSHA256String(originalFile), Util.getSHA256String(saveToFile));
         //</editor-fold>
@@ -299,8 +299,8 @@ public class RemoteContentTest {
         System.out.println("- test download when file is fully downloaded but some downloaded bytes in the file are broken");
 
         Util.copyFile(fullBrokenFile, tempFile);
-        startingPosition.setObj(0L);
-        cumulativeByteDownloaded.setObj(0);
+        startingPosition.set(0L);
+        cumulativeByteDownloaded.set(0);
 
         listener = new GetPatchListener() {
 
@@ -311,12 +311,12 @@ public class RemoteContentTest {
 
             @Override
             public void byteStart(long pos) {
-                startingPosition.setObj(pos);
+                startingPosition.set(pos);
             }
 
             @Override
             public void byteDownloaded(int numberOfBytes) {
-                cumulativeByteDownloaded.setObj(cumulativeByteDownloaded.getObj() + numberOfBytes);
+                cumulativeByteDownloaded.set(cumulativeByteDownloaded.get() + numberOfBytes);
             }
         };
         url = TestCommon.urlRoot + originalFileName;
@@ -327,8 +327,8 @@ public class RemoteContentTest {
         result = RemoteContent.getPatch(listener, url, saveToFile, fileSHA1, expectedLength);
 
         assertTrue(result.getResult());
-        assertEquals(0, (long) startingPosition.getObj());
-        assertEquals(originalFile.length(), (int) cumulativeByteDownloaded.getObj());
+        assertEquals(0, (long) startingPosition.get());
+        assertEquals(originalFile.length(), (int) cumulativeByteDownloaded.get());
         assertEquals(originalFile.length(), saveToFile.length());
         assertEquals(Util.getSHA256String(originalFile), Util.getSHA256String(saveToFile));
         //</editor-fold>
@@ -337,8 +337,8 @@ public class RemoteContentTest {
         System.out.println("- test download when the downloaded file is larger");
 
         Util.copyFile(largerFile, tempFile);
-        startingPosition.setObj(0L);
-        cumulativeByteDownloaded.setObj(0);
+        startingPosition.set(0L);
+        cumulativeByteDownloaded.set(0);
 
         listener = new GetPatchListener() {
 
@@ -349,12 +349,12 @@ public class RemoteContentTest {
 
             @Override
             public void byteStart(long pos) {
-                startingPosition.setObj(pos);
+                startingPosition.set(pos);
             }
 
             @Override
             public void byteDownloaded(int numberOfBytes) {
-                cumulativeByteDownloaded.setObj(cumulativeByteDownloaded.getObj() + numberOfBytes);
+                cumulativeByteDownloaded.set(cumulativeByteDownloaded.get() + numberOfBytes);
             }
         };
         url = TestCommon.urlRoot + originalFileName;
@@ -365,8 +365,8 @@ public class RemoteContentTest {
         result = RemoteContent.getPatch(listener, url, saveToFile, fileSHA1, expectedLength);
 
         assertTrue(result.getResult());
-        assertEquals(0, (long) startingPosition.getObj());
-        assertEquals(originalFile.length(), (int) cumulativeByteDownloaded.getObj());
+        assertEquals(0, (long) startingPosition.get());
+        assertEquals(originalFile.length(), (int) cumulativeByteDownloaded.get());
         assertEquals(originalFile.length(), saveToFile.length());
         assertEquals(Util.getSHA256String(originalFile), Util.getSHA256String(saveToFile));
         //</editor-fold>

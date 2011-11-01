@@ -55,7 +55,7 @@ public class Client {
         this.catalogPublicKeyModulus = catalogPublicKeyModulus;
         this.catalogPublicKeyExponent = catalogPublicKeyExponent;
 
-        this.patches = new ArrayList<Patch>(patches);
+        this.patches = patches != null ? new ArrayList<Patch>(patches) : new ArrayList<Patch>();
     }
 
     public String getVersion() {
@@ -158,11 +158,19 @@ public class Client {
         return new ArrayList<Patch>(patches);
     }
 
-    public void setPatches(List<Patch> updates) {
-        this.patches = new ArrayList<Patch>(updates);
+    public void setPatches(List<Patch> patches) {
+        if (patches == null) {
+            this.patches = new ArrayList<Patch>();
+            return;
+        }
+        this.patches = new ArrayList<Patch>(patches);
     }
 
     public static Client read(byte[] content) throws InvalidFormatException {
+        if (content == null) {
+            return null;
+        }
+
         Document doc;
         try {
             doc = XMLUtil.readDocument(content);
@@ -429,6 +437,10 @@ public class Client {
 
         protected static Information read(Element informationElement) throws InvalidFormatException {
             if (informationElement == null) {
+                return null;
+            }
+
+            if (informationElement == null) {
                 throw new NullPointerException();
             }
 
@@ -474,6 +486,10 @@ public class Client {
         }
 
         protected Element getElement(Document doc) {
+            if (doc == null) {
+                return null;
+            }
+
             Element _information = doc.createElement("information");
 
 

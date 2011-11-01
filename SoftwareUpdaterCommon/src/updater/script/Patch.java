@@ -44,8 +44,8 @@ public class Patch {
         this.downloadEncryptionKey = downloadEncryptionKey;
         this.downloadEncryptionIV = downloadEncryptionIV;
 
-        this.operations = new ArrayList<Operation>(operations);
-        this.validations = new ArrayList<ValidationFile>(validations);
+        this.operations = operations != null ? new ArrayList<Operation>(operations) : new ArrayList<Operation>();
+        this.validations = validations != null ? new ArrayList<ValidationFile>(validations) : new ArrayList<ValidationFile>();
     }
 
     public int getId() {
@@ -132,8 +132,12 @@ public class Patch {
         return new ArrayList<Operation>(operations);
     }
 
-    public void setOperations(List<Operation> files) {
-        this.operations = new ArrayList<Operation>(files);
+    public void setOperations(List<Operation> operations) {
+        if (operations == null) {
+            this.operations = new ArrayList<Operation>();
+            return;
+        }
+        this.operations = new ArrayList<Operation>(operations);
     }
 
     public List<ValidationFile> getValidations() {
@@ -141,10 +145,17 @@ public class Patch {
     }
 
     public void setValidations(List<ValidationFile> validations) {
+        if (validations == null) {
+            this.validations = new ArrayList<ValidationFile>();
+            return;
+        }
         this.validations = new ArrayList<ValidationFile>(validations);
     }
 
     public static Patch read(byte[] content) throws InvalidFormatException {
+        if (content == null) {
+            return null;
+        }
         Document doc;
         try {
             doc = XMLUtil.readDocument(content);
@@ -156,6 +167,9 @@ public class Patch {
     }
 
     public static Patch read(Element patchElement) throws InvalidFormatException {
+        if (patchElement == null) {
+            return null;
+        }
         int _id = 0;
         try {
             _id = Integer.parseInt(patchElement.getAttribute("id"));
@@ -234,6 +248,9 @@ public class Patch {
     }
 
     public Element getElement(Document doc) {
+        if (doc == null) {
+            return null;
+        }
         Element patchElement = doc.createElement("patch");
         patchElement.setAttribute("id", Integer.toString(id));
 
@@ -428,7 +445,7 @@ public class Patch {
 
         protected static Operation read(Element operationElement) throws InvalidFormatException {
             if (operationElement == null) {
-                throw new NullPointerException();
+                return null;
             }
 
             int _id = 0;
@@ -478,6 +495,10 @@ public class Patch {
         }
 
         protected Element getElement(Document doc) {
+            if (doc == null) {
+                return null;
+            }
+
             Element _operation = doc.createElement("operation");
             _operation.setAttribute("id", Integer.toString(id));
 
@@ -584,7 +605,7 @@ public class Patch {
 
         protected static ValidationFile read(Element fileElement) throws InvalidFormatException {
             if (fileElement == null) {
-                throw new NullPointerException();
+                return null;
             }
 
             String _path = XMLUtil.getTextContent(fileElement, "path", true);
@@ -595,6 +616,10 @@ public class Patch {
         }
 
         protected Element getElement(Document doc) {
+            if (doc == null) {
+                return null;
+            }
+
             Element _file = doc.createElement("file");
 
             Element _path = doc.createElement("path");

@@ -31,6 +31,16 @@ public class PatchPacker {
     }
 
     public static void pack(File sourceFolder, File saveToFile, AESKey aesKey, File tempFileForEncryption) throws IOException, InvalidFormatException {
+        if (sourceFolder == null) {
+            return;
+        }
+        if (saveToFile == null) {
+            throw new NullPointerException("argument 'saveToFile' cannot be null");
+        }
+        if (aesKey != null && tempFileForEncryption == null) {
+            throw new NullPointerException("argument 'tempFileForEncryption' cannot be null while argument 'aesKey' is not null");
+        }
+
         if (!sourceFolder.isDirectory()) {
             throw new IOException("sourceFolder is not a directory.");
         }

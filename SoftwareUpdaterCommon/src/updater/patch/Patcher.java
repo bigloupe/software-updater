@@ -44,6 +44,19 @@ public class Patcher {
     protected float progress;
 
     public Patcher(PatcherListener listener, PatchLogWriter log, File softwareDir, File tempDir) throws IOException {
+        if (listener == null) {
+            throw new NullPointerException("argument 'listener' cannot be null");
+        }
+        if (log == null) {
+            throw new NullPointerException("argument 'log' cannot be null");
+        }
+        if (softwareDir == null) {
+            throw new NullPointerException("argument 'softwareDir' cannot be null");
+        }
+        if (tempDir == null) {
+            throw new NullPointerException("argument 'tempDir' cannot be null");
+        }
+
         this.listener = listener;
         this.log = log;
 
@@ -62,6 +75,16 @@ public class Patcher {
     }
 
     protected void doOperation(Operation operation, InputStream patchIn, File tempNewFile) throws IOException {
+        if (operation == null) {
+            return;
+        }
+        if (patchIn == null) {
+            throw new NullPointerException("argument 'patchIn' cannot be null");
+        }
+        if (tempNewFile == null) {
+            throw new NullPointerException("argument 'tempNewFile' cannot be null");
+        }
+
         if (operation.getType().equals("remove")) {
             // doOperation will not change/remove all existing 'old files'
             return;
@@ -219,7 +242,11 @@ public class Patcher {
         }
     }
 
-    protected void doReplacement(List<Operation> operations, int startFromFileIndex, String patchFileAbsolutePath, Patch patch, float progressOccupied) throws IOException {
+    protected void doReplacement(List<Operation> operations, int startFromFileIndex, float progressOccupied) throws IOException {
+        if (operations == null) {
+            return;
+        }
+
         float progressStep = progressOccupied / (float) operations.size();
         progress += startFromFileIndex * progressStep;
 
@@ -257,6 +284,10 @@ public class Patcher {
     }
 
     public boolean doPatch(File patchFile, int patchId, int startFromFileIndex) throws IOException {
+        if (patchFile == null) {
+            return true;
+        }
+
         if (!patchFile.exists() || patchFile.isDirectory()) {
             throw new IOException("patch file not exist or not a file");
         }
@@ -265,7 +296,6 @@ public class Patcher {
 
         InputStream patchIn = null;
         try {
-            String patchFileAbsolutePath = patchFile.getAbsolutePath();
             patchIn = new BufferedInputStream(new FileInputStream(patchFile));
 
             progress = 0;
@@ -303,7 +333,7 @@ public class Patcher {
             listener.patchProgress((int) progress, "Replacing old files with new files ...");
             listener.patchEnableCancel(false);
             // all files has patched to temporary directory, replace old files with the new one
-            doReplacement(operations, startFromFileIndex, patchFileAbsolutePath, patch, 4.0F);
+            doReplacement(operations, startFromFileIndex, 4.0F);
 
             progress = 80;
             listener.patchProgress((int) progress, "Validating files ...");

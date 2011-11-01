@@ -41,6 +41,9 @@ public class AESKey {
     }
 
     public void setKey(byte[] key) {
+        if (key == null) {
+            throw new NullPointerException("argument 'key' cannot be null");
+        }
         this.key = new byte[key.length];
         System.arraycopy(key, 0, this.key, 0, key.length);
     }
@@ -52,10 +55,16 @@ public class AESKey {
     }
 
     /**
-     * Set the initial vector. This will not check the length of the IV is 128 bits or not.
+     * Set the initial vector. The length of the IV should be 128 bits (16 bytes).
      * @param IV see {@link #IV}
      */
     public void setIV(byte[] IV) {
+        if (IV == null) {
+            throw new NullPointerException("argument 'IV' cannot be null");
+        }
+        if (IV.length != 16) {
+            throw new IllegalArgumentException("length of IV should be 128 bits (16 bytes)");
+        }
         this.IV = new byte[IV.length];
         System.arraycopy(IV, 0, this.IV, 0, IV.length);
     }
@@ -67,6 +76,9 @@ public class AESKey {
      * @throws InvalidFormatException the format of the XML file is invalid
      */
     public static AESKey read(byte[] content) throws InvalidFormatException {
+        if (content == null) {
+            return null;
+        }
         Document doc;
         try {
             doc = XMLUtil.readDocument(content);

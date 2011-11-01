@@ -16,7 +16,7 @@ public class Catalog {
     protected List<Patch> patches;
 
     public Catalog(List<Patch> patches) {
-        this.patches = new ArrayList<Patch>(patches);
+        this.patches = patches != null ? new ArrayList<Patch>(patches) : new ArrayList<Patch>();
     }
 
     public List<Patch> getPatchs() {
@@ -24,10 +24,17 @@ public class Catalog {
     }
 
     public void setPatchs(List<Patch> patches) {
+        if (patches == null) {
+            this.patches = new ArrayList<Patch>();
+            return;
+        }
         this.patches = new ArrayList<Patch>(patches);
     }
 
     public static Catalog read(byte[] content) throws InvalidFormatException {
+        if (content == null) {
+            return null;
+        }
         Document doc;
         try {
             doc = XMLUtil.readDocument(content);

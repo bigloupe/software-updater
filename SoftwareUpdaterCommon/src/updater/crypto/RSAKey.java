@@ -47,6 +47,9 @@ public class RSAKey {
     }
 
     public void setModulus(byte[] modulus) {
+        if (modulus == null) {
+            throw new NullPointerException("argument 'modulus' cannot be null");
+        }
         this.modulus = new byte[modulus.length];
         System.arraycopy(modulus, 0, this.modulus, 0, modulus.length);
     }
@@ -58,6 +61,9 @@ public class RSAKey {
     }
 
     public void setPublicExponent(byte[] publicExponent) {
+        if (publicExponent == null) {
+            throw new NullPointerException("argument 'publicExponent' cannot be null");
+        }
         this.publicExponent = new byte[publicExponent.length];
         System.arraycopy(publicExponent, 0, this.publicExponent, 0, publicExponent.length);
     }
@@ -69,6 +75,9 @@ public class RSAKey {
     }
 
     public void setPrivateExponent(byte[] privateExponent) {
+        if (privateExponent == null) {
+            throw new NullPointerException("argument 'privateExponent' cannot be null");
+        }
         this.privateExponent = new byte[privateExponent.length];
         System.arraycopy(privateExponent, 0, this.privateExponent, 0, privateExponent.length);
     }
@@ -80,6 +89,9 @@ public class RSAKey {
      * @throws InvalidFormatException the format of the XML file is invalid
      */
     public static RSAKey read(byte[] content) throws InvalidFormatException {
+        if (content == null) {
+            return null;
+        }
         Document doc;
         try {
             doc = XMLUtil.readDocument(content);

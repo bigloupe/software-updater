@@ -43,6 +43,19 @@ public class PatchCreator {
     }
 
     public static void createFullPatch(File softwareDirectory, File tempDir, File patch, int patchId, String fromVersion, String fromSubsequentVersion, String toVersion, AESKey aesKey, File tempFileForEncryption) throws IOException {
+        if (softwareDirectory == null) {
+            throw new NullPointerException("argument 'softwareDirectory' cannot be null");
+        }
+        if (tempDir == null) {
+            throw new NullPointerException("argument 'tempDir' cannot be null");
+        }
+        if (patch == null) {
+            throw new NullPointerException("argument 'patch' cannot be null");
+        }
+        if (aesKey != null && tempFileForEncryption == null) {
+            throw new NullPointerException("argument 'tempFileForEncryption' cannot be null while argument 'aesKey' is not null");
+        }
+
         if (!softwareDirectory.exists() || !softwareDirectory.isDirectory()) {
             throw new IOException("Directory not exist or not a directory.");
         }
@@ -146,6 +159,8 @@ public class PatchCreator {
             }
         }
 
+        // why not use PatchPacker here?
+        // here will not copy the new file to another folder for packing but instead directly read the new file to the patch
         FileOutputStream fout = null;
         try {
             fout = new FileOutputStream(patch);
@@ -175,6 +190,22 @@ public class PatchCreator {
     }
 
     public static void createPatch(File oldVersion, File newVersion, File tempDir, File patch, int patchId, String fromVersion, String toVersion, AESKey aesKey, File tempFileForEncryption) throws IOException {
+        if (oldVersion == null) {
+            throw new NullPointerException("argument 'oldVersion' cannot be null");
+        }
+        if (newVersion == null) {
+            throw new NullPointerException("argument 'newVersion' cannot be null");
+        }
+        if (tempDir == null) {
+            throw new NullPointerException("argument 'tempDir' cannot be null");
+        }
+        if (patch == null) {
+            throw new NullPointerException("argument 'patch' cannot be null");
+        }
+        if (aesKey != null && tempFileForEncryption == null) {
+            throw new NullPointerException("argument 'tempFileForEncryption' cannot be null while argument 'aesKey' is not null");
+        }
+
         if (!oldVersion.exists() || !oldVersion.isDirectory()) {
             throw new IOException("Directory of old verison not exist or not a directory.");
         }
@@ -404,6 +435,8 @@ public class PatchCreator {
             }
         }
 
+        // why not use PatchPacker here?
+        // here will not copy the new file to another folder for packing but instead directly read the new file to the patch
         FileOutputStream fout = null;
         try {
             fout = new FileOutputStream(patch);
@@ -440,6 +473,9 @@ public class PatchCreator {
     }
 
     protected static void sortNewFileList(List<OperationRecord> list) {
+        if (list == null) {
+            return;
+        }
         Collections.sort(list, new Comparator<OperationRecord>() {
 
             @Override
@@ -450,6 +486,9 @@ public class PatchCreator {
     }
 
     protected static void sortRemoveFileList(List<OperationRecord> list) {
+        if (list == null) {
+            return;
+        }
         Collections.sort(list, new Comparator<OperationRecord>() {
 
             @Override
@@ -481,6 +520,11 @@ public class PatchCreator {
     protected static Map<String, File> getAllFiles(File file, String rootPath) {
         Map<String, File> returnResult = new HashMap<String, File>();
 
+        if (file == null) {
+            return returnResult;
+        }
+        String fileRootPath = rootPath == null ? file.getAbsolutePath() : rootPath;
+
         if (file.isDirectory()) {
             File[] files = file.listFiles();
             for (File _file : files) {
@@ -488,18 +532,29 @@ public class PatchCreator {
                     continue;
                 }
                 if (_file.isDirectory()) {
-                    returnResult.putAll(getAllFiles(_file, rootPath));
+                    returnResult.putAll(getAllFiles(_file, fileRootPath));
                 } else {
-                    returnResult.put(_file.getAbsolutePath().replace(rootPath, "").replace(File.separator, "/"), _file);
+                    returnResult.put(_file.getAbsolutePath().replace(fileRootPath, "").replace(File.separator, "/"), _file);
                 }
             }
         }
-        returnResult.put(file.getAbsolutePath().replace(rootPath, "").replace(File.separator, "/"), file);
+        returnResult.put(file.getAbsolutePath().replace(fileRootPath, "").replace(File.separator, "/"), file);
 
         return returnResult;
     }
 
     protected static boolean compareFile(File oldFile, File newFile) throws IOException {
+        if (oldFile == null && newFile == null) {
+            return true;
+        }
+
+        if (oldFile == null) {
+            throw new NullPointerException("argument 'oldFile' cannot be null");
+        }
+        if (newFile == null) {
+            throw new NullPointerException("argument 'newFile' cannot be null");
+        }
+
         long oldFileLength = oldFile.length();
         long newFileLength = newFile.length();
 

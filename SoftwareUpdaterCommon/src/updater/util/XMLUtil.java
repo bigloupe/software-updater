@@ -42,6 +42,9 @@ public class XMLUtil {
     }
 
     public static NodeList getNodeList(Element element, String tagName, int minSize, int maxSize) throws InvalidFormatException {
+        if (element == null || tagName == null) {
+            return null;
+        }
         List<Node> nodeArrayList = new ArrayList<Node>();
         NodeList _nodeList = element.getChildNodes();
         for (int i = 0, iEnd = _nodeList.getLength(); i < iEnd; i++) {
@@ -62,16 +65,25 @@ public class XMLUtil {
     }
 
     public static Element getElement(Element element, String tagName, boolean mustExist) throws InvalidFormatException {
+        if (element == null || tagName == null) {
+            return null;
+        }
         NodeList nodeList = getNodeList(element, tagName, mustExist ? 1 : 0, 1);
         return (Element) nodeList.item(0);
     }
 
     public static String getTextContent(Element element, String tagName, boolean mustExist) throws InvalidFormatException {
+        if (element == null || tagName == null) {
+            return null;
+        }
         Element resultElement = getElement(element, tagName, mustExist);
         return resultElement == null ? null : resultElement.getTextContent();
     }
 
     public static byte[] getOutput(Document doc) throws TransformerException {
+        if (doc == null) {
+            return null;
+        }
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
 
         Transformer transformer = transformerFactory.newTransformer();
@@ -87,6 +99,9 @@ public class XMLUtil {
     }
 
     public static Document readDocument(byte[] content) throws SAXException, IOException {
+        if (content == null) {
+            return null;
+        }
         Document doc = null;
         try {
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -121,7 +136,11 @@ public class XMLUtil {
         protected Node[] nodeList;
 
         protected XMLElementNodeList(List<Node> nodeList) {
-            this.nodeList = nodeList.toArray(new Node[nodeList.size()]);
+            if (nodeList == null) {
+                this.nodeList = new Node[0];
+            } else {
+                this.nodeList = nodeList.toArray(new Node[nodeList.size()]);
+            }
         }
 
         @Override

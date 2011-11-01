@@ -22,6 +22,9 @@ public class PatchWriteUtil {
     }
 
     public static void writeHeader(OutputStream out) throws IOException {
+        if (out == null) {
+            throw new NullPointerException("argument 'out' cannot be null");
+        }
         out.write('P');
         out.write('A');
         out.write('T');
@@ -30,6 +33,10 @@ public class PatchWriteUtil {
     }
 
     public static OutputStream writeCompressionMethod(OutputStream out, Compression compression) throws IOException {
+        if (out == null) {
+            throw new NullPointerException("argument 'out' cannot be null");
+        }
+
         out.write(compression.getValue());
         switch (compression) {
             case GZIP:
@@ -56,6 +63,13 @@ public class PatchWriteUtil {
     }
 
     public static void writeXML(OutputStream out, byte[] content) throws IOException {
+        if (content == null) {
+            return;
+        }
+        if (out == null) {
+            throw new NullPointerException("argument 'out' cannot be null");
+        }
+
         int contentLength = content.length;
 
         out.write((contentLength >> 16) & 0xff);
@@ -67,6 +81,13 @@ public class PatchWriteUtil {
     }
 
     public static void writePatch(File fromFile, OutputStream toStream) throws IOException {
+        if (fromFile == null) {
+            return;
+        }
+        if (toStream == null) {
+            throw new NullPointerException("argument 'toStream' cannot be null");
+        }
+
         FileInputStream fin = null;
         try {
             long fileLength = fromFile.length();
@@ -95,6 +116,16 @@ public class PatchWriteUtil {
     }
 
     public static void encrypt(AESKey aesKey, File patchFile, File tempFileForEncryption) throws IOException {
+        if (patchFile == null) {
+            return;
+        }
+        if (aesKey == null) {
+            throw new NullPointerException("argument 'aesKey' cannot be null");
+        }
+        if (tempFileForEncryption == null) {
+            throw new NullPointerException("argument 'tempFileForEncryption' cannot be null");
+        }
+
         tempFileForEncryption.delete();
 
         try {
