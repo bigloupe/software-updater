@@ -34,6 +34,8 @@ set file=src\updater\script\Patch.java
 call:linkFile
 
 mkdir %softwareDirectory%\src\updater\patch\
+set file=src\updater\patch\Compression.java
+call:linkFile
 set file=src\updater\patch\PatchReadUtil.java
 call:linkFile
 set file=src\updater\patch\PatchLogReader.java
@@ -94,6 +96,8 @@ set file=src\updater\script\Patch.java
 call:linkFile
 
 mkdir %softwareDirectory%\src\updater\patch\
+set file=src\updater\patch\Compression.java
+call:linkFile
 set file=src\updater\patch\PatchCreator.java
 call:linkFile
 set file=src\updater\patch\PatchExtractor.java

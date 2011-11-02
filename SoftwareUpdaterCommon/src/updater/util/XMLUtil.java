@@ -24,6 +24,7 @@ import org.xml.sax.SAXException;
 import updater.script.InvalidFormatException;
 
 /**
+ * Utilities for XML manipulation.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class XMLUtil {
@@ -41,10 +42,20 @@ public class XMLUtil {
     protected XMLUtil() {
     }
 
+    /**
+     * Get a node list with specified tag name from the element.
+     * @param element the element to get the node list from
+     * @param tagName the tag name of the node list
+     * @param minSize the minimum number of item that must exist in the node list
+     * @param maxSize the maximum number of item that can exist in the node list
+     * @return the node list
+     * @throws InvalidFormatException if the <code>minSize</code> or <code>maxSize</code> condition cannot be fulfilled
+     */
     public static NodeList getNodeList(Element element, String tagName, int minSize, int maxSize) throws InvalidFormatException {
         if (element == null || tagName == null) {
             return null;
         }
+
         List<Node> nodeArrayList = new ArrayList<Node>();
         NodeList _nodeList = element.getChildNodes();
         for (int i = 0, iEnd = _nodeList.getLength(); i < iEnd; i++) {
@@ -57,13 +68,21 @@ public class XMLUtil {
             }
         }
 
-        NodeList nodeList = new XMLElementNodeList(nodeArrayList);
-        if ((minSize != -1 && nodeList.getLength() < minSize) || (maxSize != -1 && nodeList.getLength() > maxSize)) {
-            throw new InvalidFormatException("The number of elements <" + tagName + "> in <" + element.getTagName() + "> not meet the size requirement. Size requirement: min: " + minSize + ", max: " + maxSize + ", found: " + nodeList.getLength());
+        if ((minSize != -1 && nodeArrayList.size() < minSize) || (maxSize != -1 && nodeArrayList.size() > maxSize)) {
+            throw new InvalidFormatException("The number of elements <" + tagName + "> in <" + element.getTagName() + "> not meet the size requirement. Size requirement: min: " + minSize + ", max: " + maxSize + ", found: " + nodeArrayList.size());
         }
-        return nodeList;
+
+        return new XMLElementNodeList(nodeArrayList);
     }
 
+    /**
+     * Get the element with the tag name from the element.
+     * @param element the element to get the element from
+     * @param tagName the tag name of the element
+     * @param mustExist indicate the element must exist or not, if is true but element not found, an exception will be thrown
+     * @return the element
+     * @throws InvalidFormatException <code>mustExist</code> is true but element not found
+     */
     public static Element getElement(Element element, String tagName, boolean mustExist) throws InvalidFormatException {
         if (element == null || tagName == null) {
             return null;
@@ -72,14 +91,28 @@ public class XMLUtil {
         return (Element) nodeList.item(0);
     }
 
+    /**
+     * Get the text content with the tag name from the element.
+     * @param element the element to get the text content from
+     * @param tagName the tag name of the text content
+     * @param mustExist indicate the text content must exist or not, if is true but text content not found, an exception will be thrown
+     * @return the text content
+     * @throws InvalidFormatException <code>mustExist</code> is true but text content not found/exist
+     */
     public static String getTextContent(Element element, String tagName, boolean mustExist) throws InvalidFormatException {
         if (element == null || tagName == null) {
             return null;
         }
         Element resultElement = getElement(element, tagName, mustExist);
-        return resultElement == null ? null : resultElement.getTextContent();
+        return resultElement == null ? null : resultElement.getTextContent(); // didn't check if the return value is null or empty
     }
 
+    /**
+     * Generate a storable output from the document.
+     * @param doc the document to get the output
+     * @return the output
+     * @throws TransformerException error occurred when transferring from document to output
+     */
     public static byte[] getOutput(Document doc) throws TransformerException {
         if (doc == null) {
             return null;
@@ -98,6 +131,13 @@ public class XMLUtil {
         return bout.toByteArray();
     }
 
+    /** 
+     * Generate the document from the input content.
+     * @param content the content
+     * @return the document
+     * @throws SAXException If any parse errors occur.
+     * @throws IOException If any IO errors occur.
+     */
     public static Document readDocument(byte[] content) throws SAXException, IOException {
         if (content == null) {
             return null;
@@ -116,6 +156,10 @@ public class XMLUtil {
         return doc;
     }
 
+    /**
+     * Create an empty document.
+     * @return the empty document
+     */
     public static Document createEmptyDocument() {
         Document doc = null;
         try {
@@ -131,16 +175,15 @@ public class XMLUtil {
         return doc;
     }
 
-    public static class XMLElementNodeList implements NodeList {
+    /**
+     * An implementation for {@link #getNodeList(org.w3c.dom.Element, java.lang.String, int, int)}.
+     */
+    protected static class XMLElementNodeList implements NodeList {
 
         protected Node[] nodeList;
 
         protected XMLElementNodeList(List<Node> nodeList) {
-            if (nodeList == null) {
-                this.nodeList = new Node[0];
-            } else {
-                this.nodeList = nodeList.toArray(new Node[nodeList.size()]);
-            }
+            this.nodeList = nodeList == null ? new Node[0] : nodeList.toArray(new Node[nodeList.size()]);
         }
 
         @Override

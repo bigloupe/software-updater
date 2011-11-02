@@ -14,6 +14,7 @@ import java.util.List;
 public class SeekableFile extends RandomAccessFileSeekableSource {
 
     protected final List<Runnable> interruptedTasks;
+    protected boolean pause;
 
     public SeekableFile(RandomAccessFile file) {
         super(file);
@@ -28,15 +29,24 @@ public class SeekableFile extends RandomAccessFileSeekableSource {
         interruptedTasks.remove(task);
     }
 
+    public void pause(boolean pause) {
+        synchronized (this) {
+            this.pause = pause;
+            if (!pause) {
+                notifyAll();
+            }
+        }
+    }
+
     @Override
     public void seek(long pos) throws IOException {
-        checkInterrupted();
+        check();
         super.seek(pos);
     }
 
     @Override
     public int read(ByteBuffer bb) throws IOException {
-        checkInterrupted();
+        check();
         return super.read(bb);
     }
 
@@ -45,7 +55,15 @@ public class SeekableFile extends RandomAccessFileSeekableSource {
         super.close();
     }
 
-    protected void checkInterrupted() {
+    protected void check() {
+        synchronized (this) {
+            if (pause) {
+                try {
+                    wait();
+                } catch (InterruptedException ex) {
+                }
+            }
+        }
         if (Thread.interrupted()) {
             synchronized (interruptedTasks) {
                 for (Runnable task : interruptedTasks) {

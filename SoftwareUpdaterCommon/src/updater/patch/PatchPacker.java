@@ -55,11 +55,11 @@ public class PatchPacker {
             fout = new FileOutputStream(saveToFile);
 
             PatchWriteUtil.writeHeader(fout);
-            XZOutputStream xzOut = (XZOutputStream) PatchWriteUtil.writeCompressionMethod(fout, PatchWriteUtil.Compression.LZMA2);
+            XZOutputStream xzOut = (XZOutputStream) PatchWriteUtil.writeCompressionMethod(fout, Compression.LZMA2);
             try {
                 PatchWriteUtil.writeXML(xzOut, patch.output());
             } catch (TransformerException ex) {
-                throw new IOException("patch.xml format invalid");
+                throw new IOException("patch.xml format invalid: " + ex.getMessage());
             }
 
             int operationIdCounter = 1;
@@ -69,7 +69,7 @@ public class PatchPacker {
                     try {
                         PatchWriteUtil.writePatch(new File(sourceFolderPath + File.separator + operationIdCounter), xzOut);
                     } catch (IOException ex) {
-                        throw new IOException("Patch with id " + operationIdCounter + " not exist.");
+                        throw new IOException("Error occurred when packing patches: " + ex.getMessage());
                     }
                 }
                 operationIdCounter++;

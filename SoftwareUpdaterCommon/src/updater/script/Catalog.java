@@ -9,6 +9,8 @@ import org.w3c.dom.NodeList;
 import updater.util.XMLUtil;
 
 /**
+ * This script includes information for software to decide which patch(es) to download to update itself to latest available version.
+ * It also contain the download URL, size and checksum of the patch.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class Catalog {

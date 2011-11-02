@@ -5,20 +5,35 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
+ * A tool to calculate/monitor the download speeding and calculate remaining time and download size.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class DownloadProgressUtil {
 
+    /**
+     * Current downloaded size.
+     */
     protected long downloadedSize;
+    /**
+     * Total size needed to download.
+     */
     protected long totalSize;
-    protected int averageTimeSpan;
+    /**
+     * The download speed will be taken average within this time span, it is in milli second. Default is 5000.
+     */
+    protected int averageTimeSpan = 5000;
+    /**
+     * The feed records list. Expired records will be removed when update.
+     */
     protected List<Record> records;
+    /**
+     * The current download speed. It is bytes/second.
+     */
     protected long speed;
 
     public DownloadProgressUtil() {
         downloadedSize = 0;
         totalSize = 0;
-        averageTimeSpan = 5000;
         records = new LinkedList<Record>();
         speed = 0;
     }
@@ -48,9 +63,13 @@ public class DownloadProgressUtil {
         updateSpeed();
     }
 
-    public synchronized void feed(long byteDownloaded) {
-        this.downloadedSize += byteDownloaded;
-        records.add(new Record(byteDownloaded));
+    /**
+     * Notify how many bytes has been downloaded since last feed.
+     * @param bytesDownloaded the total bytes downloaded this time
+     */
+    public synchronized void feed(long bytesDownloaded) {
+        this.downloadedSize += bytesDownloaded;
+        records.add(new Record(bytesDownloaded));
         updateSpeed();
     }
 
@@ -88,7 +107,7 @@ public class DownloadProgressUtil {
     protected static class Record {
 
         /**
-         * For performance concern, no getter/setter methods, direct access.
+         * For performance concern, no getter/setter methods, direct access only.
          */
         protected long time;
         protected long byteDownloaded;

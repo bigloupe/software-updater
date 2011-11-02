@@ -9,6 +9,8 @@ import org.w3c.dom.NodeList;
 import updater.util.XMLUtil;
 
 /**
+ * This script resides in the patch describing the patch, includes how the patch is packed and the operations needed to be taken to apply the patch.
+ * It be used independently and as part of the Catalog and Client script.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class Patch {

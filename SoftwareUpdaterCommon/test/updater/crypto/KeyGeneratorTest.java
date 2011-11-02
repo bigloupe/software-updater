@@ -13,6 +13,7 @@ import java.security.spec.RSAPublicKeySpec;
 import java.util.Random;
 import updater.TestCommon;
 import java.io.File;
+import java.util.Arrays;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -158,16 +159,7 @@ public class KeyGeneratorTest {
 
         assertNotNull(newIV);
         assertEquals(oldIV.length, newIV.length);
-
-        boolean twoAreEqual = true;
-        for (int i = 0, iEnd = oldIV.length; i < iEnd; i++) {
-            if (oldIV[i] != newIV[i]) {
-                twoAreEqual = false;
-                break;
-            }
-        }
-
-        assertFalse(twoAreEqual);
+        assertFalse(Arrays.equals(oldIV, newIV));
     }
 
     /**

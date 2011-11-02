@@ -5,7 +5,6 @@ import com.nothome.delta.Delta;
 import com.nothome.delta.DiffWriter;
 import com.nothome.delta.GDiffWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -78,7 +77,7 @@ public class PatchCreator {
         }
 
 
-        Map<String, File> softwareFiles = getAllFiles(softwareDirectory, softwarePath);
+        Map<String, File> softwareFiles = CommonUtil.getAllFiles(softwareDirectory, softwarePath);
         softwareFiles.remove(softwareDirectory.getAbsolutePath().replace(File.separator, "/"));
 
         // to prevent generate checksum repeatedly
@@ -166,7 +165,7 @@ public class PatchCreator {
             fout = new FileOutputStream(patch);
 
             PatchWriteUtil.writeHeader(fout);
-            XZOutputStream xzOut = (XZOutputStream) PatchWriteUtil.writeCompressionMethod(fout, PatchWriteUtil.Compression.LZMA2);
+            XZOutputStream xzOut = (XZOutputStream) PatchWriteUtil.writeCompressionMethod(fout, Compression.LZMA2);
             PatchWriteUtil.writeXML(xzOut, patchScriptOutput);
 
             // patch content
@@ -238,8 +237,8 @@ public class PatchCreator {
         }
 
 
-        Map<String, File> oldVersionFiles = getAllFiles(oldVersion, oldVersionPath);
-        Map<String, File> newVersionFiles = getAllFiles(newVersion, newVersionPath);
+        Map<String, File> oldVersionFiles = CommonUtil.getAllFiles(oldVersion, oldVersionPath);
+        Map<String, File> newVersionFiles = CommonUtil.getAllFiles(newVersion, newVersionPath);
         oldVersionFiles.remove(oldVersion.getAbsolutePath().replace(File.separator, "/"));
         newVersionFiles.remove(newVersion.getAbsolutePath().replace(File.separator, "/"));
 
@@ -360,7 +359,7 @@ public class PatchCreator {
             File _newFile = record.getNewFile();
 
             // two file are identical
-            if (compareFile(_oldFile, _newFile)) {
+            if (CommonUtil.compareFile(_oldFile, _newFile)) {
                 continue;
             }
 
@@ -442,7 +441,7 @@ public class PatchCreator {
             fout = new FileOutputStream(patch);
 
             PatchWriteUtil.writeHeader(fout);
-            XZOutputStream xzOut = (XZOutputStream) PatchWriteUtil.writeCompressionMethod(fout, PatchWriteUtil.Compression.LZMA2);
+            XZOutputStream xzOut = (XZOutputStream) PatchWriteUtil.writeCompressionMethod(fout, Compression.LZMA2);
             PatchWriteUtil.writeXML(xzOut, patchScriptOutput);
 
             // patch content
@@ -515,84 +514,5 @@ public class PatchCreator {
         public File getNewFile() {
             return newFile;
         }
-    }
-
-    protected static Map<String, File> getAllFiles(File file, String rootPath) {
-        Map<String, File> returnResult = new HashMap<String, File>();
-
-        if (file == null) {
-            return returnResult;
-        }
-        String fileRootPath = rootPath == null ? file.getAbsolutePath() : rootPath;
-
-        if (file.isDirectory()) {
-            File[] files = file.listFiles();
-            for (File _file : files) {
-                if (_file.isHidden()) {
-                    continue;
-                }
-                if (_file.isDirectory()) {
-                    returnResult.putAll(getAllFiles(_file, fileRootPath));
-                } else {
-                    returnResult.put(_file.getAbsolutePath().replace(fileRootPath, "").replace(File.separator, "/"), _file);
-                }
-            }
-        }
-        returnResult.put(file.getAbsolutePath().replace(fileRootPath, "").replace(File.separator, "/"), file);
-
-        return returnResult;
-    }
-
-    protected static boolean compareFile(File oldFile, File newFile) throws IOException {
-        if (oldFile == null && newFile == null) {
-            return true;
-        }
-
-        if (oldFile == null) {
-            throw new NullPointerException("argument 'oldFile' cannot be null");
-        }
-        if (newFile == null) {
-            throw new NullPointerException("argument 'newFile' cannot be null");
-        }
-
-        long oldFileLength = oldFile.length();
-        long newFileLength = newFile.length();
-
-        if (oldFileLength != newFileLength) {
-            return false;
-        }
-
-        FileInputStream oldFin = null;
-        FileInputStream newFin = null;
-        try {
-            oldFin = new FileInputStream(oldFile);
-            newFin = new FileInputStream(newFile);
-
-            byte[] ob = new byte[8192];
-            byte[] nb = new byte[8192];
-
-            int oldFinRead, newFinRead, cumulativeByteRead = 0;
-            while ((oldFinRead = oldFin.read(ob)) != -1 && (newFinRead = newFin.read(nb)) != -1 && oldFinRead == newFinRead) {
-                for (int i = 0; i < oldFinRead; i++) {
-                    if (ob[i] != nb[i]) {
-                        return false;
-                    }
-                }
-                cumulativeByteRead += oldFinRead;
-
-                if (cumulativeByteRead >= oldFileLength) {
-                    break;
-                }
-            }
-
-            if (cumulativeByteRead != oldFileLength) {
-                return false;
-            }
-        } finally {
-            oldFin.close();
-            newFin.close();
-        }
-
-        return true;
     }
 }

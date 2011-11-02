@@ -16,6 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import javax.crypto.BadPaddingException;
 import updater.patch.PatchCreator;
 
 /**
@@ -85,7 +86,12 @@ public class Catalog {
 
         // decrypt
         int blockSize = mod.bitLength() / 8;
-        byte[] decrypted = Util.rsaDecrypt(publicKey, blockSize, Util.readFile(in));
+        byte[] decrypted;
+        try {
+            decrypted = Util.rsaDecrypt(publicKey, blockSize, Util.readFile(in));
+        } catch (BadPaddingException ex) {
+            throw new IOException(ex);
+        }
 
         // decompress
         ByteArrayOutputStream bout = new ByteArrayOutputStream();

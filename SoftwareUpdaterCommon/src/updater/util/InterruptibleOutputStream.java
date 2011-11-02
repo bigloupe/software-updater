@@ -13,10 +13,12 @@ import java.util.List;
 public class InterruptibleOutputStream extends FilterOutputStream {
 
     protected final List<Runnable> interruptedTasks;
+    protected boolean pause;
 
     public InterruptibleOutputStream(OutputStream out) {
         super(out);
         interruptedTasks = Collections.synchronizedList(new ArrayList<Runnable>());
+        pause = false;
     }
 
     public void addInterruptedTask(Runnable task) {
@@ -27,37 +29,54 @@ public class InterruptibleOutputStream extends FilterOutputStream {
         interruptedTasks.remove(task);
     }
 
+    public void pause(boolean pause) {
+        synchronized (this) {
+            this.pause = pause;
+            if (!pause) {
+                notifyAll();
+            }
+        }
+    }
+
     @Override
     public void write(int b) throws IOException {
-        checkInterrupted();
+        check();
         out.write(b);
     }
 
     @Override
     public void write(byte b[]) throws IOException {
-        checkInterrupted();
+        check();
         out.write(b);
     }
 
     @Override
     public void write(byte b[], int off, int len) throws IOException {
-        checkInterrupted();
+        check();
         out.write(b, off, len);
     }
 
     @Override
     public void flush() throws IOException {
-        checkInterrupted();
+        check();
         out.flush();
     }
 
     @Override
     public void close() throws IOException {
-        checkInterrupted();
+        check();
         out.close();
     }
 
-    protected void checkInterrupted() {
+    protected void check() {
+        synchronized (this) {
+            if (pause) {
+                try {
+                    wait();
+                } catch (InterruptedException ex) {
+                }
+            }
+        }
         if (Thread.interrupted()) {
             synchronized (interruptedTasks) {
                 for (Runnable task : interruptedTasks) {

@@ -14,6 +14,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.BadPaddingException;
@@ -517,6 +519,11 @@ public class CommonUtil {
         }
     }
 
+    /**
+     * Remove all folders and files in the <code>directory</code>. (The <code>directory</code> will not be removed)
+     * @param directory the directory to truncate
+     * @return true if all folders and files has been removed successfully, false if failed to remove any
+     */
     public static boolean truncateFolder(File directory) {
         if (directory == null) {
             return true;
@@ -536,6 +543,12 @@ public class CommonUtil {
         return true;
     }
 
+    /**
+     * Remove all folders and files in the <code>directory</code>. (The <code>directory</code> will be removed)
+     * It is used by {@link #truncateFolder(java.io.File)}.
+     * @param directory the directory to truncate
+     * @return true if all folders and files has been removed successfully, false if failed to remove any
+     */
     protected static boolean truncateFolderRecursively(File directory) {
         if (directory == null) {
             return true;
@@ -557,7 +570,16 @@ public class CommonUtil {
         return directory.delete();
     }
 
-    public static byte[] rsaEncrypt(RSAPrivateKey key, int blockSize, int contentBlockSize, byte[] b) throws IOException {
+    /**
+     * Do RSA encryption and return the encrypted data.
+     * @param key the RSA private key
+     * @param blockSize the block size, it should be key size (in bits) divided by 8
+     * @param contentBlockSize  the content block size, it should be key size (in bits) divided by 8, then minus 11
+     * @param b the data to encrypt
+     * @return the encrypted data
+     * @throws IOException error occurred when writing to 
+     */
+    public static byte[] rsaEncrypt(RSAPrivateKey key, int blockSize, int contentBlockSize, byte[] b) {
         if (b == null) {
             return null;
         }
@@ -572,7 +594,11 @@ public class CommonUtil {
 
             for (int i = 0, iEnd = b.length; i < iEnd; i += contentBlockSize) {
                 int byteToRead = i + contentBlockSize > iEnd ? iEnd - i : contentBlockSize;
-                bout.write(cipher.doFinal(b, i, byteToRead));
+                try {
+                    bout.write(cipher.doFinal(b, i, byteToRead));
+                } catch (IOException ex) {
+                    // should not caught any for ByteArrayOutputStream
+                }
             }
 
             return bout.toByteArray();
@@ -606,7 +632,15 @@ public class CommonUtil {
         return null;
     }
 
-    public static byte[] rsaDecrypt(RSAPublicKey key, int blockSize, byte[] b) throws IOException {
+    /**
+     * Do RSA decryption and return the decrypted data.
+     * @param key the RSA public key
+     * @param blockSize the block size, it should be key size (in bits) divided by 8
+     * @param b the data to decrypt
+     * @return the decrypted data
+     * @throws BadPaddingException <code>b</code> is not a valid RSA encrypted data with the <code>key</code>
+     */
+    public static byte[] rsaDecrypt(RSAPublicKey key, int blockSize, byte[] b) throws BadPaddingException {
         if (b == null) {
             return null;
         }
@@ -617,7 +651,7 @@ public class CommonUtil {
 
         try {
             if (b.length % blockSize != 0) {
-                throw new IOException("Data length is not a multiple of RSA block size. Data length: " + b.length + ", RSA block size: " + blockSize + ", data length % RSA block size: " + b.length % blockSize);
+                throw new BadPaddingException("Data length is not a multiple of RSA block size. Data length: " + b.length + ", RSA block size: " + blockSize + ", data length % RSA block size: " + b.length % blockSize);
             }
 
             ByteArrayOutputStream bout = new ByteArrayOutputStream(b.length);
@@ -626,7 +660,11 @@ public class CommonUtil {
             cipher.init(Cipher.DECRYPT_MODE, key);
 
             for (int i = 0, iEnd = b.length; i < iEnd; i += blockSize) {
-                bout.write(cipher.doFinal(b, i, blockSize));
+                try {
+                    bout.write(cipher.doFinal(b, i, blockSize));
+                } catch (IOException ex) {
+                    // should not caught any for ByteArrayOutputStream
+                }
             }
 
             returnResult = bout.toByteArray();
@@ -650,13 +688,16 @@ public class CommonUtil {
             if (debug) {
                 Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
             }
-        } catch (BadPaddingException ex) {
-            throw new IOException(ex);
         }
 
         return returnResult;
     }
 
+    /**
+     * Try to acquire exclusive lock on the file.
+     * @param file the file to try to acquire lock
+     * @return true if acquire succeed, false if not
+     */
     public static boolean tryLock(File file) {
         if (file == null) {
             return true;
@@ -687,5 +728,113 @@ public class CommonUtil {
             }
         }
         return false;
+    }
+
+    public static Map<String, File> getAllFiles(File file, String rootPath) {
+        Map<String, File> returnResult = new HashMap<String, File>();
+
+        if (file == null) {
+            return returnResult;
+        }
+        String fileRootPath = rootPath != null ? rootPath : file.getAbsolutePath();
+
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            for (File _file : files) {
+                if (_file.isHidden()) {
+                    continue;
+                }
+                if (_file.isDirectory()) {
+                    returnResult.putAll(getAllFiles(_file, fileRootPath));
+                } else {
+                    returnResult.put(_file.getAbsolutePath().replace(fileRootPath, "").replace(File.separator, "/"), _file);
+                }
+            }
+        }
+        returnResult.put(file.getAbsolutePath().replace(fileRootPath, "").replace(File.separator, "/"), file);
+
+        return returnResult;
+    }
+
+    public static boolean compareFile(File oldFile, File newFile) throws IOException {
+        if (oldFile == null && newFile == null) {
+            return true;
+        }
+
+        if (oldFile == null) {
+            throw new NullPointerException("argument 'oldFile' cannot be null");
+        }
+        if (newFile == null) {
+            throw new NullPointerException("argument 'newFile' cannot be null");
+        }
+
+        long oldFileLength = oldFile.length();
+        long newFileLength = newFile.length();
+
+        if (oldFileLength != newFileLength) {
+            return false;
+        }
+
+        FileInputStream oldFin = null;
+        FileInputStream newFin = null;
+        try {
+            oldFin = new FileInputStream(oldFile);
+            newFin = new FileInputStream(newFile);
+
+            byte[] ob = new byte[32768];
+            byte[] nb = new byte[32768];
+
+            int byteToRead, cumulateByteRead = 0;
+            while (cumulateByteRead < oldFileLength) {
+                byteToRead = (int) (oldFileLength - cumulateByteRead > 32768 ? 32768 : oldFileLength - cumulateByteRead);
+
+                fillBuffer(oldFin, ob, byteToRead);
+                fillBuffer(newFin, nb, byteToRead);
+                for (int i = 0; i < byteToRead; i++) {
+                    if (ob[i] != nb[i]) {
+                        return false;
+                    }
+                }
+
+                cumulateByteRead += byteToRead;
+                if (cumulateByteRead >= oldFileLength) {
+                    break;
+                }
+            }
+
+            if (cumulateByteRead != oldFileLength) {
+                throw new IOException("The total number of bytes read does not match the file size. Actual file size: " + oldFileLength + ", bytes read: " + cumulateByteRead + ", path: " + oldFile.getAbsolutePath() + " & " + newFile.getAbsolutePath());
+            }
+        } finally {
+            oldFin.close();
+            newFin.close();
+        }
+
+        return true;
+    }
+
+    protected static void fillBuffer(InputStream in, byte[] b, int length) throws IOException {
+        if (length > b.length) {
+            throw new IllegalArgumentException("argument 'length' is greater than the length of argument 'b'");
+        }
+
+        int byteRead, cumulateByteRead = 0;
+        while (true) {
+            byteRead = in.read(b, cumulateByteRead, length - cumulateByteRead);
+            if (byteRead == -1) {
+                if (length != cumulateByteRead) {
+                    throw new IOException("Reach the end of stream but the total number of bytes read do not meet the requirement. Expected: " + length + ", bytes read: " + cumulateByteRead);
+                }
+                return;
+            }
+            cumulateByteRead += byteRead;
+            if (cumulateByteRead >= length) {
+                break;
+            }
+        }
+
+        if (length != cumulateByteRead) {
+            throw new IOException("The total number of bytes read does not match the requirement. Expected: " + length + ", bytes read: " + cumulateByteRead);
+        }
     }
 }

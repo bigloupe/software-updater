@@ -48,20 +48,6 @@ public class PatchWriteUtil {
         }
     }
 
-    public static enum Compression {
-
-        GZIP(0), LZMA2(1);
-        protected final int value;
-
-        Compression(int value) {
-            this.value = value;
-        }
-
-        public int getValue() {
-            return value;
-        }
-    }
-
     public static void writeXML(OutputStream out, byte[] content) throws IOException {
         if (content == null) {
             return;
@@ -94,7 +80,7 @@ public class PatchWriteUtil {
 
             fin = new FileInputStream(fromFile);
 
-            byte[] b = new byte[8096];
+            byte[] b = new byte[32768];
             int byteRead, cumulativeByteRead = 0;
             while ((byteRead = fin.read(b)) != -1) {
                 toStream.write(b, 0, byteRead);

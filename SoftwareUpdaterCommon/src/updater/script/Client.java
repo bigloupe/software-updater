@@ -9,6 +9,7 @@ import org.w3c.dom.NodeList;
 import updater.util.XMLUtil;
 
 /**
+ * This script contains the information needed for the launcher and downloader. It should be included in the software.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class Client {
