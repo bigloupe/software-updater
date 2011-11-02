@@ -106,7 +106,7 @@ public class PatchDownloader {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // user press cancel
-                updaterGUI.setEnableCancel(false);
+                updaterGUI.setCancelEnabled(false);
                 currentThread.interrupt();
             }
         });

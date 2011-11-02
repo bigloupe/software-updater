@@ -72,7 +72,7 @@ public class BatchPatcher {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                updaterGUI.setEnableCancel(false);
+                updaterGUI.setCancelEnabled(false);
                 currentThread.interrupt();
             }
         });
@@ -181,7 +181,7 @@ public class BatchPatcher {
                 }
 
                 // need modification to allow cancel or make it an output stream
-                updaterGUI.setEnableCancel(false);
+                updaterGUI.setCancelEnabled(false);
                 updaterGUI.setMessage("Decrypting patch ...");
                 if (_update.getDownloadEncryptionKey() != null) {
                     PatchReadUtil.decrypt(new AESKey(Util.hexStringToByteArray(_update.getDownloadEncryptionKey()), Util.hexStringToByteArray(_update.getDownloadEncryptionIV())), patchFile, decryptedPatchFile);
@@ -189,7 +189,7 @@ public class BatchPatcher {
                     patchFile.delete();
                     decryptedPatchFile.renameTo(patchFile);
                 }
-                updaterGUI.setEnableCancel(true);
+                updaterGUI.setCancelEnabled(true);
 
                 // initialize patcher
                 final int _count = count;
@@ -209,7 +209,7 @@ public class BatchPatcher {
 
                     @Override
                     public void patchEnableCancel(boolean enable) {
-                        updaterGUI.setEnableCancel(enable);
+                        updaterGUI.setCancelEnabled(enable);
                     }
                 }, patchActionLogWriter, new File(""), tempDirForPatch);
 

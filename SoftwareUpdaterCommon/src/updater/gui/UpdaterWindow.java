@@ -188,7 +188,7 @@ public class UpdaterWindow {
     /**
      * Set enable the cancel or not. (update cancel button)
      */
-    public void setEnableCancel(boolean enable) {
+    public void setCancelEnabled(boolean enable) {
         cancelButton.setEnabled(enable);
     }
 }
