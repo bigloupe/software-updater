@@ -1,8 +1,12 @@
 package updater;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.Iterator;
+import java.util.Map;
+import updater.util.CommonUtil;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -35,5 +39,31 @@ public class TestCommon {
             System.setErr(errorStream);
             errorStream = null;
         }
+    }
+
+    public static boolean compareFolder(File folder1, File folder2) {
+        Map<String, File> folder1Files = CommonUtil.getAllFiles(folder1, folder1.getAbsolutePath());
+        Map<String, File> folder2Files = CommonUtil.getAllFiles(folder2, folder2.getAbsolutePath());
+
+        if (folder1Files.size() != folder2Files.size()) {
+            return false;
+        }
+
+        Iterator<String> iterator = folder1Files.keySet().iterator();
+        while (iterator.hasNext()) {
+            String _path = iterator.next();
+            File _folder1File = folder1Files.get(_path);
+            File _folder2File = folder2Files.remove(_path);
+            if (_folder2File == null || _folder1File.isFile() != _folder2File.isFile()) {
+                return false;
+            }
+            iterator.remove();
+        }
+
+        if (!folder1Files.isEmpty() || !folder2Files.isEmpty()) {
+            return false;
+        }
+
+        return true;
     }
 }
