@@ -13,6 +13,7 @@ import java.io.RandomAccessFile;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import updater.crypto.AESKey;
 import updater.script.InvalidFormatException;
 import updater.script.Patch;
 import updater.script.Patch.Operation;
@@ -21,6 +22,11 @@ import updater.util.CommonUtil;
 import updater.util.InterruptibleInputStream;
 import updater.util.InterruptibleOutputStream;
 import updater.util.SeekableFile;
+import watne.seis720.project.AESForFile;
+import watne.seis720.project.AESForFileListener;
+import watne.seis720.project.KeySize;
+import watne.seis720.project.Mode;
+import watne.seis720.project.Padding;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -40,8 +46,14 @@ public class Patcher {
     protected PatchLogWriter log;
     protected File tempDir;
     protected String softwareDir;
+    //
     private byte[] buf;
     protected float progress;
+    //
+    protected InterruptibleOutputStream tempNewFileOut;
+    protected InterruptibleInputStream interruptiblePatchIn;
+    protected SeekableFile seekableRandomAccessOldFile;
+    protected AESForFile aesCipher;
 
     public Patcher(PatcherListener listener, PatchLogWriter log, File softwareDir, File tempDir) throws IOException {
         if (listener == null) {
@@ -72,6 +84,28 @@ public class Patcher {
 
         buf = new byte[32768];
         progress = 0;
+
+        tempNewFileOut = null;
+        interruptiblePatchIn = null;
+        seekableRandomAccessOldFile = null;
+        aesCipher = null;
+    }
+
+    public void pause(boolean pause) {
+        synchronized (this) {
+            if (tempNewFileOut != null) {
+                tempNewFileOut.pause(pause);
+            }
+            if (interruptiblePatchIn != null) {
+                interruptiblePatchIn.pause(pause);
+            }
+            if (seekableRandomAccessOldFile != null) {
+                seekableRandomAccessOldFile.pause(pause);
+            }
+            if (aesCipher != null) {
+                aesCipher.pause(pause);
+            }
+        }
     }
 
     protected void doOperation(Operation operation, InputStream patchIn, File tempNewFile) throws IOException {
@@ -119,9 +153,10 @@ public class Patcher {
             return;
         }
 
-        InterruptibleOutputStream tempNewFileOut = null;
-        InterruptibleInputStream interruptiblePatchIn = null;
+        tempNewFileOut = null;
+        interruptiblePatchIn = null;
         RandomAccessFile randomAccessOldFile = null;
+        seekableRandomAccessOldFile = null;
         try {
             tempNewFileOut = new InterruptibleOutputStream(new BufferedOutputStream(new FileOutputStream(tempNewFile)));
             interruptiblePatchIn = new InterruptibleInputStream(patchIn, operation.getPatchLength());
@@ -129,7 +164,7 @@ public class Patcher {
             if (operation.getType().equals("patch")) {
                 GDiffPatcher diffPatcher = new GDiffPatcher();
                 randomAccessOldFile = new RandomAccessFile(oldFile, "r");
-                SeekableFile seekableRandomAccessOldFile = new SeekableFile(randomAccessOldFile);
+                seekableRandomAccessOldFile = new SeekableFile(randomAccessOldFile);
 
                 //<editor-fold defaultstate="collapsed" desc="add interrupted tasks">
                 final OutputStream _tempNewFileOut = tempNewFileOut;
@@ -213,6 +248,9 @@ public class Patcher {
                     Logger.getLogger(Patcher.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
+            tempNewFileOut = null;
+            interruptiblePatchIn = null;
+            seekableRandomAccessOldFile = null;
         }
 
         // check new file checksum and length
@@ -228,7 +266,7 @@ public class Patcher {
         for (int i = startFromFileIndex, iEnd = operations.size(); i < iEnd; i++) {
             Operation _operation = operations.get(i);
 
-            if (_operation.getOldFilePath() != null) {
+            if (!_operation.getFileType().equals("folder") && _operation.getOldFilePath() != null) {
                 if (!CommonUtil.tryLock(new File(softwareDir + _operation.getOldFilePath()))) {
                     throw new IOException("Failed to acquire lock on (old file): " + softwareDir + _operation.getOldFilePath());
                 }
@@ -283,20 +321,49 @@ public class Patcher {
         }
     }
 
-    public boolean doPatch(File patchFile, int patchId, int startFromFileIndex) throws IOException {
+    public void doPatch(File patchFile, int patchId, int startFromFileIndex, AESKey aesKey, File tempFileForDecryption) throws IOException {
         if (patchFile == null) {
-            return true;
+            return;
         }
 
         if (!patchFile.exists() || patchFile.isDirectory()) {
             throw new IOException("patch file not exist or not a file");
         }
 
+        progress = 0;
+
+        File _patchFile = patchFile;
+        if (aesKey != null) {
+            try {
+                aesCipher = new AESForFile();
+                aesCipher.setListener(new AESForFileListener() {
+
+                    @Override
+                    public void cryptProgress(int percentage) {
+                        listener.extractProgress(percentage);
+                    }
+                });
+                aesCipher.setMode(Mode.CBC);
+                aesCipher.setPadding(Padding.PKCS5PADDING);
+                aesCipher.setKeySize(KeySize.BITS256);
+                aesCipher.setKey(aesKey.getKey());
+                aesCipher.setInitializationVector(aesKey.getIV());
+                aesCipher.decryptFile(patchFile, tempFileForDecryption);
+            } catch (Exception ex) {
+                throw new IOException(ex);
+            } finally {
+                aesCipher = null;
+            }
+
+            _patchFile = tempFileForDecryption;
+        }
+        listener.extractFinished();
+
         boolean returnResult = true;
 
         InputStream patchIn = null;
         try {
-            patchIn = new BufferedInputStream(new FileInputStream(patchFile));
+            patchIn = new BufferedInputStream(new FileInputStream(_patchFile));
 
             progress = 0;
             listener.patchProgress((int) progress, "Preparing new patch ...");
@@ -380,8 +447,6 @@ public class Patcher {
             }
         }
 
-        listener.patchFinished(returnResult);
-
-        return returnResult;
+        listener.patchFinished();
     }
 }

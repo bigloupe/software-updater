@@ -49,6 +49,8 @@ public class SoftwareLauncher {
         Information clientInfo = client.getInformation();
 
         Image softwareIcon = null;
+        Image updaterIcon = null;
+        //<editor-fold defaultstate="collapsed" desc="get icons">
         if (clientInfo.getSoftwareIconLocation() != null) {
             if (clientInfo.getSoftwareIconLocation().equals("jar")) {
                 URL resourceURL = SoftwareLauncher.class.getResource(clientInfo.getSoftwareIconPath());
@@ -61,7 +63,6 @@ public class SoftwareLauncher {
                 softwareIcon = ImageIO.read(new File(clientInfo.getSoftwareIconPath()));
             }
         }
-        Image updaterIcon = null;
         if (clientInfo.getLauncherIconLocation() != null) {
             if (clientInfo.getLauncherIconLocation().equals("jar")) {
                 URL resourceURL = SoftwareLauncher.class.getResource(clientInfo.getLauncherIconPath());
@@ -74,6 +75,7 @@ public class SoftwareLauncher {
                 updaterIcon = ImageIO.read(new File(clientInfo.getLauncherIconPath()));
             }
         }
+        //</editor-fold>
 
         UpdateResult updateResult = BatchPatcher.update(clientScriptFile, client, new File(storagePath), clientInfo.getSoftwareName(), softwareIcon, clientInfo.getLauncherTitle(), updaterIcon);
         if (updateResult.isUpdateSucceed() || updateResult.isLaunchSoftware()) {

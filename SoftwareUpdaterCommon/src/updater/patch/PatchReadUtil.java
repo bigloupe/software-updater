@@ -112,18 +112,18 @@ public class PatchReadUtil {
         }
     }
 
-    public static void decrypt(AESKey aesKey, File patchFile, File tempFileForDecryption) throws IOException {
+    public static void decrypt(AESKey aesKey, File patchFile, File decryptTo) throws IOException {
         if (patchFile == null) {
             return;
         }
         if (aesKey == null) {
             throw new NullPointerException("argument 'aesKey' cannot be null");
         }
-        if (tempFileForDecryption == null) {
+        if (decryptTo == null) {
             throw new NullPointerException("argument 'tempFileForDecryption' cannot be null");
         }
 
-        tempFileForDecryption.delete();
+        decryptTo.delete();
 
         try {
             WatneAES_Implementer aesCipher = new WatneAES_Implementer();
@@ -132,7 +132,7 @@ public class PatchReadUtil {
             aesCipher.setKeySize(KeySize.BITS256);
             aesCipher.setKey(aesKey.getKey());
             aesCipher.setInitializationVector(aesKey.getIV());
-            aesCipher.decryptFile(patchFile, tempFileForDecryption);
+            aesCipher.decryptFile(patchFile, decryptTo);
         } catch (Exception ex) {
             throw new IOException("Error occurred when decrypting the patch: " + ex.getMessage());
         }

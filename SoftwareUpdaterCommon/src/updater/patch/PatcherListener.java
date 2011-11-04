@@ -5,9 +5,13 @@ package updater.patch;
  */
 public interface PatcherListener {
 
+    void extractProgress(int percentage);
+
+    void extractFinished();
+
     void patchProgress(int percentage, String message);
 
-    void patchFinished(boolean succeed);
+    void patchFinished();
 
     void patchEnableCancel(boolean enable);
 }

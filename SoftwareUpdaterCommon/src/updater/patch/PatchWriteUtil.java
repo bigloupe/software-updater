@@ -101,18 +101,18 @@ public class PatchWriteUtil {
         }
     }
 
-    public static void encrypt(AESKey aesKey, File patchFile, File tempFileForEncryption) throws IOException {
+    public static void encrypt(AESKey aesKey, File patchFile, File encryptTo) throws IOException {
         if (patchFile == null) {
             return;
         }
         if (aesKey == null) {
             throw new NullPointerException("argument 'aesKey' cannot be null");
         }
-        if (tempFileForEncryption == null) {
+        if (encryptTo == null) {
             throw new NullPointerException("argument 'tempFileForEncryption' cannot be null");
         }
 
-        tempFileForEncryption.delete();
+        encryptTo.delete();
 
         try {
             WatneAES_Implementer aesCipher = new WatneAES_Implementer();
@@ -121,7 +121,7 @@ public class PatchWriteUtil {
             aesCipher.setKeySize(KeySize.BITS256);
             aesCipher.setKey(aesKey.getKey());
             aesCipher.setInitializationVector(aesKey.getIV());
-            aesCipher.encryptFile(patchFile, tempFileForEncryption);
+            aesCipher.encryptFile(patchFile, encryptTo);
         } catch (Exception ex) {
             throw new IOException("Error occurred when encrypting the patch: " + ex.getMessage());
         }

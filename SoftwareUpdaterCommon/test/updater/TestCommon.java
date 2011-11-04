@@ -22,6 +22,9 @@ public class TestCommon {
     //
     protected static PrintStream errorStream;
 
+    protected TestCommon() {
+    }
+
     public synchronized static void suppressErrorOutput() {
         if (errorStream == null) {
             errorStream = System.err;
@@ -57,6 +60,15 @@ public class TestCommon {
             if (_folder2File == null || _folder1File.isFile() != _folder2File.isFile()) {
                 return false;
             }
+            if (_folder1File.isFile()) {
+                try {
+                    if (!CommonUtil.compareFile(_folder1File, _folder2File)) {
+                        return false;
+                    }
+                } catch (IOException ex) {
+                    return false;
+                }
+            }
             iterator.remove();
         }
 
@@ -65,5 +77,28 @@ public class TestCommon {
         }
 
         return true;
+    }
+
+    public static void copyFolder(File fromFolder, File toFolder) throws IOException {
+        if (fromFolder == null || toFolder == null) {
+            return;
+        }
+        if (!fromFolder.isDirectory()) {
+            throw new IllegalArgumentException("Argument 'fromFolder' is not a directory");
+        }
+        if (toFolder.exists() && !toFolder.isDirectory()) {
+            throw new IllegalArgumentException("Argument 'toFolder' exist but not a directory");
+        }
+
+        toFolder.mkdirs();
+
+        File[] files = fromFolder.listFiles();
+        for (File file : files) {
+            if (file.isDirectory()) {
+                copyFolder(file, new File(toFolder.getAbsolutePath() + File.separator + file.getName()));
+            } else {
+                CommonUtil.copyFile(file, new File(toFolder.getAbsolutePath() + File.separator + file.getName()));
+            }
+        }
     }
 }

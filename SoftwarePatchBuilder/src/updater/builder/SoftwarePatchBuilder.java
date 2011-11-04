@@ -4,11 +4,19 @@ import com.nothome.delta.Delta;
 import com.nothome.delta.DiffWriter;
 import com.nothome.delta.GDiffPatcher;
 import com.nothome.delta.GDiffWriter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+import javax.crypto.BadPaddingException;
 import javax.xml.transform.TransformerException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -31,12 +39,12 @@ import updater.patch.PatchCreator;
 import updater.patch.PatchExtractor;
 import updater.patch.PatchLogWriter;
 import updater.patch.PatchPacker;
-import updater.patch.PatchReadUtil;
 import updater.patch.Patcher;
 import updater.patch.PatcherListener;
 import updater.script.Client;
 import updater.script.InvalidFormatException;
 import updater.script.Patch;
+import updater.util.CommonUtil;
 import updater.util.XMLUtil;
 
 /**
@@ -48,6 +56,15 @@ public class SoftwarePatchBuilder {
     static {
         // set debug mode
         System.setProperty("SyntaxHighlighterDebugMode", "false");
+    }
+    /**
+     * Indicate whether it is in debug mode or not.
+     */
+    protected final static boolean debug;
+
+    static {
+        String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
+        debug = debugMode == null || !debugMode.equals("true") ? false : true;
     }
 
     protected SoftwarePatchBuilder() {
@@ -441,6 +458,7 @@ public class SoftwarePatchBuilder {
         tempDir.mkdirs();
 
         AESKey aesKey = null;
+        File decryptedPatchFile = null;
         if (line.hasOption("key")) {
             try {
                 aesKey = AESKey.read(Util.readFile(new File(line.getOptionValue("key"))));
@@ -451,11 +469,11 @@ public class SoftwarePatchBuilder {
                 throw new IOException("Currently only support 256 bits AES key.");
             }
 
-            File decryptedPatchFile = new File(tempDir.getAbsolutePath() + File.separator + patchFile.getName() + ".decrypted");
+            decryptedPatchFile = new File(tempDir.getAbsolutePath() + File.separator + patchFile.getName() + ".decrypted");
             decryptedPatchFile.delete();
             decryptedPatchFile.deleteOnExit();
 
-            PatchReadUtil.decrypt(aesKey, patchFile, decryptedPatchFile);
+//            PatchReadUtil.decrypt(aesKey, patchFile, decryptedPatchFile);
 
             patchFile = decryptedPatchFile;
         }
@@ -463,21 +481,36 @@ public class SoftwarePatchBuilder {
         PatchLogWriter logger = new PatchLogWriter(new File(tempDir.getAbsolutePath() + "/action.log"));
         Patcher patcher = new Patcher(new PatcherListener() {
 
+            private int extractionPercentage = 0;
+
+            @Override
+            public void extractProgress(int percentage) {
+                if (extractionPercentage != percentage) {
+                    System.out.println(percentage + "% extracted");
+                    extractionPercentage = percentage;
+                }
+            }
+
+            @Override
+            public void extractFinished() {
+                System.out.println("Extraction completed.");
+            }
+
             @Override
             public void patchProgress(int percentage, String message) {
                 System.out.println(percentage + "%, " + message);
             }
 
             @Override
-            public void patchFinished(boolean succeed) {
-                System.out.println("Patch result: " + (succeed ? "Succeed" : "Failed"));
+            public void patchFinished() {
+                System.out.println("Patch completed.");
             }
 
             @Override
             public void patchEnableCancel(boolean enable) {
             }
         }, logger, new File(doArgs[0]), tempDir);
-        patcher.doPatch(patchFile, 0, 0);
+        patcher.doPatch(patchFile, 0, 0, aesKey, decryptedPatchFile);
         logger.close();
 
 //        Util.truncateFolder(tempDir);
@@ -721,10 +754,66 @@ public class SoftwarePatchBuilder {
         System.out.println();
 
         try {
+            File in = new File(catalogArgs[1]);
+            File out = new File(outputArg);
+            BigInteger mod = new BigInteger(rsaKey.getModulus());
+
             if (catalogArgs[0].equals("e")) {
-                Catalog.encrypt(new File(catalogArgs[1]), new File(outputArg), new BigInteger(rsaKey.getModulus()), new BigInteger(rsaKey.getPrivateExponent()));
+                BigInteger privateExp = new BigInteger(rsaKey.getPrivateExponent());
+
+                RSAPrivateKey privateKey = null;
+                try {
+                    privateKey = CommonUtil.getPrivateKey(mod, privateExp);
+                } catch (InvalidKeySpecException ex) {
+                    throw new IOException("RSA key is invalid: " + ex.getMessage());
+                }
+
+                // compress
+                ByteArrayOutputStream bout = new ByteArrayOutputStream();
+                GZIPOutputStream gout = new GZIPOutputStream(bout);
+                gout.write(Util.readFile(in));
+                gout.finish();
+                byte[] compressedData = bout.toByteArray();
+
+                // encrypt
+                int blockSize = mod.bitLength() / 8;
+                byte[] encrypted = Util.rsaEncrypt(privateKey, blockSize, blockSize - 11, compressedData);
+
+                // write to file
+                Util.writeFile(out, encrypted);
             } else {
-                Catalog.decrypt(new File(catalogArgs[1]), new File(outputArg), new BigInteger(rsaKey.getModulus()), new BigInteger(rsaKey.getPublicExponent()));
+                BigInteger publicExp = new BigInteger(rsaKey.getPublicExponent());
+
+                RSAPublicKey publicKey = null;
+                try {
+                    publicKey = CommonUtil.getPublicKey(mod, publicExp);
+                } catch (InvalidKeySpecException ex) {
+                    throw new IOException("RSA key is invalid: " + ex.getMessage());
+                }
+
+                // decrypt
+                int blockSize = mod.bitLength() / 8;
+                byte[] decrypted;
+                try {
+                    decrypted = Util.rsaDecrypt(publicKey, blockSize, Util.readFile(in));
+                } catch (BadPaddingException ex) {
+                    throw new IOException(ex);
+                }
+
+                // decompress
+                ByteArrayOutputStream bout = new ByteArrayOutputStream();
+                ByteArrayInputStream bin = new ByteArrayInputStream(decrypted);
+                GZIPInputStream gin = new GZIPInputStream(bin);
+
+                int byteRead;
+                byte[] b = new byte[1024];
+                while ((byteRead = gin.read(b)) != -1) {
+                    bout.write(b, 0, byteRead);
+                }
+                byte[] decompressedData = bout.toByteArray();
+
+                // write to file
+                Util.writeFile(out, decompressedData);
             }
         } catch (IOException ex) {
             throw new IOException("Error occurred when reading from " + catalogArgs[1] + " or outputting to " + outputArg);

@@ -12,6 +12,7 @@ import org.junit.runners.Suite;
     updater.crypto.KeyGeneratorTest.class,
     updater.crypto.RSAKeyTest.class,
     updater.patch.PatchLogTest.class,
+    updater.patch.PatchTest.class,
     updater.script.ScriptTest.class,
     updater.util.CommonUtilTest.class,
     updater.util.DownloadProgressUtilTest.class

@@ -7,13 +7,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPrivateKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -693,6 +698,34 @@ public class CommonUtil {
         return returnResult;
     }
 
+    public static RSAPublicKey getPublicKey(BigInteger modulus, BigInteger publicExponent) throws InvalidKeySpecException {
+        RSAPublicKey returnKey = null;
+        try {
+            RSAPublicKeySpec keySpec = new RSAPublicKeySpec(modulus, publicExponent);
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            returnKey = (RSAPublicKey) keyFactory.generatePublic(keySpec);
+        } catch (NoSuchAlgorithmException ex) {
+            if (debug) {
+                Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return returnKey;
+    }
+
+    public static RSAPrivateKey getPrivateKey(BigInteger modulus, BigInteger privateExponent) throws InvalidKeySpecException {
+        RSAPrivateKey returnKey = null;
+        try {
+            RSAPrivateKeySpec keySpec = new RSAPrivateKeySpec(modulus, privateExponent);
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            returnKey = (RSAPrivateKey) keyFactory.generatePrivate(keySpec);
+        } catch (NoSuchAlgorithmException ex) {
+            if (debug) {
+                Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return returnKey;
+    }
+
     /**
      * Try to acquire exclusive lock on the file.
      * @param file the file to try to acquire lock
@@ -806,8 +839,12 @@ public class CommonUtil {
                 throw new IOException("The total number of bytes read does not match the file size. Actual file size: " + oldFileLength + ", bytes read: " + cumulateByteRead + ", path: " + oldFile.getAbsolutePath() + " & " + newFile.getAbsolutePath());
             }
         } finally {
-            oldFin.close();
-            newFin.close();
+            if (oldFin != null) {
+                oldFin.close();
+            }
+            if (newFin != null) {
+                newFin.close();
+            }
         }
 
         return true;

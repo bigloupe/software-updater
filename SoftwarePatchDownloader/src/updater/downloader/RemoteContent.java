@@ -10,15 +10,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.security.KeyFactory;
 import java.security.MessageDigest;
-import java.security.PublicKey;
-import java.security.spec.RSAPublicKeySpec;
+import java.security.interfaces.RSAPublicKey;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -45,7 +42,7 @@ public class RemoteContent {
     protected RemoteContent() {
     }
 
-    public static GetCatalogResult getCatalog(String url, long lastUpdateDate, RSAPublicKey key) {
+    public static GetCatalogResult getCatalog(String url, long lastUpdateDate, RSAPublicKey key, int keyLength) {
         GetCatalogResult returnResult = new GetCatalogResult(null, false);
 
         InputStream in = null;
@@ -121,15 +118,14 @@ public class RemoteContent {
                 ByteArrayOutputStream rsaBuffer = new ByteArrayOutputStream(contentLength);
 
                 Cipher decryptCipher = Cipher.getInstance("RSA");
-                decryptCipher.init(Cipher.DECRYPT_MODE, key.getKey());
+                decryptCipher.init(Cipher.DECRYPT_MODE, key);
 
-                int maxContentLength = key.getBlockSize();
-                if (content.length % maxContentLength != 0) {
-                    throw new Exception("RSA block size not match, content length: " + content.length + ", RSA block size: " + maxContentLength);
+                if (content.length % keyLength != 0) {
+                    throw new Exception("RSA block size not match, content length: " + content.length + ", RSA block size: " + keyLength);
                 }
 
-                for (int i = 0, iEnd = content.length; i < iEnd; i += maxContentLength) {
-                    rsaBuffer.write(decryptCipher.doFinal(content, i, maxContentLength));
+                for (int i = 0, iEnd = content.length; i < iEnd; i += keyLength) {
+                    rsaBuffer.write(decryptCipher.doFinal(content, i, keyLength));
                 }
 
                 content = rsaBuffer.toByteArray();
@@ -405,34 +401,6 @@ public class RemoteContent {
 
         public boolean isNotModified() {
             return notModified;
-        }
-    }
-
-    public static class RSAPublicKey {
-
-        protected BigInteger modulus;
-        protected BigInteger exponent;
-
-        public RSAPublicKey(BigInteger mod, BigInteger exp) {
-            this.modulus = mod;
-            this.exponent = exp;
-        }
-
-        public PublicKey getKey() {
-            try {
-                RSAPublicKeySpec keySpec = new RSAPublicKeySpec(modulus, exponent);
-                KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-                return keyFactory.generatePublic(keySpec);
-            } catch (Exception ex) {
-                if (debug) {
-                    Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-            return null;
-        }
-
-        public int getBlockSize() {
-            return (modulus.bitLength() / 8);
         }
     }
 }

@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URL;
 import java.nio.channels.FileLock;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,7 +25,6 @@ import updater.downloader.PatchDownloader.DownloadPatchesListener.DownloadPatche
 import updater.downloader.RemoteContent.GetCatalogResult;
 import updater.downloader.RemoteContent.GetPatchListener;
 import updater.downloader.RemoteContent.GetPatchResult;
-import updater.downloader.RemoteContent.RSAPublicKey;
 import updater.gui.UpdaterWindow;
 import updater.script.Catalog;
 import updater.script.Client;
@@ -32,6 +33,7 @@ import updater.script.InvalidFormatException;
 import updater.script.Patch;
 import updater.script.Patch.Operation;
 import updater.script.Patch.ValidationFile;
+import updater.util.CommonUtil;
 import updater.util.DownloadProgressUtil;
 
 /**
@@ -93,7 +95,9 @@ public class PatchDownloader {
                 }
             }
         } catch (Exception ex) {
-            Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+            if (debug) {
+                Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+            }
             JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software->icon or root->information->downloader->icon.");
             return;
         }
@@ -106,8 +110,12 @@ public class PatchDownloader {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // user press cancel
-                updaterGUI.setCancelEnabled(false);
-                currentThread.interrupt();
+                Object[] options = {"Yes", "No"};
+                int result = JOptionPane.showOptionDialog(null, "Are you sure to cancel download?", "Canel Download", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+                if (result == 0) {
+                    updaterGUI.setCancelEnabled(false);
+                    currentThread.interrupt();
+                }
             }
         });
         updaterGUI.setProgress(0);
@@ -125,7 +133,9 @@ public class PatchDownloader {
             }
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(updaterFrame, "Error occurred when getting the patches catalog.");
-            Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+            if (debug) {
+                Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+            }
             disposeWindow(updaterFrame);
             return;
         }
@@ -139,7 +149,9 @@ public class PatchDownloader {
                 Util.saveClientScript(clientScriptFile, clientScript);
             } catch (Exception ex) {
                 // not a fatal problem
-                Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+                if (debug) {
+                    Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
 
             disposeWindow(updaterFrame);
@@ -178,7 +190,9 @@ public class PatchDownloader {
                             Util.saveClientScript(clientScriptFile, clientScript);
                         } catch (Exception ex) {
                             // not a fatal problem
-                            Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+                            if (debug) {
+                                Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+                            }
                         }
 
                         disposeWindow(updaterFrame);
@@ -443,16 +457,21 @@ public class PatchDownloader {
 
         RSAPublicKey publicKey = null;
         if (client.getCatalogPublicKeyModulus() != null) {
-            publicKey = new RSAPublicKey(new BigInteger(client.getCatalogPublicKeyModulus(), 16), new BigInteger(client.getCatalogPublicKeyExponent(), 16));
+            try {
+                publicKey = CommonUtil.getPublicKey(new BigInteger(client.getCatalogPublicKeyModulus(), 16), new BigInteger(client.getCatalogPublicKeyExponent(), 16));
+            } catch (InvalidKeySpecException ex) {
+                throw new IOException("RSA key invalid: " + ex);
+            }
         }
 
-        GetCatalogResult getCatalogResult = RemoteContent.getCatalog(catalogURL, client.getCatalogLastUpdated(), publicKey);
+        GetCatalogResult getCatalogResult = RemoteContent.getCatalog(catalogURL, client.getCatalogLastUpdated(), publicKey, Util.hexStringToByteArray(client.getCatalogPublicKeyModulus()).length);
         if (getCatalogResult.isNotModified()) {
             return null;
         }
         if (getCatalogResult.getCatalog() == null) {
             throw new IOException("Error occurred when getting the catalog.");
         }
+
         return getCatalogResult.getCatalog();
     }
 }

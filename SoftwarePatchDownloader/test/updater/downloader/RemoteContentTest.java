@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
@@ -19,7 +21,6 @@ import updater.TestCommon;
 import updater.downloader.RemoteContent.GetCatalogResult;
 import updater.downloader.RemoteContent.GetPatchListener;
 import updater.downloader.RemoteContent.GetPatchResult;
-import updater.downloader.RemoteContent.RSAPublicKey;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -59,7 +60,7 @@ public class RemoteContentTest {
      * This test depends on some functions in /updater/util/Util.java.
      */
     @Test
-    public void testGetCatalog() throws IOException {
+    public void testGetCatalog() throws IOException, InvalidKeySpecException {
         System.out.println("+++++ testGetCatalog +++++");
 
         String xmlFileName = "RemoteContentTest_getCatalog.xml";
@@ -78,8 +79,8 @@ public class RemoteContentTest {
 
         String url = TestCommon.urlRoot + manipulatedXmlFileName;
         long lastUpdateDate = 0L;
-        RSAPublicKey key = new RSAPublicKey(new BigInteger(TestCommon.modulusString, 16), new BigInteger(TestCommon.publicExponentString, 16));
-        GetCatalogResult result = RemoteContent.getCatalog(url, lastUpdateDate, key);
+        RSAPublicKey key = Util.getPublicKey(new BigInteger(TestCommon.modulusString, 16), new BigInteger(TestCommon.publicExponentString, 16));
+        GetCatalogResult result = RemoteContent.getCatalog(url, lastUpdateDate, key, Util.hexStringToByteArray(TestCommon.modulusString).length);
 
         assertNotNull(result);
         assertFalse(result.isNotModified());
@@ -97,8 +98,8 @@ public class RemoteContentTest {
 
         url = TestCommon.urlRoot + manipulatedXmlFileName;
         lastUpdateDate = System.currentTimeMillis() - 2000;
-        key = new RSAPublicKey(new BigInteger(TestCommon.modulusString, 16), new BigInteger(TestCommon.publicExponentString, 16));
-        result = RemoteContent.getCatalog(url, lastUpdateDate, key);
+        key = Util.getPublicKey(new BigInteger(TestCommon.modulusString, 16), new BigInteger(TestCommon.publicExponentString, 16));
+        result = RemoteContent.getCatalog(url, lastUpdateDate, key, Util.hexStringToByteArray(TestCommon.modulusString).length);
 
         assertNotNull(result);
         assertTrue(result.isNotModified());

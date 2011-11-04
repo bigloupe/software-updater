@@ -19,7 +19,6 @@ import updater.gui.UpdaterWindow;
 import updater.patch.PatchLogReader;
 import updater.patch.PatchLogReader.UnfinishedPatch;
 import updater.patch.PatchLogWriter;
-import updater.patch.PatchReadUtil;
 import updater.patch.Patcher;
 import updater.patch.PatcherListener;
 import updater.script.Client;
@@ -180,20 +179,25 @@ public class BatchPatcher {
                     }
                 }
 
-                // need modification to allow cancel or make it an output stream
-                updaterGUI.setCancelEnabled(false);
-                updaterGUI.setMessage("Decrypting patch ...");
+                // patch
+                AESKey aesKey = null;
                 if (_update.getDownloadEncryptionKey() != null) {
-                    PatchReadUtil.decrypt(new AESKey(Util.hexStringToByteArray(_update.getDownloadEncryptionKey()), Util.hexStringToByteArray(_update.getDownloadEncryptionIV())), patchFile, decryptedPatchFile);
-
-                    patchFile.delete();
-                    decryptedPatchFile.renameTo(patchFile);
+                    aesKey = new AESKey(Util.hexStringToByteArray(_update.getDownloadEncryptionKey()), Util.hexStringToByteArray(_update.getDownloadEncryptionIV()));
                 }
-                updaterGUI.setCancelEnabled(true);
 
                 // initialize patcher
                 final int _count = count;
                 Patcher _patcher = new Patcher(new PatcherListener() {
+
+                    @Override
+                    public void extractProgress(int percentage) {
+                        updaterGUI.setProgress(percentage);
+                        updaterGUI.setMessage("Extracting the package ...");
+                    }
+
+                    @Override
+                    public void extractFinished() {
+                    }
 
                     @Override
                     public void patchProgress(int percentage, String message) {
@@ -204,7 +208,7 @@ public class BatchPatcher {
                     }
 
                     @Override
-                    public void patchFinished(boolean succeed) {
+                    public void patchFinished() {
                     }
 
                     @Override
@@ -212,26 +216,23 @@ public class BatchPatcher {
                         updaterGUI.setCancelEnabled(enable);
                     }
                 }, patchActionLogWriter, new File(""), tempDirForPatch);
+                _patcher.doPatch(patchFile, _update.getId(), getPatchStartIndex(_update, patchLogReader), aesKey, decryptedPatchFile);
 
-                // patch
-                boolean patchResult = _patcher.doPatch(patchFile, _update.getId(), getPatchStartIndex(_update, patchLogReader));
+                // close log
                 patchActionLogWriter.close();
-                if (!patchResult) {
-                    throw new IOException("Do patch failed.");
-                } else { // update succeed
-                    // remove 'update' from updates list
-                    iterator.remove();
 
-                    // save the client scirpt
-                    clientScript.setVersion(_update.getVersionTo());
-                    clientScript.setPatches(patches);
-                    Util.saveClientScript(clientScriptFile, clientScript);
+                // remove 'update' from updates list
+                iterator.remove();
 
-                    Util.truncateFolder(tempDirForPatch);
-                    tempDirForPatch.delete();
+                // save the client scirpt
+                clientScript.setVersion(_update.getVersionTo());
+                clientScript.setPatches(patches);
+                Util.saveClientScript(clientScriptFile, clientScript);
 
-                    patchFile.delete();
-                }
+                Util.truncateFolder(tempDirForPatch);
+                tempDirForPatch.delete();
+
+                patchFile.delete();
             }
 
             returnResult = new UpdateResult(true, true);
