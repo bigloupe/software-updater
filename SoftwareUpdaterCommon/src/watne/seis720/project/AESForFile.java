@@ -83,6 +83,7 @@ public class AESForFile extends WatneAES_Implementer {
             int bytesRead = reader.read(currBlock, 0, BLOCKSIZE);
             // Bytes read from file.
 
+            int percentage = 0, tempPercentage = 0;
             int delayRound = 32768 / BLOCKSIZE;
             long inputFileLength = inputFile.length(), cumulateRead = 0, roundCount = 0;
             while (bytesRead >= 0) {
@@ -91,7 +92,11 @@ public class AESForFile extends WatneAES_Implementer {
                 if (roundCount >= delayRound) {
                     check();
                     if (listener != null) {
-                        listener.cryptProgress((int) ((double) (cumulateRead * 100) / (double) inputFileLength));
+                        tempPercentage = (int) ((double) (cumulateRead * 100) / (double) inputFileLength);
+                        if (percentage != tempPercentage) {
+                            listener.cryptProgress(tempPercentage);
+                            percentage = tempPercentage;
+                        }
                     }
                     roundCount = 0;
                 }
@@ -195,13 +200,18 @@ public class AESForFile extends WatneAES_Implementer {
             reader = new BufferedInputStream(new FileInputStream(inputFile), 32768);
             writer = new BufferedOutputStream(new FileOutputStream(outputFile), 32768);
 
+            int percentage = 0, tempPercentage = 0;
             int delayRound = 32768 / BLOCKSIZE;
             long inputFileLength = inputFile.length(), cumulateRead = 0, roundCount = 0;
             while (reader.read(currBlock, 0, BLOCKSIZE) >= 0) {
                 if (roundCount >= delayRound) {
                     check();
                     if (listener != null) {
-                        listener.cryptProgress((int) ((double) (cumulateRead * 100) / (double) inputFileLength));
+                        tempPercentage = (int) ((double) (cumulateRead * 100) / (double) inputFileLength);
+                        if (percentage != tempPercentage) {
+                            listener.cryptProgress(tempPercentage);
+                            percentage = tempPercentage;
+                        }
                     }
                     roundCount = 0;
                 }

@@ -30,35 +30,44 @@ public class DownloadProgressUtil {
      * The current download speed. It is bytes/second.
      */
     protected long speed;
-
+    
     public DownloadProgressUtil() {
         downloadedSize = 0;
         totalSize = 0;
         records = new LinkedList<Record>();
         speed = 0;
     }
-
+    
     public long getDownloadedSize() {
         return downloadedSize;
     }
-
+    
     public void setDownloadedSize(long downloadedSize) {
+        if (downloadedSize < 0) {
+            throw new IllegalArgumentException("argument 'downloadSize' should >= 0");
+        }
         this.downloadedSize = downloadedSize;
     }
-
+    
     public long getTotalSize() {
         return totalSize;
     }
-
+    
     public void setTotalSize(long totalSize) {
+        if (totalSize < 0) {
+            throw new IllegalArgumentException("argument 'totalSize' should >= 0");
+        }
         this.totalSize = totalSize;
     }
-
+    
     public int getAverageTimeSpan() {
         return averageTimeSpan;
     }
-
+    
     public synchronized void setAverageTimeSpan(int averageTimeSpan) {
+        if (totalSize < 1) {
+            throw new IllegalArgumentException("argument 'totalSize' should >= 1");
+        }
         this.averageTimeSpan = averageTimeSpan;
         updateSpeed();
     }
@@ -68,26 +77,29 @@ public class DownloadProgressUtil {
      * @param bytesDownloaded the total bytes downloaded this time
      */
     public synchronized void feed(long bytesDownloaded) {
+        if (bytesDownloaded < 0) {
+            throw new IllegalArgumentException("argument 'bytesDownloaded' should >= 0");
+        }
         this.downloadedSize += bytesDownloaded;
         records.add(new Record(bytesDownloaded));
         updateSpeed();
     }
-
+    
     public long getSpeed() {
         return speed;
     }
-
+    
     public int getTimeRemaining() {
         return speed == 0 ? 0 : (int) ((double) (totalSize - downloadedSize) / (double) speed);
     }
-
+    
     protected void updateSpeed() {
         // should be synchronized
         long currentTime = System.currentTimeMillis();
-
+        
         long minimumTime = currentTime;
         long bytesDownloadedWithinPeriod = 0;
-
+        
         Iterator<Record> iterator = records.iterator();
         while (iterator.hasNext()) {
             Record record = iterator.next();
@@ -100,10 +112,10 @@ public class DownloadProgressUtil {
                 bytesDownloadedWithinPeriod += record.byteDownloaded;
             }
         }
-
+        
         speed = currentTime == minimumTime ? 0 : (long) ((double) bytesDownloadedWithinPeriod / ((double) (currentTime - minimumTime) / 1000F));
     }
-
+    
     protected static class Record {
 
         /**
@@ -111,7 +123,7 @@ public class DownloadProgressUtil {
          */
         protected long time;
         protected long byteDownloaded;
-
+        
         protected Record(long byteDownloaded) {
             time = System.currentTimeMillis();
             this.byteDownloaded = byteDownloaded;

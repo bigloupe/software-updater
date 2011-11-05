@@ -17,15 +17,26 @@ public class InterruptibleOutputStream extends FilterOutputStream {
 
     public InterruptibleOutputStream(OutputStream out) {
         super(out);
+
+        if (out == null) {
+            throw new NullPointerException("argument 'out' cannot be null");
+        }
+
         interruptedTasks = Collections.synchronizedList(new ArrayList<Runnable>());
         pause = false;
     }
 
     public void addInterruptedTask(Runnable task) {
+        if (task == null) {
+            return;
+        }
         interruptedTasks.add(task);
     }
 
     public void removeInterruptedTask(Runnable task) {
+        if (task == null) {
+            return;
+        }
         interruptedTasks.remove(task);
     }
 

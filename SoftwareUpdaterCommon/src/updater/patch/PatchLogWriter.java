@@ -76,6 +76,7 @@ public class PatchLogWriter {
         if (file == null) {
             throw new NullPointerException("argument 'file' cannot be null");
         }
+
         out = new FileOutputStream(file, true);
 
         currentPatchId = "0";
@@ -150,6 +151,7 @@ public class PatchLogWriter {
         if (operationType == null) {
             throw new NullPointerException("argument 'operationType' cannot be null");
         }
+
         String fileIndexString = Integer.toString(fileIndex);
 
 //        StringBuilder sb = new StringBuilder(1 + currentPatchId.length() + 3

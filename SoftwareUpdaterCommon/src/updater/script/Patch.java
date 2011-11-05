@@ -156,8 +156,9 @@ public class Patch {
 
     public static Patch read(byte[] content) throws InvalidFormatException {
         if (content == null) {
-            return null;
+            throw new NullPointerException("argument 'content' cannot be null");
         }
+
         Document doc;
         try {
             doc = XMLUtil.readDocument(content);
@@ -170,8 +171,9 @@ public class Patch {
 
     public static Patch read(Element patchElement) throws InvalidFormatException {
         if (patchElement == null) {
-            return null;
+            throw new NullPointerException("argument 'patchElement' cannot be null");
         }
+
         int _id = 0;
         try {
             _id = Integer.parseInt(patchElement.getAttribute("id"));
@@ -251,8 +253,9 @@ public class Patch {
 
     public Element getElement(Document doc) {
         if (doc == null) {
-            return null;
+            throw new NullPointerException("argument 'doc' cannot be null");
         }
+
         Element patchElement = doc.createElement("patch");
         patchElement.setAttribute("id", Integer.toString(id));
 
@@ -447,7 +450,7 @@ public class Patch {
 
         protected static Operation read(Element operationElement) throws InvalidFormatException {
             if (operationElement == null) {
-                return null;
+                throw new NullPointerException("argument 'operationElement' cannot be null");
             }
 
             int _id = 0;
@@ -498,7 +501,7 @@ public class Patch {
 
         protected Element getElement(Document doc) {
             if (doc == null) {
-                return null;
+                throw new NullPointerException("argument 'doc' cannot be null");
             }
 
             Element _operation = doc.createElement("operation");
@@ -607,7 +610,7 @@ public class Patch {
 
         protected static ValidationFile read(Element fileElement) throws InvalidFormatException {
             if (fileElement == null) {
-                return null;
+                throw new NullPointerException("argument 'fileElement' cannot be null");
             }
 
             String _path = XMLUtil.getTextContent(fileElement, "path", true);
@@ -619,7 +622,7 @@ public class Patch {
 
         protected Element getElement(Document doc) {
             if (doc == null) {
-                return null;
+                throw new NullPointerException("argument 'doc' cannot be null");
             }
 
             Element _file = doc.createElement("file");

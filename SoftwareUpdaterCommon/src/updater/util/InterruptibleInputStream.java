@@ -22,16 +22,30 @@ public class InterruptibleInputStream extends FilterInputStream {
 
     public InterruptibleInputStream(InputStream in, int sizeAvailable) {
         super(in);
+
+        if (in == null) {
+            throw new NullPointerException("argument 'in' cannot be null");
+        }
+        if (sizeAvailable < 0 && sizeAvailable != -1) {
+            throw new IllegalArgumentException("argument 'sizeAvailable' should >= 0 or be -1");
+        }
+
         this.sizeAvailable = sizeAvailable;
         interruptedTasks = Collections.synchronizedList(new ArrayList<Runnable>());
         pause = false;
     }
 
     public void addInterruptedTask(Runnable task) {
+        if (task == null) {
+            return;
+        }
         interruptedTasks.add(task);
     }
 
     public void removeInterruptedTask(Runnable task) {
+        if (task == null) {
+            return;
+        }
         interruptedTasks.remove(task);
     }
 

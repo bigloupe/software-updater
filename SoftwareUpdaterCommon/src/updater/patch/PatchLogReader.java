@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import updater.util.CommonUtil;
 
 /**
  * <b>Format: </b><br />
@@ -43,49 +44,54 @@ public class PatchLogReader {
         if (file == null) {
             throw new NullPointerException("argument 'file' cannot be null");
         }
+
         finishedPatches = new ArrayList<Integer>();
 
         Pattern logPattern = Pattern.compile("^\\(([0-9]+)\\s(?:(0|1)|(2|3)\\s([0-9]+))\\)\t.+?$");
 
-        String readLine = null;
-        int currentPatchId = -1, currentFileIndex = 0;
-
         // not very strict check, assume IO is correct and in sequence
-        BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
-        while ((readLine = in.readLine()) != null) {
-            Matcher matcher = logPattern.matcher(readLine);
-            if (!matcher.matches()) {
-                // broken log
-                continue;
+        BufferedReader in = null;
+        try {
+            in = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+
+            String readLine = null;
+            int currentPatchId = -1, currentFileIndex = 0;
+
+            while ((readLine = in.readLine()) != null) {
+                Matcher matcher = logPattern.matcher(readLine);
+                if (!matcher.matches()) {
+                    // broken log
+                    continue;
+                }
+
+                int actionId = Integer.parseInt(matcher.group(2) != null ? matcher.group(2) : matcher.group(3));
+                switch (actionId) {
+                    case 0:
+                        currentPatchId = Integer.parseInt(matcher.group(1));
+                        currentFileIndex = 0;
+                        break;
+                    case 1:
+                        if (currentPatchId != -1) {
+                            finishedPatches.add(currentPatchId);
+                        }
+                        currentPatchId = -1;
+                        currentFileIndex = 0;
+                        break;
+                    case 2:
+                        currentFileIndex = Integer.parseInt(matcher.group(4));
+                        break;
+                    case 3:
+                        currentFileIndex++;
+                        break;
+                }
             }
 
-            int actionId = Integer.parseInt(matcher.group(2) != null ? matcher.group(2) : matcher.group(3));
-            switch (actionId) {
-                case 0:
-                    currentPatchId = Integer.parseInt(matcher.group(1));
-                    currentFileIndex = 0;
-                    break;
-                case 1:
-                    if (currentPatchId != -1) {
-                        finishedPatches.add(currentPatchId);
-                    }
-                    currentPatchId = -1;
-                    currentFileIndex = 0;
-                    break;
-                case 2:
-                    currentFileIndex = Integer.parseInt(matcher.group(4));
-                    break;
-                case 3:
-                    currentFileIndex++;
-                    break;
+            if (currentPatchId != -1) {
+                unfinishedPatch = new UnfinishedPatch(currentPatchId, currentFileIndex);
             }
+        } finally {
+            CommonUtil.closeQuietly(in);
         }
-
-        if (currentPatchId != -1) {
-            unfinishedPatch = new UnfinishedPatch(currentPatchId, currentFileIndex);
-        }
-
-        in.close();
     }
 
     public List<Integer> getfinishedPatches() {

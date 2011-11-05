@@ -9,10 +9,12 @@ import org.tukaani.xz.XZInputStream;
 import updater.crypto.AESKey;
 import updater.script.InvalidFormatException;
 import updater.script.Patch;
+import updater.util.CommonUtil;
+import watne.seis720.project.AESForFile;
+import watne.seis720.project.AESForFileListener;
 import watne.seis720.project.KeySize;
 import watne.seis720.project.Mode;
 import watne.seis720.project.Padding;
-import watne.seis720.project.WatneAES_Implementer;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -24,7 +26,7 @@ public class PatchReadUtil {
 
     public static void readHeader(InputStream in) throws IOException {
         if (in == null) {
-            return;
+            throw new NullPointerException("argument 'in' cannot be null");
         }
 
         byte[] buf = new byte[5];
@@ -39,7 +41,7 @@ public class PatchReadUtil {
 
     public static InputStream readCompressionMethod(InputStream in) throws IOException {
         if (in == null) {
-            return null;
+            throw new NullPointerException("argument 'in' cannot be null");
         }
 
         byte[] buf = new byte[1];
@@ -63,7 +65,7 @@ public class PatchReadUtil {
 
     public static Patch readXML(InputStream in) throws IOException, InvalidFormatException {
         if (in == null) {
-            return null;
+            throw new NullPointerException("argument 'in' cannot be null");
         }
 
         byte[] buf = new byte[3];
@@ -81,10 +83,13 @@ public class PatchReadUtil {
 
     public static void readToFile(File saveTo, InputStream in, int length) throws IOException {
         if (saveTo == null) {
-            return;
+            throw new NullPointerException("argument 'saveTo' cannot be null");
         }
         if (in == null) {
             throw new NullPointerException("argument 'in' cannot be null");
+        }
+        if (length <= 0) {
+            return;
         }
 
         FileOutputStream fout = null;
@@ -106,18 +111,16 @@ public class PatchReadUtil {
                 byteToRead = length - cumulativeByteRead > b.length ? b.length : length - cumulativeByteRead;
             }
         } finally {
-            if (fout != null) {
-                fout.close();
-            }
+            CommonUtil.closeQuietly(fout);
         }
     }
 
-    public static void decrypt(AESKey aesKey, File patchFile, File decryptTo) throws IOException {
-        if (patchFile == null) {
-            return;
-        }
+    public static void decrypt(AESKey aesKey, AESForFileListener listener, File patchFile, File decryptTo) throws IOException {
         if (aesKey == null) {
             throw new NullPointerException("argument 'aesKey' cannot be null");
+        }
+        if (patchFile == null) {
+            throw new NullPointerException("argument 'patchFile' cannot be null");
         }
         if (decryptTo == null) {
             throw new NullPointerException("argument 'tempFileForDecryption' cannot be null");
@@ -126,7 +129,10 @@ public class PatchReadUtil {
         decryptTo.delete();
 
         try {
-            WatneAES_Implementer aesCipher = new WatneAES_Implementer();
+            AESForFile aesCipher = new AESForFile();
+            if (listener != null) {
+                aesCipher.setListener(listener);
+            }
             aesCipher.setMode(Mode.CBC);
             aesCipher.setPadding(Padding.PKCS5PADDING);
             aesCipher.setKeySize(KeySize.BITS256);

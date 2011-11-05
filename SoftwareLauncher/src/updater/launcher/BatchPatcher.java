@@ -190,16 +190,6 @@ public class BatchPatcher {
                 Patcher _patcher = new Patcher(new PatcherListener() {
 
                     @Override
-                    public void extractProgress(int percentage) {
-                        updaterGUI.setProgress(percentage);
-                        updaterGUI.setMessage("Extracting the package ...");
-                    }
-
-                    @Override
-                    public void extractFinished() {
-                    }
-
-                    @Override
                     public void patchProgress(int percentage, String message) {
                         float base = 3F + (stepSize * (float) _count);
                         float addition = ((float) percentage / 100F) * stepSize;

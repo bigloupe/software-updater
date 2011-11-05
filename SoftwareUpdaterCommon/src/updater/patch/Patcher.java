@@ -110,7 +110,7 @@ public class Patcher {
 
     protected void doOperation(Operation operation, InputStream patchIn, File tempNewFile) throws IOException {
         if (operation == null) {
-            return;
+            throw new NullPointerException("argument 'operation' cannot be null");
         }
         if (patchIn == null) {
             throw new NullPointerException("argument 'patchIn' cannot be null");
@@ -230,24 +230,20 @@ public class Patcher {
                 }
             }
         } finally {
+            CommonUtil.closeQuietly(randomAccessOldFile);
             try {
-                if (randomAccessOldFile != null) {
-                    randomAccessOldFile.close();
-                }
                 if (interruptiblePatchIn != null) {
                     long byteSkipped = patchIn.skip(interruptiblePatchIn.remaining());
                     if (byteSkipped != interruptiblePatchIn.remaining()) {
                         throw new IOException("Failed to skip remaining bytes in 'interruptiblePatchIn'.");
                     }
                 }
-                if (tempNewFileOut != null) {
-                    tempNewFileOut.close();
-                }
             } catch (IOException ex) {
                 if (debug) {
                     Logger.getLogger(Patcher.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
+            CommonUtil.closeQuietly(tempNewFileOut);
             tempNewFileOut = null;
             interruptiblePatchIn = null;
             seekableRandomAccessOldFile = null;
@@ -263,6 +259,13 @@ public class Patcher {
     }
 
     protected void tryAcquireExclusiveLocks(List<Operation> operations, int startFromFileIndex) throws IOException {
+        if (operations == null) {
+            throw new NullPointerException("argument 'operations' cannot be null");
+        }
+        if (startFromFileIndex < 0) {
+            throw new IllegalArgumentException("argument 'startFromFileIndex' should >= 0");
+        }
+
         for (int i = startFromFileIndex, iEnd = operations.size(); i < iEnd; i++) {
             Operation _operation = operations.get(i);
 
@@ -271,18 +274,18 @@ public class Patcher {
                     throw new IOException("Failed to acquire lock on (old file): " + softwareDir + _operation.getOldFilePath());
                 }
             }
-
-//            if (_operation.getNewFilePath() != null) {
-//                if (!CommonUtil.tryLock(new File(_operation.getNewFilePath()))) {
-//                    throw new IOException("Failed to acquire lock on (new file): " + _operation.getNewFilePath());
-//                }
-//            }
         }
     }
 
     protected void doReplacement(List<Operation> operations, int startFromFileIndex, float progressOccupied) throws IOException {
         if (operations == null) {
-            return;
+            throw new NullPointerException("argument 'operations' cannot be null");
+        }
+        if (startFromFileIndex < 0) {
+            throw new IllegalArgumentException("argument 'startFromFileIndex' should >= 0");
+        }
+        if (progressOccupied < 0) {
+            throw new IllegalArgumentException("argument 'progressOccupied' should >= 0");
         }
 
         float progressStep = progressOccupied / (float) operations.size();
@@ -323,26 +326,50 @@ public class Patcher {
 
     public void doPatch(File patchFile, int patchId, int startFromFileIndex, AESKey aesKey, File tempFileForDecryption) throws IOException {
         if (patchFile == null) {
-            return;
+            throw new NullPointerException("argument 'patchFile' cannot be null");
+        }
+        if (startFromFileIndex < 0) {
+            throw new IllegalArgumentException("argument 'startFromFileIndex' should >= 0");
+        }
+        if (aesKey != null && tempFileForDecryption == null) {
+            throw new NullPointerException("argument 'tempFileForDecryption' cannot be null while argument 'aesKey' is not null");
         }
 
         if (!patchFile.exists() || patchFile.isDirectory()) {
             throw new IOException("patch file not exist or not a file");
         }
 
-        progress = 0;
+        float decryptProgress = 0;
+        float prepareProgress = 5;
+        float updateProgress = 60;
+        float checkAccessibilityProgress = 5;
+        float replaceFilesProgress = 5;
+        float validateFilesProgress = 25;
+
+
+        float stageMinimumProgress = 0;
+        progress = stageMinimumProgress;
+
 
         File _patchFile = patchFile;
         if (aesKey != null) {
+            decryptProgress = 25;
+            updateProgress = 40;
+            validateFilesProgress = 20;
+
+            final float _decryptProgress = decryptProgress;
+            final float _stageMinimumProgress = stageMinimumProgress;
             try {
-                aesCipher = new AESForFile();
-                aesCipher.setListener(new AESForFileListener() {
+                AESForFileListener aesForFileListener = new AESForFileListener() {
 
                     @Override
                     public void cryptProgress(int percentage) {
-                        listener.extractProgress(percentage);
+                        listener.patchProgress((int) (_stageMinimumProgress + ((float) percentage / _decryptProgress)), "Decrypting patch ...");
                     }
-                });
+                };
+
+                aesCipher = new AESForFile();
+                aesCipher.setListener(aesForFileListener);
                 aesCipher.setMode(Mode.CBC);
                 aesCipher.setPadding(Padding.PKCS5PADDING);
                 aesCipher.setKeySize(KeySize.BITS256);
@@ -357,15 +384,17 @@ public class Patcher {
 
             _patchFile = tempFileForDecryption;
         }
-        listener.extractFinished();
 
-        boolean returnResult = true;
+
+        stageMinimumProgress += decryptProgress;
+        progress = stageMinimumProgress;
+
 
         InputStream patchIn = null;
         try {
             patchIn = new BufferedInputStream(new FileInputStream(_patchFile));
 
-            progress = 0;
+
             listener.patchProgress((int) progress, "Preparing new patch ...");
             listener.patchEnableCancel(false);
             // header
@@ -379,11 +408,15 @@ public class Patcher {
             // start log
             log.logStart(patchId, patch.getVersionFrom(), patch.getVersionTo());
 
-            progress = 5;
+
+            stageMinimumProgress += prepareProgress;
+            progress = stageMinimumProgress;
+
+
             listener.patchProgress((int) progress, "Updating ...");
             listener.patchEnableCancel(true);
             // start patch - patch files and store to temporary directory first
-            float progressStep = 70.0F / (float) operations.size();
+            float progressStep = updateProgress / (float) operations.size();
             progress += startFromFileIndex * progressStep;
             for (int i = startFromFileIndex, iEnd = operations.size(); i < iEnd; i++) {
                 Operation _operation = operations.get(i);
@@ -391,21 +424,33 @@ public class Patcher {
                 progress += progressStep;
             }
 
-            progress = 75;
+
+            stageMinimumProgress += updateProgress;
+            progress = stageMinimumProgress;
+
+
             listener.patchProgress((int) progress, "Checking the accessibility of all files ...");
             // try acquire locks on all files
             tryAcquireExclusiveLocks(operations, startFromFileIndex);
 
-            progress = 76;
+
+            stageMinimumProgress += checkAccessibilityProgress;
+            progress = stageMinimumProgress;
+
+
             listener.patchProgress((int) progress, "Replacing old files with new files ...");
             listener.patchEnableCancel(false);
             // all files has patched to temporary directory, replace old files with the new one
-            doReplacement(operations, startFromFileIndex, 4.0F);
+            doReplacement(operations, startFromFileIndex, replaceFilesProgress);
 
-            progress = 80;
+
+            stageMinimumProgress += replaceFilesProgress;
+            progress = stageMinimumProgress;
+
+
             listener.patchProgress((int) progress, "Validating files ...");
             // validate files
-            progressStep = 20.0F / (float) validations.size();
+            progressStep = validateFilesProgress / (float) validations.size();
             for (ValidationFile _validationFile : validations) {
                 listener.patchProgress((int) progress, "Validating file: " + _validationFile.getFilePath());
 
@@ -429,6 +474,11 @@ public class Patcher {
                 progress += progressStep;
             }
 
+
+            stageMinimumProgress += validateFilesProgress;
+            progress = stageMinimumProgress;
+
+
             listener.patchProgress(100, "Finished.");
             log.logEnd();
         } catch (InvalidFormatException ex) {
@@ -436,15 +486,7 @@ public class Patcher {
                 Logger.getLogger(Patcher.class.getName()).log(Level.SEVERE, null, ex);
             }
         } finally {
-            try {
-                if (patchIn != null) {
-                    patchIn.close();
-                }
-            } catch (IOException ex) {
-                if (debug) {
-                    Logger.getLogger(Patcher.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
+            CommonUtil.closeQuietly(patchIn);
         }
 
         listener.patchFinished();

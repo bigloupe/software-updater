@@ -52,8 +52,11 @@ public class XMLUtil {
      * @throws InvalidFormatException if the <code>minSize</code> or <code>maxSize</code> condition cannot be fulfilled
      */
     public static NodeList getNodeList(Element element, String tagName, int minSize, int maxSize) throws InvalidFormatException {
-        if (element == null || tagName == null) {
-            return null;
+        if (element == null) {
+            throw new NullPointerException("argument 'element' cannot be null");
+        }
+        if (tagName == null) {
+            throw new NullPointerException("argument 'tagName' cannot be null");
         }
 
         List<Node> nodeArrayList = new ArrayList<Node>();
@@ -84,9 +87,13 @@ public class XMLUtil {
      * @throws InvalidFormatException <code>mustExist</code> is true but element not found
      */
     public static Element getElement(Element element, String tagName, boolean mustExist) throws InvalidFormatException {
-        if (element == null || tagName == null) {
-            return null;
+        if (element == null) {
+            throw new NullPointerException("argument 'element' cannot be null");
         }
+        if (tagName == null) {
+            throw new NullPointerException("argument 'tagName' cannot be null");
+        }
+
         NodeList nodeList = getNodeList(element, tagName, mustExist ? 1 : 0, 1);
         return (Element) nodeList.item(0);
     }
@@ -100,9 +107,13 @@ public class XMLUtil {
      * @throws InvalidFormatException <code>mustExist</code> is true but text content not found/exist
      */
     public static String getTextContent(Element element, String tagName, boolean mustExist) throws InvalidFormatException {
-        if (element == null || tagName == null) {
-            return null;
+        if (element == null) {
+            throw new NullPointerException("argument 'element' cannot be null");
         }
+        if (tagName == null) {
+            throw new NullPointerException("argument 'tagName' cannot be null");
+        }
+
         Element resultElement = getElement(element, tagName, mustExist);
         return resultElement == null ? null : resultElement.getTextContent(); // didn't check if the return value is null or empty
     }
@@ -115,8 +126,9 @@ public class XMLUtil {
      */
     public static byte[] getOutput(Document doc) throws TransformerException {
         if (doc == null) {
-            return null;
+            throw new NullPointerException("argument 'doc' cannot be null");
         }
+
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
 
         Transformer transformer = transformerFactory.newTransformer();
@@ -140,8 +152,9 @@ public class XMLUtil {
      */
     public static Document readDocument(byte[] content) throws SAXException, IOException {
         if (content == null) {
-            return null;
+            throw new NullPointerException("argument 'content' cannot be null");
         }
+
         Document doc = null;
         try {
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -153,6 +166,7 @@ public class XMLUtil {
                 Logger.getLogger(XMLUtil.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+
         return doc;
     }
 

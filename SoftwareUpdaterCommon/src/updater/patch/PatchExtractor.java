@@ -34,10 +34,10 @@ public class PatchExtractor {
 
     public static void extract(File patchFile, File saveToFolder, AESKey aesKey, File tempFileForDecryption) throws IOException, InvalidFormatException {
         if (patchFile == null) {
-            return;
+            throw new NullPointerException("argument 'patchFile' cannot be null");
         }
         if (saveToFolder == null) {
-            throw new NullPointerException("argument 'patchFile' cannot be null");
+            throw new NullPointerException("argument 'saveToFolder' cannot be null");
         }
         if (aesKey != null && tempFileForDecryption == null) {
             throw new NullPointerException("argument 'tempFileForDecryption' cannot be null while argument 'aesKey' is not null");
@@ -54,7 +54,7 @@ public class PatchExtractor {
         }
 
         if (aesKey != null) {
-            PatchReadUtil.decrypt(aesKey, patchFile, tempFileForDecryption);
+            PatchReadUtil.decrypt(aesKey, null, patchFile, tempFileForDecryption);
 
             _patchFile = tempFileForDecryption;
             _patchFile.deleteOnExit();
@@ -84,9 +84,7 @@ public class PatchExtractor {
                 Logger.getLogger(PatchCreator.class.getName()).log(Level.SEVERE, null, ex);
             }
         } finally {
-            if (in != null) {
-                in.close();
-            }
+            CommonUtil.closeQuietly(in);
             if (deletePatch) {
                 _patchFile.delete();
             }

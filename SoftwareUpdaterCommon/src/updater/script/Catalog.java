@@ -35,8 +35,9 @@ public class Catalog {
 
     public static Catalog read(byte[] content) throws InvalidFormatException {
         if (content == null) {
-            return null;
+            throw new NullPointerException("argument 'content' cannot be null");
         }
+
         Document doc;
         try {
             doc = XMLUtil.readDocument(content);

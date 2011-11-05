@@ -1,6 +1,7 @@
 package updater.util;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -57,8 +58,9 @@ public class CommonUtil {
      */
     public static String byteArrayToHexString(byte[] raw) {
         if (raw == null) {
-            return null;
+            throw new NullPointerException("argument 'raw' cannot be null");
         }
+
         byte[] hexCharTable = {
             (byte) '0', (byte) '1', (byte) '2', (byte) '3',
             (byte) '4', (byte) '5', (byte) '6', (byte) '7',
@@ -66,20 +68,20 @@ public class CommonUtil {
             (byte) 'c', (byte) 'd', (byte) 'e', (byte) 'f'
         };
 
-        byte[] hex = new byte[2 * raw.length];
-        int index = 0;
-
+        int i = 0, byteInt = 0;
+        byte[] hexBytes = new byte[2 * raw.length];
         for (byte b : raw) {
-            int v = b & 0xFF;
-            hex[index] = hexCharTable[v >>> 4];
-            index++;
-            hex[index] = hexCharTable[v & 0xF];
-            index++;
+            byteInt = b & 0xFF;
+
+            hexBytes[i] = hexCharTable[byteInt >>> 4];
+            i++;
+            hexBytes[i] = hexCharTable[byteInt & 0xF];
+            i++;
         }
 
         String result = null;
         try {
-            result = new String(hex, "US-ASCII");
+            result = new String(hexBytes, "US-ASCII");
         } catch (UnsupportedEncodingException ex) {
             // US-ASCII should always exist
             if (debug) {
@@ -91,19 +93,25 @@ public class CommonUtil {
     }
 
     /**
-     * Convert the hex string to a byte array. This function will not check the validity of the <code>hexString</code>.
+     * Convert the hex string to a byte array. The length of the <code>hexString</code> should be multiple of 2.
      * @param hexString the hex string to convert
      * @return the byte array
      */
     public static byte[] hexStringToByteArray(String hexString) {
         if (hexString == null) {
-            return new byte[0];
+            throw new NullPointerException("argument 'hexString' cannot be null");
         }
+
         int len = hexString.length();
+        if ((len & 0x2) != 0) {
+            throw new IllegalArgumentException("length of argument 'hexString' should be a multiple of 2");
+        }
+
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
             data[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4) + Character.digit(hexString.charAt(i + 1), 16));
         }
+
         return data;
     }
 
@@ -125,20 +133,21 @@ public class CommonUtil {
      */
     public static byte[] getSHA256(File file) throws IOException {
         if (file == null) {
-            throw new IOException("argument 'file' cannot be null");
+            throw new NullPointerException("argument 'file' cannot be null");
         }
+
         InputStream fin = null;
         try {
             long fileLength = file.length();
             fin = new FileInputStream(file);
 
-            MessageDigest messageDigest;
-            messageDigest = MessageDigest.getInstance("SHA-256");
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
 
             int byteRead, cumulateByteRead = 0;
-            byte[] b = new byte[8192];
+            byte[] b = new byte[32768];
             while ((byteRead = fin.read(b)) != -1) {
                 messageDigest.update(b, 0, byteRead);
+
                 cumulateByteRead += byteRead;
                 if (cumulateByteRead >= fileLength) {
                     break;
@@ -156,9 +165,7 @@ public class CommonUtil {
                 Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
             }
         } finally {
-            if (fin != null) {
-                fin.close();
-            }
+            closeQuietly(fin);
         }
 
         return null;
@@ -178,7 +185,7 @@ public class CommonUtil {
      */
     public static String getFileDirectory(File file) {
         if (file == null) {
-            return null;
+            throw new NullPointerException("argument 'file' cannot be null");
         }
         return file.isDirectory() ? file.getAbsolutePath() : getFileDirectory(file.getAbsolutePath());
     }
@@ -190,7 +197,7 @@ public class CommonUtil {
      */
     public static String getFileDirectory(String filePath) {
         if (filePath == null) {
-            return null;
+            throw new NullPointerException("argument 'filePath' cannot be null");
         }
         int pos = filePath.replace(File.separator, "/").lastIndexOf('/');
         return pos != -1 ? filePath.substring(0, pos) : filePath;
@@ -203,11 +210,11 @@ public class CommonUtil {
      * @throws IOException error occurred when writing the content into the file
      */
     public static void writeFile(File file, String content) throws IOException {
-        if (content == null) {
-            return;
-        }
         if (file == null) {
-            throw new IOException("argument 'file' cannot be null");
+            throw new NullPointerException("argument 'file' cannot be null");
+        }
+        if (content == null) {
+            throw new NullPointerException("argument 'content' cannot be null");
         }
         writeFile(file, content.getBytes("UTF-8"));
     }
@@ -219,20 +226,18 @@ public class CommonUtil {
      * @throws IOException error occurred when writing the content into the file
      */
     public static void writeFile(File file, byte[] content) throws IOException {
-        if (content == null) {
-            return;
-        }
         if (file == null) {
-            throw new IOException("argument 'file' cannot be null");
+            throw new NullPointerException("argument 'file' cannot be null");
+        }
+        if (content == null) {
+            throw new NullPointerException("argument 'content' cannot be null");
         }
         FileOutputStream fout = null;
         try {
             fout = new FileOutputStream(file);
             fout.write(content);
         } finally {
-            if (fout != null) {
-                fout.close();
-            }
+            closeQuietly(fout);
         }
     }
 
@@ -243,9 +248,13 @@ public class CommonUtil {
      * @throws IOException error occurred when reading/writing the content from/into the file
      */
     public static void copyFile(File fromFile, File toFile) throws IOException {
-        if (fromFile == null || toFile == null) {
-            return;
+        if (fromFile == null) {
+            throw new NullPointerException("argument 'fromFile' cannot be null");
         }
+        if (toFile == null) {
+            throw new NullPointerException("argument 'toFile' cannot be null");
+        }
+
         FileInputStream fromFileStream = null;
         FileOutputStream toFileStream = null;
         FileChannel fromFileChannel = null;
@@ -265,31 +274,14 @@ public class CommonUtil {
                 cumulateByteRead += toFileChannel.transferFrom(fromFileChannel, cumulateByteRead, byteToRead);
             }
 
-//            byte[] buf = new byte[32768];
-//            while ((byteRead = fromFileStream.read(buf)) != -1) {
-//                toFileStream.write(buf, 0, byteRead);
-//                cumulateByteRead += byteRead;
-//                if (cumulateByteRead >= fromFileLength) {
-//                    break;
-//                }
-//            }
-
             if (cumulateByteRead != fromFileLength) {
                 throw new IOException("The total number of bytes read does not match the file size. Actual file size: " + fromFileLength + ", bytes read: " + cumulateByteRead + ", path: " + fromFile.getAbsolutePath());
             }
         } finally {
-            if (fromFileChannel != null) {
-                fromFileChannel.close();
-            }
-            if (toFileChannel != null) {
-                toFileChannel.close();
-            }
-            if (fromFileStream != null) {
-                fromFileStream.close();
-            }
-            if (toFileStream != null) {
-                toFileStream.close();
-            }
+            closeQuietly(fromFileChannel);
+            closeQuietly(toFileChannel);
+            closeQuietly(fromFileStream);
+            closeQuietly(toFileStream);
         }
     }
 
@@ -301,8 +293,9 @@ public class CommonUtil {
      */
     public static byte[] readFile(File file) throws IOException {
         if (file == null) {
-            return null;
+            throw new NullPointerException("argument 'file' cannot be null");
         }
+
         long fileLength = file.length();
         byte[] content = new byte[(int) fileLength];
 
@@ -322,9 +315,7 @@ public class CommonUtil {
                 throw new IOException("The total number of bytes read does not match the file size. Actual file size: " + fileLength + ", bytes read: " + cumulateByteRead + ", path: " + file.getAbsolutePath());
             }
         } finally {
-            if (fin != null) {
-                fin.close();
-            }
+            closeQuietly(fin);
         }
 
         return content;
@@ -338,33 +329,28 @@ public class CommonUtil {
      */
     public static byte[] readResourceFile(String path) throws IOException {
         if (path == null) {
-            return null;
+            throw new NullPointerException("argument 'path' cannot be null");
         }
-        byte[] returnResult = null;
 
-        int byteRead = 0;
-        byte[] b = new byte[256];
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         InputStream in = null;
-
         try {
             in = CommonUtil.class.getResourceAsStream(path);
             if (in == null) {
                 throw new IOException("Resources not found: " + path);
             }
 
+            int byteRead = 0;
+            byte[] b = new byte[8096];
+
             while ((byteRead = in.read(b)) != -1) {
                 bout.write(b, 0, byteRead);
             }
-
-            returnResult = bout.toByteArray();
         } finally {
-            if (in != null) {
-                in.close();
-            }
+            closeQuietly(in);
         }
 
-        return returnResult;
+        return bout.toByteArray();
     }
 
     /**
@@ -374,7 +360,7 @@ public class CommonUtil {
      */
     protected static boolean validateVersion(String version) {
         if (version == null) {
-            return false;
+            throw new NullPointerException("argument 'version' cannot be null");
         }
         return version.matches("[0-9]+(\\.[0-9]+)*");
     }
@@ -390,6 +376,7 @@ public class CommonUtil {
         if (!validateVersion(version1) || !validateVersion(version2)) {
             throw new IllegalArgumentException("Valid version number should be [0-9]+(\\.[0-9]+)*, found: " + version1 + ", " + version2);
         }
+
         String[] version1Parted = version1.split("\\.");
         String[] version2Parted = version2.split("\\.");
 
@@ -404,7 +391,7 @@ public class CommonUtil {
 
     /**
      * Get the client script.
-     * @param inputPath the default path, can be null
+     * @param inputPath the default path, null means not specified
      * @return the result
      * @throws InvalidFormatException the format of the client script or the version number is invalid
      * @throws IOException error occurred when reading the content from the file
@@ -511,12 +498,13 @@ public class CommonUtil {
      * @throws TransformerException the format of the client is invalid
      */
     public static void saveClientScript(File clientScriptFile, Client clientScript) throws IOException, TransformerException {
-        if (clientScript == null) {
-            return;
-        }
         if (clientScriptFile == null) {
             throw new NullPointerException("argument 'clientScriptFile' cannot be null");
         }
+        if (clientScript == null) {
+            throw new NullPointerException("argument 'clientScript' cannot be null");
+        }
+
         File clientScriptTemp = new File(getFileDirectory(clientScriptFile) + File.separator + clientScriptFile.getName() + ".new");
         writeFile(clientScriptTemp, clientScript.output());
         if (!clientScriptFile.delete() || !clientScriptTemp.renameTo(clientScriptFile)) {
@@ -531,8 +519,9 @@ public class CommonUtil {
      */
     public static boolean truncateFolder(File directory) {
         if (directory == null) {
-            return true;
+            throw new NullPointerException("argument 'directory' cannot be null");
         }
+
         File[] files = directory.listFiles();
         for (File file : files) {
             if (file.isDirectory()) {
@@ -545,6 +534,7 @@ public class CommonUtil {
                 }
             }
         }
+
         return true;
     }
 
@@ -556,8 +546,9 @@ public class CommonUtil {
      */
     protected static boolean truncateFolderRecursively(File directory) {
         if (directory == null) {
-            return true;
+            throw new NullPointerException("argument 'directory' cannot be null");
         }
+
         if (directory.isDirectory()) {
             File[] files = directory.listFiles();
             for (File file : files) {
@@ -572,6 +563,7 @@ public class CommonUtil {
                 }
             }
         }
+
         return directory.delete();
     }
 
@@ -585,15 +577,21 @@ public class CommonUtil {
      * @throws IOException error occurred when writing to 
      */
     public static byte[] rsaEncrypt(RSAPrivateKey key, int blockSize, int contentBlockSize, byte[] b) {
-        if (b == null) {
-            return null;
-        }
         if (key == null) {
             throw new NullPointerException("argument 'key' cannot be null");
         }
-        try {
-            ByteArrayOutputStream bout = new ByteArrayOutputStream(((b.length / contentBlockSize) * blockSize) + (b.length % contentBlockSize == 0 ? 0 : blockSize));
+        if (b == null) {
+            throw new NullPointerException("argument 'b' cannot be null");
+        }
+        if (blockSize <= 0) {
+            throw new IllegalArgumentException("argument 'blockSize' should >= 0");
+        }
+        if (contentBlockSize <= 0) {
+            throw new IllegalArgumentException("argument 'contentBlockSize' should >= 0");
+        }
 
+        ByteArrayOutputStream bout = new ByteArrayOutputStream(((b.length / contentBlockSize) * blockSize) + (b.length % contentBlockSize == 0 ? 0 : blockSize));
+        try {
             Cipher cipher = Cipher.getInstance("RSA");
             cipher.init(Cipher.ENCRYPT_MODE, key);
 
@@ -602,11 +600,9 @@ public class CommonUtil {
                 try {
                     bout.write(cipher.doFinal(b, i, byteToRead));
                 } catch (IOException ex) {
-                    // should not caught any for ByteArrayOutputStream
+                    // should not catch any for ByteArrayOutputStream
                 }
             }
-
-            return bout.toByteArray();
         } catch (NoSuchAlgorithmException ex) {
             // it should be included in JCE
             if (debug) {
@@ -634,7 +630,7 @@ public class CommonUtil {
             }
         }
 
-        return null;
+        return bout.toByteArray();
     }
 
     /**
@@ -646,21 +642,22 @@ public class CommonUtil {
      * @throws BadPaddingException <code>b</code> is not a valid RSA encrypted data with the <code>key</code>
      */
     public static byte[] rsaDecrypt(RSAPublicKey key, int blockSize, byte[] b) throws BadPaddingException {
-        if (b == null) {
-            return null;
-        }
         if (key == null) {
             throw new NullPointerException("argument 'key' cannot be null");
         }
-        byte[] returnResult = null;
+        if (b == null) {
+            throw new NullPointerException("argument 'b' cannot be null");
+        }
+        if (blockSize <= 0) {
+            throw new IllegalArgumentException("argument 'blockSize' should >= 0");
+        }
 
+        if (b.length % blockSize != 0) {
+            throw new BadPaddingException("Data length is not a multiple of RSA block size. Data length: " + b.length + ", RSA block size: " + blockSize + ", data length % RSA block size: " + b.length % blockSize);
+        }
+
+        ByteArrayOutputStream bout = new ByteArrayOutputStream(b.length);
         try {
-            if (b.length % blockSize != 0) {
-                throw new BadPaddingException("Data length is not a multiple of RSA block size. Data length: " + b.length + ", RSA block size: " + blockSize + ", data length % RSA block size: " + b.length % blockSize);
-            }
-
-            ByteArrayOutputStream bout = new ByteArrayOutputStream(b.length);
-
             Cipher cipher = Cipher.getInstance("RSA");
             cipher.init(Cipher.DECRYPT_MODE, key);
 
@@ -668,11 +665,9 @@ public class CommonUtil {
                 try {
                     bout.write(cipher.doFinal(b, i, blockSize));
                 } catch (IOException ex) {
-                    // should not caught any for ByteArrayOutputStream
+                    // should not catch any for ByteArrayOutputStream
                 }
             }
-
-            returnResult = bout.toByteArray();
         } catch (NoSuchAlgorithmException ex) {
             // it should be included in JCE
             if (debug) {
@@ -695,10 +690,24 @@ public class CommonUtil {
             }
         }
 
-        return returnResult;
+        return bout.toByteArray();
     }
 
+    /**
+     * Get the {@link java.security.interfaces.RSAPublicKey} by the modulus and public exponent.
+     * @param modulus the modulus
+     * @param publicExponent the public exponent
+     * @return the key
+     * @throws InvalidKeySpecException the modulus or exponent is invalid
+     */
     public static RSAPublicKey getPublicKey(BigInteger modulus, BigInteger publicExponent) throws InvalidKeySpecException {
+        if (modulus == null) {
+            throw new NullPointerException("argument 'modulus' cannot be null");
+        }
+        if (publicExponent == null) {
+            throw new NullPointerException("argument 'publicExponent' cannot be null");
+        }
+
         RSAPublicKey returnKey = null;
         try {
             RSAPublicKeySpec keySpec = new RSAPublicKeySpec(modulus, publicExponent);
@@ -712,7 +721,21 @@ public class CommonUtil {
         return returnKey;
     }
 
+    /**
+     * Get the {@link java.security.interfaces.RSAPrivateKey} by the modulus and private exponent.
+     * @param modulus the modulus
+     * @param privateExponent the private exponent
+     * @return the key
+     * @throws InvalidKeySpecException the modulus or exponent is invalid
+     */
     public static RSAPrivateKey getPrivateKey(BigInteger modulus, BigInteger privateExponent) throws InvalidKeySpecException {
+        if (modulus == null) {
+            throw new NullPointerException("argument 'modulus' cannot be null");
+        }
+        if (privateExponent == null) {
+            throw new NullPointerException("argument 'privateExponent' cannot be null");
+        }
+
         RSAPrivateKey returnKey = null;
         try {
             RSAPrivateKeySpec keySpec = new RSAPrivateKeySpec(modulus, privateExponent);
@@ -733,8 +756,9 @@ public class CommonUtil {
      */
     public static boolean tryLock(File file) {
         if (file == null) {
-            return true;
+            throw new NullPointerException("argument 'file' cannot be null");
         }
+
         FileOutputStream fout = null;
         FileLock lock = null;
         try {
@@ -751,28 +775,37 @@ public class CommonUtil {
                 if (lock != null) {
                     lock.release();
                 }
-                if (fout != null) {
-                    fout.close();
-                }
             } catch (IOException ex) {
                 if (debug) {
                     Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
+            closeQuietly(fout);
         }
+
         return false;
     }
 
-    public static Map<String, File> getAllFiles(File file, String rootPath) {
+    /**
+     * Search through the directory and find all sub-folders, files and those in its sub-folders recursively.
+     * @param directory the directory to search through to get files
+     * @param rootPath the path to replace the map key in return result
+     * @return a map with the key be the path of the file and value be the file
+     */
+    public static Map<String, File> getAllFiles(File directory, String rootPath) {
+        if (directory == null) {
+            throw new NullPointerException("argument 'file' cannot be null");
+        }
+        if (rootPath == null) {
+            throw new NullPointerException("argument 'rootPath' cannot be null");
+        }
+
         Map<String, File> returnResult = new HashMap<String, File>();
 
-        if (file == null) {
-            return returnResult;
-        }
-        String fileRootPath = rootPath != null ? rootPath : file.getAbsolutePath();
+        String fileRootPath = rootPath != null ? rootPath : directory.getAbsolutePath();
 
-        if (file.isDirectory()) {
-            File[] files = file.listFiles();
+        if (directory.isDirectory()) {
+            File[] files = directory.listFiles();
             for (File _file : files) {
                 if (_file.isHidden()) {
                     continue;
@@ -784,25 +817,28 @@ public class CommonUtil {
                 }
             }
         }
-        returnResult.put(file.getAbsolutePath().replace(fileRootPath, "").replace(File.separator, "/"), file);
+        returnResult.put(directory.getAbsolutePath().replace(fileRootPath, "").replace(File.separator, "/"), directory);
 
         return returnResult;
     }
 
-    public static boolean compareFile(File oldFile, File newFile) throws IOException {
-        if (oldFile == null && newFile == null) {
-            return true;
-        }
-
-        if (oldFile == null) {
+    /**
+     * Compare the content of two files byte by byte.
+     * @param file1 the first file
+     * @param file2 the second file
+     * @return true if the content of two files are identical
+     * @throws IOException error occurred when reading the file
+     */
+    public static boolean compareFile(File file1, File file2) throws IOException {
+        if (file1 == null) {
             throw new NullPointerException("argument 'oldFile' cannot be null");
         }
-        if (newFile == null) {
+        if (file2 == null) {
             throw new NullPointerException("argument 'newFile' cannot be null");
         }
 
-        long oldFileLength = oldFile.length();
-        long newFileLength = newFile.length();
+        long oldFileLength = file1.length();
+        long newFileLength = file2.length();
 
         if (oldFileLength != newFileLength) {
             return false;
@@ -811,8 +847,8 @@ public class CommonUtil {
         FileInputStream oldFin = null;
         FileInputStream newFin = null;
         try {
-            oldFin = new FileInputStream(oldFile);
-            newFin = new FileInputStream(newFile);
+            oldFin = new FileInputStream(file1);
+            newFin = new FileInputStream(file2);
 
             byte[] ob = new byte[32768];
             byte[] nb = new byte[32768];
@@ -836,23 +872,35 @@ public class CommonUtil {
             }
 
             if (cumulateByteRead != oldFileLength) {
-                throw new IOException("The total number of bytes read does not match the file size. Actual file size: " + oldFileLength + ", bytes read: " + cumulateByteRead + ", path: " + oldFile.getAbsolutePath() + " & " + newFile.getAbsolutePath());
+                throw new IOException("The total number of bytes read does not match the file size. Actual file size: " + oldFileLength + ", bytes read: " + cumulateByteRead + ", path: " + file1.getAbsolutePath() + " & " + file2.getAbsolutePath());
             }
         } finally {
-            if (oldFin != null) {
-                oldFin.close();
-            }
-            if (newFin != null) {
-                newFin.close();
-            }
+            closeQuietly(oldFin);
+            closeQuietly(newFin);
         }
 
         return true;
     }
 
+    /**
+     * Fill the buffer <code>b</code> with specified <code>length</code> from the stream <code>in</code>.
+     * @param in the stream to read from
+     * @param b the buffer to fill-in
+     * @param length the length to fill-in the buffer <code>b</code>
+     * @throws IOException error occurred when read from stream or reach the end of stream but the <code>length</code> not fulfilled
+     */
     protected static void fillBuffer(InputStream in, byte[] b, int length) throws IOException {
+        if (in == null) {
+            throw new NullPointerException("argument 'in' cannot be null");
+        }
+        if (b == null) {
+            throw new NullPointerException("argument 'b' cannot be null");
+        }
         if (length > b.length) {
             throw new IllegalArgumentException("argument 'length' is greater than the length of argument 'b'");
+        }
+        if (length <= 0) {
+            return;
         }
 
         int byteRead, cumulateByteRead = 0;
@@ -864,6 +912,7 @@ public class CommonUtil {
                 }
                 return;
             }
+
             cumulateByteRead += byteRead;
             if (cumulateByteRead >= length) {
                 break;
@@ -872,6 +921,22 @@ public class CommonUtil {
 
         if (length != cumulateByteRead) {
             throw new IOException("The total number of bytes read does not match the requirement. Expected: " + length + ", bytes read: " + cumulateByteRead);
+        }
+    }
+
+    /**
+     * Close the stream quietly without any IO exception thrown.
+     * @param closeable the stream to close, accept null
+     */
+    public static void closeQuietly(Closeable closeable) {
+        if (closeable != null) {
+            try {
+                closeable.close();
+            } catch (IOException ex) {
+                if (debug) {
+                    Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
         }
     }
 }

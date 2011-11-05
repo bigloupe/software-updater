@@ -32,7 +32,7 @@ public class PatchPacker {
 
     public static void pack(File sourceFolder, File saveToFile, AESKey aesKey, File tempFileForEncryption) throws IOException, InvalidFormatException {
         if (sourceFolder == null) {
-            return;
+            throw new NullPointerException("argument 'sourceFolder' cannot be null");
         }
         if (saveToFile == null) {
             throw new NullPointerException("argument 'saveToFile' cannot be null");
@@ -77,13 +77,11 @@ public class PatchPacker {
 
             xzOut.finish();
         } finally {
-            if (fout != null) {
-                fout.close();
-            }
+            CommonUtil.closeQuietly(fout);
         }
 
         if (aesKey != null) {
-            PatchWriteUtil.encrypt(aesKey, saveToFile, tempFileForEncryption);
+            PatchWriteUtil.encrypt(aesKey, null, saveToFile, tempFileForEncryption);
 
             saveToFile.delete();
             tempFileForEncryption.renameTo(saveToFile);

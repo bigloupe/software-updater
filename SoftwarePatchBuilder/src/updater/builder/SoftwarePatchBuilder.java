@@ -481,21 +481,6 @@ public class SoftwarePatchBuilder {
         PatchLogWriter logger = new PatchLogWriter(new File(tempDir.getAbsolutePath() + "/action.log"));
         Patcher patcher = new Patcher(new PatcherListener() {
 
-            private int extractionPercentage = 0;
-
-            @Override
-            public void extractProgress(int percentage) {
-                if (extractionPercentage != percentage) {
-                    System.out.println(percentage + "% extracted");
-                    extractionPercentage = percentage;
-                }
-            }
-
-            @Override
-            public void extractFinished() {
-                System.out.println("Extraction completed.");
-            }
-
             @Override
             public void patchProgress(int percentage, String message) {
                 System.out.println(percentage + "%, " + message);

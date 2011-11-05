@@ -61,15 +61,11 @@ public class PatchCreator {
 
         List<Operation> operations = new ArrayList<Operation>();
         List<ValidationFile> validations = new ArrayList<ValidationFile>();
-
         Patch patchScript = new Patch(patchId,
                 fromVersion, fromSubsequentVersion, toVersion,
                 null, null, -1,
                 null, null, null,
                 operations, validations);
-
-        List<OperationRecord> forceFileList = new ArrayList<OperationRecord>();
-
 
         String softwarePath = softwareDirectory.getAbsolutePath();
         if (!softwarePath.endsWith(File.separator)) {
@@ -77,13 +73,15 @@ public class PatchCreator {
         }
 
 
+        // get all files in the software directory
         Map<String, File> softwareFiles = CommonUtil.getAllFiles(softwareDirectory, softwarePath);
         softwareFiles.remove(softwareDirectory.getAbsolutePath().replace(File.separator, "/"));
+
 
         // to prevent generate checksum repeatedly
         Map<String, String> softwareFilesChecksumMap = new HashMap<String, String>();
 
-        // add validations list first
+        // validations - add validations list first
         for (String _filePath : softwareFiles.keySet()) {
             File _newFile = softwareFiles.get(_filePath);
             ValidationFile validationFile;
@@ -98,25 +96,23 @@ public class PatchCreator {
         }
         patchScript.setValidations(validations);
 
-        // process operations list
+
+        List<OperationRecord> forceFileList = new ArrayList<OperationRecord>();
+        // record those file with their content needed to put into the patch
+        List<File> patchForceFileList = new ArrayList<File>();
+
+        // operations - prepare forceFileList
         Iterator<String> iterator = softwareFiles.keySet().iterator();
         while (iterator.hasNext()) {
             String _filePath = iterator.next();
             File _forceFile = softwareFiles.get(_filePath);
-
             forceFileList.add(new OperationRecord(null, _forceFile));
-
             iterator.remove();
         }
+        sortFileListAsc(forceFileList);
 
-
-        sortNewFileList(forceFileList);
-
-
+        // operations - prepare patchForceFileList and operations
         int pos = 0, operationIdCounter = 1;
-        // record those file with their content needed to put into the patch
-        List<File> patchForceFileList = new ArrayList<File>();
-
         for (OperationRecord record : forceFileList) {
             File _forceFile = record.getNewFile();
 
@@ -149,6 +145,7 @@ public class PatchCreator {
 //        } catch (TransformerException ex) {
 //            Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
 //        }
+        // patch script
         byte[] patchScriptOutput = null;
         try {
             patchScriptOutput = patchScript.output();
@@ -158,6 +155,8 @@ public class PatchCreator {
             }
         }
 
+
+        // packing
         // why not use PatchPacker here?
         // here will not copy the new file to another folder for packing but instead directly read the new file to the patch
         FileOutputStream fout = null;
@@ -175,13 +174,13 @@ public class PatchCreator {
 
             xzOut.finish();
         } finally {
-            if (fout != null) {
-                fout.close();
-            }
+            CommonUtil.closeQuietly(fout);
         }
 
+
+        // encryption
         if (aesKey != null) {
-            PatchWriteUtil.encrypt(aesKey, patch, tempFileForEncryption);
+            PatchWriteUtil.encrypt(aesKey, null, patch, tempFileForEncryption);
 
             patch.delete();
             tempFileForEncryption.renameTo(patch);
@@ -214,18 +213,11 @@ public class PatchCreator {
 
         List<Operation> operations = new ArrayList<Operation>();
         List<ValidationFile> validations = new ArrayList<ValidationFile>();
-
         Patch patchScript = new Patch(patchId,
                 fromVersion, null, toVersion,
                 null, null, -1,
                 null, null, null,
                 operations, validations);
-
-        List<OperationRecord> newFileList = new ArrayList<OperationRecord>();
-        List<OperationRecord> removeFileList = new ArrayList<OperationRecord>();
-        List<OperationRecord> patchFileList = new ArrayList<OperationRecord>();
-        List<OperationRecord> replaceFileList = new ArrayList<OperationRecord>();
-
 
         String oldVersionPath = oldVersion.getAbsolutePath();
         String newVersionPath = newVersion.getAbsolutePath();
@@ -236,11 +228,16 @@ public class PatchCreator {
             newVersionPath += File.separator;
         }
 
-
         Map<String, File> oldVersionFiles = CommonUtil.getAllFiles(oldVersion, oldVersionPath);
         Map<String, File> newVersionFiles = CommonUtil.getAllFiles(newVersion, newVersionPath);
         oldVersionFiles.remove(oldVersion.getAbsolutePath().replace(File.separator, "/"));
         newVersionFiles.remove(newVersion.getAbsolutePath().replace(File.separator, "/"));
+
+
+        List<OperationRecord> newFileList = new ArrayList<OperationRecord>();
+        List<OperationRecord> removeFileList = new ArrayList<OperationRecord>();
+        List<OperationRecord> patchFileList = new ArrayList<OperationRecord>();
+        List<OperationRecord> replaceFileList = new ArrayList<OperationRecord>();
 
         // to prevent generate checksum repeatedly
         Map<String, String> newVersionFilesChecksumMap = new HashMap<String, String>();
@@ -301,8 +298,8 @@ public class PatchCreator {
         }
 
 
-        sortNewFileList(newFileList);
-        sortRemoveFileList(removeFileList);
+        sortFileListAsc(newFileList);
+        sortFileListDesc(removeFileList);
 
 
         int pos = 0, operationIdCounter = 1;
@@ -366,10 +363,14 @@ public class PatchCreator {
             // get delta/diff
             File diffFile = new File(tempDir + File.separator + Integer.toString(count));
             diffFile.deleteOnExit();
-            FileOutputStream fout = new FileOutputStream(diffFile);
-            DiffWriter diffOut = new GDiffWriter(fout);
-            delta.compute(_oldFile, _newFile, diffOut);
-            fout.close();
+            FileOutputStream fout = null;
+            try {
+                fout = new FileOutputStream(diffFile);
+                DiffWriter diffOut = new GDiffWriter(fout);
+                delta.compute(_oldFile, _newFile, diffOut);
+            } catch (Exception ex) {
+                CommonUtil.closeQuietly(fout);
+            }
 
             int fileLength = (int) diffFile.length();
             int newFileLength = (int) _newFile.length();
@@ -414,9 +415,6 @@ public class PatchCreator {
             pos += fileLength;
         }
 
-//        if (operations.isEmpty()) {
-//            return false;
-//        }
         patchScript.setOperations(operations);
 
 
@@ -425,6 +423,7 @@ public class PatchCreator {
 //        } catch (TransformerException ex) {
 //            Logger.getLogger(Creator.class.getName()).log(Level.SEVERE, null, ex);
 //        }
+        // patch script
         byte[] patchScriptOutput = null;
         try {
             patchScriptOutput = patchScript.output();
@@ -434,6 +433,8 @@ public class PatchCreator {
             }
         }
 
+
+        // packing
         // why not use PatchPacker here?
         // here will not copy the new file to another folder for packing but instead directly read the new file to the patch
         FileOutputStream fout = null;
@@ -458,23 +459,24 @@ public class PatchCreator {
 
             xzOut.finish();
         } finally {
-            if (fout != null) {
-                fout.close();
-            }
+            CommonUtil.closeQuietly(fout);
         }
 
+
+        // encryption
         if (aesKey != null) {
-            PatchWriteUtil.encrypt(aesKey, patch, tempFileForEncryption);
+            PatchWriteUtil.encrypt(aesKey, null, patch, tempFileForEncryption);
 
             patch.delete();
             tempFileForEncryption.renameTo(patch);
         }
     }
 
-    protected static void sortNewFileList(List<OperationRecord> list) {
+    protected static void sortFileListAsc(List<OperationRecord> list) {
         if (list == null) {
-            return;
+            throw new NullPointerException("argument 'list' cannot be null");
         }
+
         Collections.sort(list, new Comparator<OperationRecord>() {
 
             @Override
@@ -484,10 +486,11 @@ public class PatchCreator {
         });
     }
 
-    protected static void sortRemoveFileList(List<OperationRecord> list) {
+    protected static void sortFileListDesc(List<OperationRecord> list) {
         if (list == null) {
-            return;
+            throw new NullPointerException("argument 'list' cannot be null");
         }
+
         Collections.sort(list, new Comparator<OperationRecord>() {
 
             @Override

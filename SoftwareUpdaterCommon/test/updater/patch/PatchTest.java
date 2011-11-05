@@ -83,14 +83,6 @@ public class PatchTest {
         Patcher patcher = new Patcher(new PatcherListener() {
 
             @Override
-            public void extractProgress(int percentage) {
-            }
-
-            @Override
-            public void extractFinished() {
-            }
-
-            @Override
             public void patchProgress(int percentage, String message) {
             }
 
@@ -127,14 +119,6 @@ public class PatchTest {
         // apply the patch on 'old' folder
         log = new PatchLogWriter(logFileForFullPatch);
         patcher = new Patcher(new PatcherListener() {
-
-            @Override
-            public void extractProgress(int percentage) {
-            }
-
-            @Override
-            public void extractFinished() {
-            }
 
             @Override
             public void patchProgress(int percentage, String message) {

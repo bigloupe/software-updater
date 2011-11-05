@@ -22,10 +22,16 @@ public class SeekableFile extends RandomAccessFileSeekableSource {
     }
 
     public void addInterruptedTask(Runnable task) {
+        if (task == null) {
+            return;
+        }
         interruptedTasks.add(task);
     }
 
     public void removeInterruptedTask(Runnable task) {
+        if (task == null) {
+            return;
+        }
         interruptedTasks.remove(task);
     }
 

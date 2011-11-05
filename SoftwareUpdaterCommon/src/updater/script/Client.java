@@ -169,7 +169,7 @@ public class Client {
 
     public static Client read(byte[] content) throws InvalidFormatException {
         if (content == null) {
-            return null;
+            throw new NullPointerException("argument 'content' cannot be null");
         }
 
         Document doc;
@@ -438,11 +438,7 @@ public class Client {
 
         protected static Information read(Element informationElement) throws InvalidFormatException {
             if (informationElement == null) {
-                return null;
-            }
-
-            if (informationElement == null) {
-                throw new NullPointerException();
+                throw new NullPointerException("argument 'informationElement' cannot be null");
             }
 
             String _softwareName = null;
@@ -488,7 +484,7 @@ public class Client {
 
         protected Element getElement(Document doc) {
             if (doc == null) {
-                return null;
+                throw new NullPointerException("argument 'doc' cannot be null");
             }
 
             Element _information = doc.createElement("information");
