@@ -1,5 +1,6 @@
 package updater.patch;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,7 +29,7 @@ import java.io.IOException;
  * 
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
-public class PatchLogWriter {
+public class PatchLogWriter implements Closeable {
 
     public static enum Action {
 
@@ -84,6 +85,7 @@ public class PatchLogWriter {
         currentPatchVersionTo = "";
     }
 
+    @Override
     public void close() throws IOException {
         out.close();
     }

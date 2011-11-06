@@ -146,17 +146,9 @@ public class RemoteContent {
                 Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
             }
         } finally {
-            try {
-                if (in != null) {
-                    in.close();
-                }
-                if (httpConn != null) {
-                    httpConn.disconnect();
-                }
-            } catch (IOException ex) {
-                if (debug) {
-                    Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
-                }
+            Util.closeQuietly(in);
+            if (httpConn != null) {
+                httpConn.disconnect();
             }
         }
 
@@ -184,9 +176,7 @@ public class RemoteContent {
                 throw new Exception("The total number of bytes read does not match the file size. Actual file size: " + fileLength + ", bytes read: " + cumulateByteRead + ", path: " + file.getAbsolutePath());
             }
         } finally {
-            if (fin != null) {
-                fin.close();
-            }
+            Util.closeQuietly(fin);
         }
     }
 
@@ -330,28 +320,18 @@ public class RemoteContent {
 
             returnResult = new GetPatchResult(true, false);
         } catch (InterruptedException ex) {
-            return new GetPatchResult(false, true);
+            returnResult = new GetPatchResult(false, true);
         } catch (Exception ex) {
             returnResult = new GetPatchResult(false, false);
             if (debug) {
                 Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
             }
         } finally {
-            try {
-                if (in != null) {
-                    in.close();
-                }
-                if (httpConn != null) {
-                    httpConn.disconnect();
-                }
-                if (fout != null) {
-                    fout.close();
-                }
-            } catch (IOException ex) {
-                if (debug) {
-                    Logger.getLogger(RemoteContent.class.getName()).log(Level.SEVERE, null, ex);
-                }
+            Util.closeQuietly(in);
+            if (httpConn != null) {
+                httpConn.disconnect();
             }
+            Util.closeQuietly(fout);
         }
 
         return returnResult;

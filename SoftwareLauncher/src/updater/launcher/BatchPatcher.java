@@ -10,6 +10,7 @@ import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFrame;
@@ -56,6 +57,8 @@ public class BatchPatcher {
     public static UpdateResult update(File clientScriptFile, Client clientScript, File tempDir, String windowTitle, Image windowIcon, String title, Image icon) {
         UpdateResult returnResult = new UpdateResult(false, false);
 
+        final AtomicReference<Patcher> patcherRef = new AtomicReference<Patcher>();
+
         List<Patch> patches = clientScript.getPatches();
         if (patches.isEmpty()) {
             return new UpdateResult(true, true);
@@ -71,8 +74,22 @@ public class BatchPatcher {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                updaterGUI.setCancelEnabled(false);
-                currentThread.interrupt();
+                Patcher _patcher = patcherRef.get();
+                if (_patcher == null) {
+                    updaterGUI.setCancelEnabled(false);
+                    currentThread.interrupt();
+                } else {
+                    _patcher.pause(true);
+
+                    Object[] options = {"Yes", "No"};
+                    int result = JOptionPane.showOptionDialog(null, "Are you sure to cancel update?", "Canel Update", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+                    if (result == 0) {
+                        updaterGUI.setCancelEnabled(false);
+                        currentThread.interrupt();
+                    }
+
+                    _patcher.pause(false);
+                }
             }
         });
         updaterGUI.setProgress(0);
@@ -168,15 +185,11 @@ public class BatchPatcher {
                 File patchFile = new File(tempDir.getAbsolutePath() + File.separator + _update.getId() + ".patch");
                 File decryptedPatchFile = new File(_update.getId() + ".patch.decrypted");
                 if (!patchFile.exists()) {
-                    if (decryptedPatchFile.exists()) {
-                        decryptedPatchFile.renameTo(patchFile);
-                    } else {
-                        // if the patch not exist, remove all patches
-                        // save the client scirpt
-                        clientScript.setPatches(new ArrayList<Patch>());
-                        Util.saveClientScript(clientScriptFile, clientScript);
-                        throw new IOException("Patch file not found: " + patchFile.getAbsolutePath());
-                    }
+                    // if the patch not exist, remove all patches
+                    // save the client scirpt
+                    clientScript.setPatches(new ArrayList<Patch>());
+                    Util.saveClientScript(clientScriptFile, clientScript);
+                    throw new IOException("Patch file not found: " + patchFile.getAbsolutePath());
                 }
 
                 // patch
@@ -206,10 +219,9 @@ public class BatchPatcher {
                         updaterGUI.setCancelEnabled(enable);
                     }
                 }, patchActionLogWriter, new File(""), tempDirForPatch);
+                patcherRef.set(_patcher);
                 _patcher.doPatch(patchFile, _update.getId(), getPatchStartIndex(_update, patchLogReader), aesKey, decryptedPatchFile);
-
-                // close log
-                patchActionLogWriter.close();
+                patcherRef.set(null);
 
                 // remove 'update' from updates list
                 iterator.remove();
@@ -227,7 +239,7 @@ public class BatchPatcher {
 
             returnResult = new UpdateResult(true, true);
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(updaterFrame, "An error occurred when updating the software.");
+            JOptionPane.showMessageDialog(updaterFrame, "Error occurred when updating the software.");
 
             boolean launchSoftware = false;
 
@@ -249,21 +261,17 @@ public class BatchPatcher {
         } finally {
             updaterFrame.setVisible(false);
             updaterFrame.dispose();
-            try {
-                if (lock != null) {
+            if (lock != null) {
+                try {
                     lock.release();
-                }
-                if (lockFileOut != null) {
-                    lockFileOut.close();
-                }
-                if (patchActionLogWriter != null) {
-                    patchActionLogWriter.close();
-                }
-            } catch (IOException ex) {
-                if (debug) {
-                    Logger.getLogger(BatchPatcher.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (IOException ex) {
+                    if (debug) {
+                        Logger.getLogger(BatchPatcher.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
+            Util.closeQuietly(lockFileOut);
+            Util.closeQuietly(patchActionLogWriter);
             if (returnResult.isUpdateSucceed()) {
                 // remove log
                 logFile.delete();

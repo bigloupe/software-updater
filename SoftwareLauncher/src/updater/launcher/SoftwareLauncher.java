@@ -113,8 +113,20 @@ public class SoftwareLauncher {
             Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
         }
 
+        GetClientScriptResult result = null;
         try {
-            GetClientScriptResult result = Util.getClientScript(args.length > 0 ? args[0] : null);
+            result = Util.getClientScript(args.length > 0 ? args[0] : null);
+        } catch (IOException ex) {
+            Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(null, "Fail to load config file.");
+            return;
+        } catch (InvalidFormatException ex) {
+            Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(null, "Config file format invalid.");
+            return;
+        }
+
+        try {
             if (result.getClientScript() != null) {
                 SoftwareLauncher.start(new File(result.getClientScriptPath()), result.getClientScript(), args);
             } else {
@@ -123,12 +135,11 @@ public class SoftwareLauncher {
         } catch (IOException ex) {
             Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
             JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software-icon or root->information->updater-icon.");
-        } catch (InvalidFormatException ex) {
-            Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
-            JOptionPane.showMessageDialog(null, "Config file format invalid.");
+            return;
         } catch (LaunchFailedException ex) {
             Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
             JOptionPane.showMessageDialog(null, "Failed to launch the software.");
+            return;
         }
     }
 }
