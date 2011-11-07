@@ -22,7 +22,7 @@ public class Client {
     //
     protected String launchType;
     protected String launchAfterLaunch;
-    protected String launchCommand;
+    protected List<String> launchCommands;
     protected String launchJarPath;
     protected String launchMainClass;
     //
@@ -36,7 +36,7 @@ public class Client {
     public Client(String version,
             String storagePath,
             Information information,
-            String launchType, String launchAfterLaunch, String launchCommand, String launchJarPath, String launchMainClass,
+            String launchType, String launchAfterLaunch, List<String> launchCommands, String launchJarPath, String launchMainClass,
             String catalogUrl, String catalogPublicKeyModulus, String catalogPublicKeyExponent, long catalogLastUpdated,
             List<Patch> patches) {
         this.version = version;
@@ -47,7 +47,7 @@ public class Client {
 
         this.launchType = launchType;
         this.launchAfterLaunch = launchAfterLaunch;
-        this.launchCommand = launchCommand;
+        this.launchCommands = launchCommands;
         this.launchJarPath = launchJarPath;
         this.launchMainClass = launchMainClass;
 
@@ -99,12 +99,16 @@ public class Client {
         this.launchAfterLaunch = launchAfterLaunch;
     }
 
-    public String getLaunchCommand() {
-        return launchCommand;
+    public List<String> getLaunchCommands() {
+        return new ArrayList<String>(launchCommands);
     }
 
-    public void setLaunchCommand(String launchCommand) {
-        this.launchCommand = launchCommand;
+    public void setLaunchCommands(List<String> launchCommands) {
+        if (launchCommands == null) {
+            this.launchCommands = new ArrayList<String>();
+            return;
+        }
+        this.launchCommands = launchCommands;
     }
 
     public String getLaunchJarPath() {
@@ -193,21 +197,25 @@ public class Client {
 
         String _launchType = null;
         String _launchAfterLaunch = null;
-        String _launchCommand = null;
+        List<String> _launchCommands = new ArrayList<String>();
         String _launchJarPath = null;
         String _launchMainClass = null;
         Element _launchNode = XMLUtil.getElement(_rootNode, "launch", false);
         if (_launchNode != null) {
             _launchType = XMLUtil.getTextContent(_launchNode, "type", true);
             _launchAfterLaunch = XMLUtil.getTextContent(_launchNode, "after-launch", false);
-            _launchCommand = XMLUtil.getTextContent(_launchNode, "command", false);
+            NodeList commandNodeList = XMLUtil.getNodeList(_launchNode, "command", -1, -1);
+            for (int i = 0, iEnd = commandNodeList.getLength(); i < iEnd; i++) {
+                Element _commandNode = (Element) commandNodeList.item(i);
+                _launchCommands.add(_commandNode.getTextContent());
+            }
             _launchJarPath = XMLUtil.getTextContent(_launchNode, "jar-path", false);
             _launchMainClass = XMLUtil.getTextContent(_launchNode, "main-class", false);
 
             if (_launchType.equals("jar") && (_launchJarPath == null || _launchMainClass == null)) {
                 throw new InvalidFormatException("Launch type if 'jar', <jar-path> and <main-class> must exist under <launch>.");
             }
-            if (_launchType.equals("command") && _launchCommand == null) {
+            if (_launchType.equals("command") && _launchCommands == null) {
                 throw new InvalidFormatException("Launch type if 'command', <command> must exist under <launch>.");
             }
         }
@@ -242,7 +250,7 @@ public class Client {
 
         return new Client(_version,
                 _storagePath, _information,
-                _launchType, _launchAfterLaunch, _launchCommand, _launchJarPath, _launchMainClass,
+                _launchType, _launchAfterLaunch, _launchCommands, _launchJarPath, _launchMainClass,
                 _catalogUrl, _catalogPublicKeyModulus, _catalogPublicKeyExponent, _catalogLastUpdated,
                 patches);
     }
@@ -283,9 +291,11 @@ public class Client {
                 launchElement.appendChild(launchAfterLaunchElement);
             }
             if (launchType.equals("command")) {
-                Element launchCommandElement = doc.createElement("command");
-                launchCommandElement.setTextContent(launchCommand);
-                launchElement.appendChild(launchCommandElement);
+                for (String _command : launchCommands) {
+                    Element launchCommandElement = doc.createElement("command");
+                    launchCommandElement.setTextContent(_command);
+                    launchElement.appendChild(launchCommandElement);
+                }
             }
             if (launchType.equals("jar")) {
                 Element launchJarPathElement = doc.createElement("jar-path");

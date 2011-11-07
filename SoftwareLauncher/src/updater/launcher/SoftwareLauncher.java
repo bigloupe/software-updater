@@ -2,16 +2,24 @@ package updater.launcher;
 
 import java.awt.Image;
 import java.awt.Toolkit;
+import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 import updater.launcher.BatchPatcher.UpdateResult;
+import updater.patch.Patcher.Replacement;
 import updater.script.Client;
 import updater.script.Client.Information;
 import updater.script.InvalidFormatException;
@@ -43,7 +51,7 @@ public class SoftwareLauncher {
         String afterLaunchOperation = client.getLaunchAfterLaunch();
         String jarPath = client.getLaunchJarPath();
         String mainClass = client.getLaunchMainClass();
-        String command = client.getLaunchCommand();
+        List<String> launchCommands = client.getLaunchCommands();
 
         String storagePath = client.getStoragePath();
         Information clientInfo = client.getInformation();
@@ -78,16 +86,74 @@ public class SoftwareLauncher {
         //</editor-fold>
 
         UpdateResult updateResult = BatchPatcher.update(clientScriptFile, client, new File(storagePath), clientInfo.getSoftwareName(), softwareIcon, clientInfo.getLauncherTitle(), updaterIcon);
+
+        List<Replacement> replacementList = updateResult.getReplacementList();
+        if (replacementList != null && !replacementList.isEmpty()) {
+            Util.writeFile(new File(client.getStoragePath() + File.separator + "SoftwareSelfUpdater.jar"), Util.readResourceFile("/SoftwareSelfUpdater.jar"));
+
+            File replacementFile = new File(storagePath + File.separator + "replacement.txt");
+            writeReplacement(replacementFile, replacementList);
+
+            List<String> commands = new ArrayList<String>();
+
+            String javaBinary = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
+            String launcherPath = null;
+            try {
+                launcherPath = SoftwareLauncher.class.getProtectionDomain().getCodeSource().getLocation().toURI().toString();
+            } catch (URISyntaxException ex) {
+                JOptionPane.showMessageDialog(null, "Fatal error occurred: jar path detected is invalid.");
+                Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
+                return;
+            }
+
+            commands.add(javaBinary);
+            commands.add("-jar");
+            commands.add(replacementFile.getAbsolutePath());
+
+            if (launchType.equals("jar")) {
+                commands.add(launcherPath);
+                commands.add(replacementFile.getAbsolutePath());
+                commands.add(javaBinary);
+                commands.addAll(ManagementFactory.getRuntimeMXBean().getInputArguments());
+                commands.add("-jar");
+                commands.add(launcherPath);
+                commands.addAll(Arrays.asList(args));
+            } else {
+                for (String _command : launchCommands) {
+                    commands.add(_command.replace("{java}", javaBinary));
+                }
+            }
+
+            ProcessBuilder builder = new ProcessBuilder(commands);
+            builder.start();
+            System.exit(0);
+        }
+
         if (updateResult.isUpdateSucceed() || updateResult.isLaunchSoftware()) {
             if (launchType.equals("jar")) {
                 startSoftware(jarPath, mainClass, args);
             } else {
-                command = command.replace("{java}", System.getProperty("java.home") + File.separator + "bin" + File.separator + "java");
-                Runtime.getRuntime().exec(command);
+                ProcessBuilder builder = new ProcessBuilder(launchCommands);
+                builder.start();
                 if (afterLaunchOperation.equals("exit")) {
                     System.exit(0);
                 }
             }
+        }
+    }
+
+    protected static void writeReplacement(File file, List<Replacement> replacementList) throws IOException {
+        FileOutputStream fout = null;
+        try {
+            fout = new FileOutputStream(file);
+            PrintWriter writer = new PrintWriter(fout);
+
+            for (Replacement _replacement : replacementList) {
+                writer.println(_replacement.getDestination());
+                writer.println(_replacement.getNewFilePath());
+            }
+        } finally {
+            Util.closeQuietly(fout);
         }
     }
 

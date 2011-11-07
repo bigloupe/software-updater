@@ -8,8 +8,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileLock;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,6 +23,7 @@ import updater.patch.PatchLogReader;
 import updater.patch.PatchLogReader.UnfinishedPatch;
 import updater.patch.PatchLogWriter;
 import updater.patch.Patcher;
+import updater.patch.Patcher.Replacement;
 import updater.patch.PatcherListener;
 import updater.script.Client;
 import updater.script.Patch;
@@ -55,13 +58,14 @@ public class BatchPatcher {
     }
 
     public static UpdateResult update(File clientScriptFile, Client clientScript, File tempDir, String windowTitle, Image windowIcon, String title, Image icon) {
-        UpdateResult returnResult = new UpdateResult(false, false);
+        Map<String, Replacement> replacementMap = new HashMap<String, Replacement>();
+        UpdateResult returnResult = new UpdateResult(false, false, new ArrayList<Replacement>());
 
         final AtomicReference<Patcher> patcherRef = new AtomicReference<Patcher>();
 
         List<Patch> patches = clientScript.getPatches();
         if (patches.isEmpty()) {
-            return new UpdateResult(true, true);
+            return new UpdateResult(true, true, new ArrayList<Replacement>());
         }
 
         // action log
@@ -130,7 +134,7 @@ public class BatchPatcher {
                 }
 
                 if (patches.isEmpty()) {
-                    return new UpdateResult(true, true);
+                    return new UpdateResult(true, true, new ArrayList<Replacement>());
                 }
             }
             //</editor-fold>
@@ -220,7 +224,10 @@ public class BatchPatcher {
                     }
                 }, patchActionLogWriter, new File(""), tempDirForPatch);
                 patcherRef.set(_patcher);
-                _patcher.doPatch(patchFile, _update.getId(), getPatchStartIndex(_update, patchLogReader), aesKey, decryptedPatchFile);
+                List<Replacement> replacementList = _patcher.doPatch(patchFile, _update.getId(), getPatchStartIndex(_update, patchLogReader), aesKey, decryptedPatchFile);
+                for (Replacement _replacement : replacementList) {
+                    replacementMap.put(_replacement.getDestination(), _replacement);
+                }
                 patcherRef.set(null);
 
                 // remove 'update' from updates list
@@ -231,13 +238,18 @@ public class BatchPatcher {
                 clientScript.setPatches(patches);
                 Util.saveClientScript(clientScriptFile, clientScript);
 
-                Util.truncateFolder(tempDirForPatch);
-                tempDirForPatch.delete();
+//                Util.truncateFolder(tempDirForPatch);
+//                tempDirForPatch.delete();
 
                 patchFile.delete();
             }
 
-            returnResult = new UpdateResult(true, true);
+            List<Replacement> replacementList = new ArrayList<Replacement>();
+            for (Replacement _replacement : replacementMap.values()) {
+                replacementList.add(_replacement);
+            }
+
+            returnResult = new UpdateResult(true, true, replacementList);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(updaterFrame, "Error occurred when updating the software.");
 
@@ -253,7 +265,7 @@ public class BatchPatcher {
                 }
             }
 
-            returnResult = new UpdateResult(false, launchSoftware);
+            returnResult = new UpdateResult(false, launchSoftware, new ArrayList<Replacement>());
 
             if (debug) {
                 Logger.getLogger(BatchPatcher.class.getName()).log(Level.SEVERE, null, ex);
@@ -285,10 +297,12 @@ public class BatchPatcher {
 
         protected boolean updateSucceed;
         protected boolean launchSoftware;
+        protected List<Replacement> replacementList;
 
-        public UpdateResult(boolean updateSucceed, boolean launchSoftware) {
+        public UpdateResult(boolean updateSucceed, boolean launchSoftware, List<Replacement> replacementList) {
             this.updateSucceed = updateSucceed;
             this.launchSoftware = launchSoftware;
+            this.replacementList = replacementList == null ? new ArrayList<Replacement>() : new ArrayList<Replacement>(replacementList);
         }
 
         public boolean isUpdateSucceed() {
@@ -297,6 +311,10 @@ public class BatchPatcher {
 
         public boolean isLaunchSoftware() {
             return launchSoftware;
+        }
+
+        public List<Replacement> getReplacementList() {
+            return new ArrayList<Replacement>(replacementList);
         }
     }
 }

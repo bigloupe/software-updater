@@ -13,7 +13,9 @@
   </information>
   <launch>
     <type>command</type>
-    <command>{java} -jar LanguageFilesTool.jar</command>
+    <command>{java}</command>
+    <command>-jar</command>
+    <command>LanguageFilesTool.jar</command>
   </launch>
   <catalog>
     <url>http://localhost/SoftwareUpdaterTest/catalog_manipulated.xml</url>

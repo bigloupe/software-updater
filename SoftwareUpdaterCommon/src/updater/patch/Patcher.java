@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -277,7 +278,7 @@ public class Patcher {
         }
     }
 
-    protected void doReplacement(List<Operation> operations, int startFromFileIndex, float progressOccupied) throws IOException {
+    protected List<Replacement> doReplacement(List<Operation> operations, int startFromFileIndex, float progressOccupied) throws IOException {
         if (operations == null) {
             throw new NullPointerException("argument 'operations' cannot be null");
         }
@@ -287,6 +288,8 @@ public class Patcher {
         if (progressOccupied < 0) {
             throw new IllegalArgumentException("argument 'progressOccupied' should >= 0");
         }
+
+        List<Replacement> replacementFailedList = new ArrayList<Replacement>();
 
         float progressStep = progressOccupied / (float) operations.size();
         progress += startFromFileIndex * progressStep;
@@ -310,21 +313,27 @@ public class Patcher {
                     File newFile = new File(softwareDir + _operation.getNewFilePath());
                     new File(CommonUtil.getFileDirectory(newFile)).mkdirs();
                     newFile.delete();
-                    new File(tempDir + File.separator + i).renameTo(newFile);
+                    if (!new File(tempDir + File.separator + i).renameTo(newFile)) {
+                        replacementFailedList.add(new Replacement(softwareDir + _operation.getNewFilePath(), tempDir + File.separator + i));
+                    }
                 }
             } else {
                 // patch or replace
                 listener.patchProgress((int) progress, "Copying from " + _operation.getOldFilePath() + " to " + _operation.getNewFilePath() + " ...");
                 new File(softwareDir + _operation.getNewFilePath()).delete();
-                new File(tempDir + File.separator + i).renameTo(new File(softwareDir + _operation.getNewFilePath()));
+                if (!new File(tempDir + File.separator + i).renameTo(new File(softwareDir + _operation.getNewFilePath()))) {
+                    replacementFailedList.add(new Replacement(softwareDir + _operation.getNewFilePath(), tempDir + File.separator + i));
+                }
             }
 
             log.logPatch(PatchLogWriter.Action.FINISH, i, PatchLogWriter.OperationType.get(_operation.getType()), _operation.getOldFilePath(), _operation.getNewFilePath());
             progress += progressStep;
         }
+
+        return replacementFailedList;
     }
 
-    public void doPatch(File patchFile, int patchId, int startFromFileIndex, AESKey aesKey, File tempFileForDecryption) throws IOException {
+    public List<Replacement> doPatch(File patchFile, int patchId, int startFromFileIndex, AESKey aesKey, File tempFileForDecryption) throws IOException {
         if (patchFile == null) {
             throw new NullPointerException("argument 'patchFile' cannot be null");
         }
@@ -338,6 +347,8 @@ public class Patcher {
         if (!patchFile.exists() || patchFile.isDirectory()) {
             throw new IOException("patch file not exist or not a file");
         }
+
+        List<Replacement> replacementFailedList = null;
 
         float decryptProgress = 0;
         float prepareProgress = 5;
@@ -441,7 +452,7 @@ public class Patcher {
             listener.patchProgress((int) progress, "Replacing old files with new files ...");
             listener.patchEnableCancel(false);
             // all files has patched to temporary directory, replace old files with the new one
-            doReplacement(operations, startFromFileIndex, replaceFilesProgress);
+            replacementFailedList = doReplacement(operations, startFromFileIndex, replaceFilesProgress);
 
 
             stageMinimumProgress += replaceFilesProgress;
@@ -454,7 +465,16 @@ public class Patcher {
             for (ValidationFile _validationFile : validations) {
                 listener.patchProgress((int) progress, "Validating file: " + _validationFile.getFilePath());
 
-                File _file = new File(softwareDir + _validationFile.getFilePath());
+                File _file = null;
+
+                int replacementPos = replacementFailedList.indexOf(softwareDir + _validationFile.getFilePath());
+                if (replacementPos != -1) {
+                    Replacement replacement = replacementFailedList.get(replacementPos);
+                    _file = new File(replacement.getNewFilePath());
+                } else {
+                    _file = new File(softwareDir + _validationFile.getFilePath());
+                }
+
                 if (_validationFile.getFileLength() == -1) {
                     if (!_file.isDirectory()) {
                         throw new IOException("Folder missed: " + softwareDir + _validationFile.getFilePath());
@@ -490,5 +510,52 @@ public class Patcher {
         }
 
         listener.patchFinished();
+        return replacementFailedList;
+    }
+
+    public static class Replacement {
+
+        protected String destination;
+        protected String newFilePath;
+
+        protected Replacement(String destination, String newFilePath) {
+            if (destination == null) {
+                throw new NullPointerException("argument 'destination' cannot be null");
+            }
+            if (newFilePath == null) {
+                throw new NullPointerException("argument 'newFilePath' cannot be null");
+            }
+            this.destination = destination;
+            this.newFilePath = newFilePath;
+        }
+
+        public String getDestination() {
+            return this.destination;
+        }
+
+        public void setDestination(String destination) {
+            this.destination = destination;
+        }
+
+        public String getNewFilePath() {
+            return this.newFilePath;
+        }
+
+        public void setNewFilePath(String newFilePath) {
+            this.newFilePath = newFilePath;
+        }
+
+        @Override
+        public boolean equals(Object compareTo) {
+            if (compareTo == null || !(compareTo instanceof Replacement)) {
+                return false;
+            }
+            if (compareTo == this) {
+                return true;
+            }
+            Replacement _object = (Replacement) compareTo;
+
+            return _object.getDestination().equals(getDestination());
+        }
     }
 }
