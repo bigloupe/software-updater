@@ -108,11 +108,12 @@ public class SoftwareLauncher {
 
             commands.add(javaBinary);
             commands.add("-jar");
+            commands.add(client.getStoragePath() + File.separator + "SoftwareSelfUpdater.jar");
+            commands.add(storagePath + File.separator + "update.lck");
             commands.add(replacementFile.getAbsolutePath());
+            //storagePath
 
             if (launchType.equals("jar")) {
-                commands.add(launcherPath);
-                commands.add(replacementFile.getAbsolutePath());
                 commands.add(javaBinary);
                 commands.addAll(ManagementFactory.getRuntimeMXBean().getInputArguments());
                 commands.add("-jar");
