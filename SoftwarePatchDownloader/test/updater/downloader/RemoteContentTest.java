@@ -80,7 +80,7 @@ public class RemoteContentTest {
         String url = TestCommon.urlRoot + manipulatedXmlFileName;
         long lastUpdateDate = 0L;
         RSAPublicKey key = Util.getPublicKey(new BigInteger(TestCommon.modulusString, 16), new BigInteger(TestCommon.publicExponentString, 16));
-        GetCatalogResult result = RemoteContent.getCatalog(url, lastUpdateDate, key, Util.hexStringToByteArray(TestCommon.modulusString).length);
+        GetCatalogResult result = RemoteContent.getCatalog(url, lastUpdateDate, key, new BigInteger(TestCommon.modulusString, 16).bitLength() / 8);
 
         assertNotNull(result);
         assertFalse(result.isNotModified());
@@ -99,7 +99,7 @@ public class RemoteContentTest {
         url = TestCommon.urlRoot + manipulatedXmlFileName;
         lastUpdateDate = System.currentTimeMillis() - 2000;
         key = Util.getPublicKey(new BigInteger(TestCommon.modulusString, 16), new BigInteger(TestCommon.publicExponentString, 16));
-        result = RemoteContent.getCatalog(url, lastUpdateDate, key, Util.hexStringToByteArray(TestCommon.modulusString).length);
+        result = RemoteContent.getCatalog(url, lastUpdateDate, key, new BigInteger(TestCommon.modulusString, 16).bitLength() / 8);
 
         assertNotNull(result);
         assertTrue(result.isNotModified());

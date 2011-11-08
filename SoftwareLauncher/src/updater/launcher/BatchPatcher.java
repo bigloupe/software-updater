@@ -187,7 +187,8 @@ public class BatchPatcher {
                 }
 
                 File patchFile = new File(tempDir.getAbsolutePath() + File.separator + _update.getId() + ".patch");
-                File decryptedPatchFile = new File(_update.getId() + ".patch.decrypted");
+                File decryptedPatchFile = new File(tempDir.getAbsolutePath() + File.separator + _update.getId() + ".patch.decrypted");
+                decryptedPatchFile.deleteOnExit();
                 if (!patchFile.exists()) {
                     // if the patch not exist, remove all patches
                     // save the client scirpt
@@ -222,7 +223,7 @@ public class BatchPatcher {
                     public void patchEnableCancel(boolean enable) {
                         updaterGUI.setCancelEnabled(enable);
                     }
-                }, patchActionLogWriter, new File(""), tempDirForPatch);
+                }, patchActionLogWriter, new File("." + File.separator), tempDirForPatch);
                 patcherRef.set(_patcher);
                 List<Replacement> replacementList = _patcher.doPatch(patchFile, _update.getId(), getPatchStartIndex(_update, patchLogReader), aesKey, decryptedPatchFile);
                 for (Replacement _replacement : replacementList) {

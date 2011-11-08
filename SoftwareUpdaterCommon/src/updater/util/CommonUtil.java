@@ -103,7 +103,7 @@ public class CommonUtil {
         }
 
         int len = hexString.length();
-        if ((len & 0x2) != 0) {
+        if ((len & 0x1) != 0) {
             throw new IllegalArgumentException("length of argument 'hexString' should be a multiple of 2");
         }
 

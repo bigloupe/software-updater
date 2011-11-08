@@ -194,9 +194,12 @@ public class Patch {
         String _downloadEncryptionIV = null;
         Element _downloadElement = XMLUtil.getElement(patchElement, "download", false);
         if (_downloadElement != null) {
-            _downloadUrl = XMLUtil.getTextContent(_downloadElement, "url", true);
-            _downloadChecksum = XMLUtil.getTextContent(_downloadElement, "checksum", true);
-            _downloadLength = Integer.parseInt(XMLUtil.getTextContent(_downloadElement, "length", true));
+            Element _downloadUrlElement = XMLUtil.getElement(_downloadElement, "url", false);
+            if (_downloadUrlElement != null) {
+                _downloadUrl = XMLUtil.getTextContent(_downloadElement, "url", true);
+                _downloadChecksum = XMLUtil.getTextContent(_downloadElement, "checksum", true);
+                _downloadLength = Integer.parseInt(XMLUtil.getTextContent(_downloadElement, "length", true));
+            }
 
             Element _downloadEncryptionElement = XMLUtil.getElement(_downloadElement, "encryption", false);
             if (_downloadEncryptionElement != null) {
@@ -275,21 +278,23 @@ public class Patch {
         versionToElement.setTextContent(versionTo);
         versionElement.appendChild(versionToElement);
 
-        if (downloadUrl != null) {
+        if (downloadUrl != null || downloadEncryptionType != null) {
             Element downloadElement = doc.createElement("download");
             patchElement.appendChild(downloadElement);
 
-            Element downloadUrlElement = doc.createElement("url");
-            downloadUrlElement.setTextContent(downloadUrl);
-            downloadElement.appendChild(downloadUrlElement);
+            if (downloadUrl != null) {
+                Element downloadUrlElement = doc.createElement("url");
+                downloadUrlElement.setTextContent(downloadUrl);
+                downloadElement.appendChild(downloadUrlElement);
 
-            Element downloadChecksumElement = doc.createElement("checksum");
-            downloadChecksumElement.setTextContent(downloadChecksum);
-            downloadElement.appendChild(downloadChecksumElement);
+                Element downloadChecksumElement = doc.createElement("checksum");
+                downloadChecksumElement.setTextContent(downloadChecksum);
+                downloadElement.appendChild(downloadChecksumElement);
 
-            Element downloadLengthElement = doc.createElement("length");
-            downloadLengthElement.setTextContent(Integer.toString(downloadLength));
-            downloadElement.appendChild(downloadLengthElement);
+                Element downloadLengthElement = doc.createElement("length");
+                downloadLengthElement.setTextContent(Integer.toString(downloadLength));
+                downloadElement.appendChild(downloadLengthElement);
+            }
 
             if (downloadEncryptionType != null) {
                 Element downloadEncryptionElement = doc.createElement("encryption");

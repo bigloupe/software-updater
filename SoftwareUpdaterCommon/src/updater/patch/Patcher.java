@@ -375,7 +375,7 @@ public class Patcher {
 
                     @Override
                     public void cryptProgress(int percentage) {
-                        listener.patchProgress((int) (_stageMinimumProgress + ((float) percentage / _decryptProgress)), "Decrypting patch ...");
+                        listener.patchProgress((int) (_stageMinimumProgress + ((float) percentage / 100F) * _decryptProgress), "Decrypting patch ...");
                     }
                 };
 
@@ -442,7 +442,7 @@ public class Patcher {
 
             listener.patchProgress((int) progress, "Checking the accessibility of all files ...");
             // try acquire locks on all files
-            tryAcquireExclusiveLocks(operations, startFromFileIndex);
+//            tryAcquireExclusiveLocks(operations, startFromFileIndex);
 
 
             stageMinimumProgress += checkAccessibilityProgress;
@@ -465,14 +465,12 @@ public class Patcher {
             for (ValidationFile _validationFile : validations) {
                 listener.patchProgress((int) progress, "Validating file: " + _validationFile.getFilePath());
 
-                File _file = null;
-
-                int replacementPos = replacementFailedList.indexOf(softwareDir + _validationFile.getFilePath());
-                if (replacementPos != -1) {
-                    Replacement replacement = replacementFailedList.get(replacementPos);
-                    _file = new File(replacement.getNewFilePath());
-                } else {
-                    _file = new File(softwareDir + _validationFile.getFilePath());
+                File _file = new File(softwareDir + _validationFile.getFilePath());
+                String _validationFileAbsPath = _file.getAbsolutePath();
+                for (Replacement _replacement : replacementFailedList) {
+                    if (new File(_replacement.getDestination()).getAbsolutePath().equals(_validationFileAbsPath)) {
+                        _file = new File(_replacement.getNewFilePath());
+                    }
                 }
 
                 if (_validationFile.getFileLength() == -1) {
@@ -543,19 +541,6 @@ public class Patcher {
 
         public void setNewFilePath(String newFilePath) {
             this.newFilePath = newFilePath;
-        }
-
-        @Override
-        public boolean equals(Object compareTo) {
-            if (compareTo == null || !(compareTo instanceof Replacement)) {
-                return false;
-            }
-            if (compareTo == this) {
-                return true;
-            }
-            Replacement _object = (Replacement) compareTo;
-
-            return _object.getDestination().equals(getDestination());
         }
     }
 }

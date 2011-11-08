@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * Changes: add progress notification to encryptFile and decryptFile
  * @author John Watne
  * @author Chan Wai Shing <cws1989@gmail.com>
  */

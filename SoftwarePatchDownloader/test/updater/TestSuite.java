@@ -10,6 +10,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     updater.downloader.PatchDownloaderTest.class,
     updater.downloader.RemoteContentTest.class,
+    updater.downloader.SoftwarePatchDownloaderTest.class,
     updater.downloader.UtilTest.class
 })
 public class TestSuite {

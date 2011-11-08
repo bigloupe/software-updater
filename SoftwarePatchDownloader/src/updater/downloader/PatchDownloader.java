@@ -168,7 +168,7 @@ public class PatchDownloader {
                 existingUpdates.add(new Patch(update.getId(),
                         update.getVersionFrom(), update.getVersionFromSubsequent(), update.getVersionTo(),
                         null, null, -1,
-                        null, null, null,
+                        update.getDownloadEncryptionType(), update.getDownloadEncryptionKey(), update.getDownloadEncryptionIV(),
                         new ArrayList<Operation>(), new ArrayList<ValidationFile>()));
                 clientScript.setPatches(existingUpdates);
                 try {
@@ -278,7 +278,7 @@ public class PatchDownloader {
             }
         }
 
-        GetCatalogResult getCatalogResult = RemoteContent.getCatalog(catalogURL, client.getCatalogLastUpdated(), publicKey, Util.hexStringToByteArray(client.getCatalogPublicKeyModulus()).length);
+        GetCatalogResult getCatalogResult = RemoteContent.getCatalog(catalogURL, client.getCatalogLastUpdated(), publicKey, new BigInteger(client.getCatalogPublicKeyModulus(), 16).bitLength() / 8);
         if (getCatalogResult.isNotModified()) {
             return null;
         }

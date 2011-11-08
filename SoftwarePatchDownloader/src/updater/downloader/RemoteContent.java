@@ -21,10 +21,10 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
-import javax.crypto.Cipher;
 import updater.script.Catalog;
 
 /**
+ * Utilities to download catalog and patch.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class RemoteContent {
@@ -42,7 +42,19 @@ public class RemoteContent {
     protected RemoteContent() {
     }
 
+    /**
+     * Get the catalog from Internet.
+     * @param url the URL to download the catalog from
+     * @param lastUpdateDate the last update date, if the catalog not be updated since this date, the content of the catalog will not be downloaded (save time and traffic)
+     * @param key the RSA key to decrypt the catalog, null means no encryption
+     * @param keyLength if <code>key</code> specified, provide the key length of the RSA key in byte
+     * @return the get catalog result
+     */
     public static GetCatalogResult getCatalog(String url, long lastUpdateDate, RSAPublicKey key, int keyLength) {
+        if (url == null) {
+            throw new NullPointerException("argument 'url' cannot be null");
+        }
+
         GetCatalogResult returnResult = new GetCatalogResult(null, false);
 
         InputStream in = null;
@@ -115,20 +127,7 @@ public class RemoteContent {
 
             // decrypt
             if (key != null) {
-                ByteArrayOutputStream rsaBuffer = new ByteArrayOutputStream(contentLength);
-
-                Cipher decryptCipher = Cipher.getInstance("RSA");
-                decryptCipher.init(Cipher.DECRYPT_MODE, key);
-
-                if (content.length % keyLength != 0) {
-                    throw new Exception("RSA block size not match, content length: " + content.length + ", RSA block size: " + keyLength);
-                }
-
-                for (int i = 0, iEnd = content.length; i < iEnd; i += keyLength) {
-                    rsaBuffer.write(decryptCipher.doFinal(content, i, keyLength));
-                }
-
-                content = rsaBuffer.toByteArray();
+                content = Util.rsaDecrypt(key, keyLength, content);
             }
 
             // decompress
@@ -155,14 +154,21 @@ public class RemoteContent {
         return returnResult;
     }
 
-    protected static void digest(MessageDigest digest, File file) throws Exception {
+    protected static void digest(MessageDigest digest, File file) throws IOException {
+        if (digest == null) {
+            throw new NullPointerException("argument 'digest' cannot be null");
+        }
+        if (file == null) {
+            throw new NullPointerException("argument 'file' cannot be null");
+        }
+
         FileInputStream fin = null;
         try {
-            fin = new FileInputStream(file);
             long fileLength = file.length();
+            fin = new FileInputStream(file);
 
             int byteRead, cumulateByteRead = 0;
-            byte[] b = new byte[1024];
+            byte[] b = new byte[32768];
             while ((byteRead = fin.read(b)) != -1) {
                 digest.update(b, 0, byteRead);
                 cumulateByteRead += byteRead;
@@ -173,7 +179,7 @@ public class RemoteContent {
             }
 
             if (cumulateByteRead != fileLength) {
-                throw new Exception("The total number of bytes read does not match the file size. Actual file size: " + fileLength + ", bytes read: " + cumulateByteRead + ", path: " + file.getAbsolutePath());
+                throw new IOException("The total number of bytes read does not match the file size. Actual file size: " + fileLength + ", bytes read: " + cumulateByteRead + ", path: " + file.getAbsolutePath());
             }
         } finally {
             Util.closeQuietly(fin);
@@ -181,20 +187,29 @@ public class RemoteContent {
     }
 
     public static GetPatchResult getPatch(GetPatchListener listener, String url, File saveToFile, String fileSHA256, int expectedLength) {
+        if (listener == null) {
+            throw new NullPointerException("argument 'listener' cannot be null");
+        }
+        if (url == null) {
+            throw new NullPointerException("argument 'url' cannot be null");
+        }
+        if (saveToFile == null) {
+            throw new NullPointerException("argument 'saveToFile' cannot be null");
+        }
+        if (!fileSHA256.matches("^[0-9a-f]{64}$")) {
+            throw new IllegalArgumentException("SHA format invalid, expected: ^[0-9a-f]{64}$, checksum: " + fileSHA256);
+        }
+
         GetPatchResult returnResult = new GetPatchResult(false, false);
 
         InputStream in = null;
         HttpURLConnection httpConn = null;
         OutputStream fout = null;
         try {
-            if (!fileSHA256.matches("^[0-9a-f]{64}$")) {
-                throw new Exception("SHA format invalid, expected: ^[0-9a-f]{64}$, checksum: " + fileSHA256);
-            }
-
             URL urlObj = new URL(url);
             long fileLength = saveToFile.length();
 
-            // check saveToFile with fileLength and expectedLength
+            // check saveToFile if exist with fileLength and expectedLength
             if (fileLength != 0) {
                 if ((fileLength == expectedLength && !Util.getSHA256String(saveToFile).equals(fileSHA256))
                         || fileLength > expectedLength) {

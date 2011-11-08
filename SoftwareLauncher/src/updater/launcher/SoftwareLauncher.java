@@ -32,7 +32,7 @@ public class SoftwareLauncher {
 
     static {
         // set debug mode
-        System.setProperty("SyntaxHighlighterDebugMode", "false");
+        System.setProperty("SoftwareUpdaterDebugMode", "false");
     }
 
     protected SoftwareLauncher() {
@@ -144,17 +144,16 @@ public class SoftwareLauncher {
     }
 
     protected static void writeReplacement(File file, List<Replacement> replacementList) throws IOException {
-        FileOutputStream fout = null;
+        PrintWriter writer = null;
         try {
-            fout = new FileOutputStream(file);
-            PrintWriter writer = new PrintWriter(fout);
+            writer = new PrintWriter(new FileOutputStream(file));
 
             for (Replacement _replacement : replacementList) {
                 writer.println(_replacement.getDestination());
                 writer.println(_replacement.getNewFilePath());
             }
         } finally {
-            Util.closeQuietly(fout);
+            Util.closeQuietly(writer);
         }
     }
 
