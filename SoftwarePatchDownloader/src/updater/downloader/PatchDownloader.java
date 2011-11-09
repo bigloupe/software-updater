@@ -99,9 +99,8 @@ public class PatchDownloader {
             GetPatchListener getPatchListener = new GetPatchListener() {
 
                 @Override
-                public boolean downloadInterrupted() {
+                public void downloadInterrupted() {
                     listener.downloadPatchesResult(DownloadPatchesListener.DownloadPatchesResult.DOWNLOAD_INTERRUPTED);
-                    return true;
                 }
 
                 @Override

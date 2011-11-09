@@ -150,8 +150,7 @@ public class RemoteContentTest {
         GetPatchListener listener = new GetPatchListener() {
 
             @Override
-            public boolean downloadInterrupted() {
-                return true;
+            public void downloadInterrupted() {
             }
 
             @Override
@@ -188,8 +187,7 @@ public class RemoteContentTest {
         listener = new GetPatchListener() {
 
             @Override
-            public boolean downloadInterrupted() {
-                return true;
+            public void downloadInterrupted() {
             }
 
             @Override
@@ -227,8 +225,7 @@ public class RemoteContentTest {
         listener = new GetPatchListener() {
 
             @Override
-            public boolean downloadInterrupted() {
-                return true;
+            public void downloadInterrupted() {
             }
 
             @Override
@@ -268,8 +265,7 @@ public class RemoteContentTest {
         listener = new GetPatchListener() {
 
             @Override
-            public boolean downloadInterrupted() {
-                return true;
+            public void downloadInterrupted() {
             }
 
             @Override
@@ -306,8 +302,7 @@ public class RemoteContentTest {
         listener = new GetPatchListener() {
 
             @Override
-            public boolean downloadInterrupted() {
-                return true;
+            public void downloadInterrupted() {
             }
 
             @Override
@@ -344,8 +339,7 @@ public class RemoteContentTest {
         listener = new GetPatchListener() {
 
             @Override
-            public boolean downloadInterrupted() {
-                return true;
+            public void downloadInterrupted() {
             }
 
             @Override

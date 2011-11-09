@@ -3,6 +3,7 @@ package updater.downloader;
 import updater.util.CommonUtil;
 
 /**
+ * Utilities.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class Util extends CommonUtil {
@@ -10,6 +11,12 @@ public class Util extends CommonUtil {
     protected Util() {
     }
 
+    /**
+     * Convert the number of bytes to human readable string.
+     * @param bytes the number of bytes
+     * @param si use internation system of units of not, true to use 1000, false to use 1024
+     * @return the human readable string of the 'number of bytes'
+     */
     public static String humanReadableByteCount(long bytes, boolean si) {
         // http://stackoverflow.com/questions/3758606/how-to-convert-byte-size-into-human-readable-format-in-java
         int unit = si ? 1000 : 1024;
@@ -21,6 +28,12 @@ public class Util extends CommonUtil {
         return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
     }
 
+    /**
+     * Convert the time (in second) to human readable string.
+     * @param timeInSecond the time to convert
+     * @param maxDisplay indicate the max number of item to display, max: 6, e.g. timeInSecond = 3661, maxDisplay: 2 => 1h 1m
+     * @return the human readable string of the time
+     */
     public static String humanReadableTimeCount(int timeInSecond, int maxDisplay) {
         int buf = timeInSecond, count = 0;
         StringBuilder sb = new StringBuilder();

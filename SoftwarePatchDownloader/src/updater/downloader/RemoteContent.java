@@ -154,6 +154,12 @@ public class RemoteContent {
         return returnResult;
     }
 
+    /**
+     * Read the content in the <code>file</code> and put into the <code>digest</code>.
+     * @param digest the digest object
+     * @param file the file to read the content from
+     * @throws IOException error occurred when reading file
+     */
     protected static void digest(MessageDigest digest, File file) throws IOException {
         if (digest == null) {
             throw new NullPointerException("argument 'digest' cannot be null");
@@ -171,8 +177,8 @@ public class RemoteContent {
             byte[] b = new byte[32768];
             while ((byteRead = fin.read(b)) != -1) {
                 digest.update(b, 0, byteRead);
-                cumulateByteRead += byteRead;
 
+                cumulateByteRead += byteRead;
                 if (cumulateByteRead >= fileLength) {
                     break;
                 }
@@ -186,6 +192,16 @@ public class RemoteContent {
         }
     }
 
+    /**
+     * Get the patch from the Internet.
+     * This will check the exist file in the path of <code>saveToFile</code> and determine resume download.
+     * @param listener the progress and result listener
+     * @param url the URL to download the patch from
+     * @param saveToFile the place to save the downloaded patch
+     * @param fileSHA256 the SHA-256 digest of the patch
+     * @param expectedLength the expected file length of the patch
+     * @return the get patch result
+     */
     public static GetPatchResult getPatch(GetPatchListener listener, String url, File saveToFile, String fileSHA256, int expectedLength) {
         if (listener == null) {
             throw new NullPointerException("argument 'listener' cannot be null");
@@ -310,10 +326,8 @@ public class RemoteContent {
             byte[] b = new byte[32];
             while ((byteRead = in.read(b)) != -1) {
                 if (Thread.interrupted()) {
-                    boolean result = listener.downloadInterrupted();
-                    if (result) {
-                        throw new InterruptedException();
-                    }
+                    listener.downloadInterrupted();
+                    throw new InterruptedException();
                 }
 
                 digest.update(b, 0, byteRead);
@@ -352,48 +366,107 @@ public class RemoteContent {
         return returnResult;
     }
 
+    /**
+     * The listener for {@link #getPatch(updater.downloader.RemoteContent.GetPatchListener, java.lang.String, java.io.File, java.lang.String, int)}.
+     */
     public static interface GetPatchListener {
 
-        boolean downloadInterrupted();
+        /**
+         * The thread was interrupted.
+         */
+        void downloadInterrupted();
 
+        /**
+         * Notify which position to start the download from.
+         * This should be called only once or less, and be called before first notifying {@link #byteDownloaded(int)}.
+         * @param pos the position
+         */
         void byteStart(long pos);
 
+        /**
+         * Notify the byte downloaded since last notification.
+         * @param numberOfBytes the bytes downloaded
+         */
         void byteDownloaded(int numberOfBytes);
     }
 
+    /**
+     * Get patch result for {@link #getPatch(updater.downloader.RemoteContent.GetPatchListener, java.lang.String, java.io.File, java.lang.String, int)}.
+     */
     public static class GetPatchResult {
 
+        /**
+         * Get patch result. true if get patch succeed, false if not.
+         */
         protected boolean result;
+        /**
+         * Indicate if the running thread was interrupted during execution. true if interrupted, false if not.
+         */
         protected boolean interrupted;
 
+        /**
+         * Constructor.
+         * @param result true if get patch succeed, false if not
+         * @param interrupted true if the running thread was interrupted, false if not
+         */
         public GetPatchResult(boolean result, boolean interrupted) {
             this.result = result;
             this.interrupted = interrupted;
         }
 
+        /**
+         * Get the result.
+         * @return true if get patch succeed, false if not
+         */
         public boolean getResult() {
             return result;
         }
 
+        /**
+         * Check if the running thread was interrupted during execution.
+         * @return true if interrupted, false if not
+         */
         public boolean isInterrupted() {
             return interrupted;
         }
     }
 
+    /**
+     * Get catalog result for {@link #getCatalog(java.lang.String, long, java.security.interfaces.RSAPublicKey, int)}.
+     */
     public static class GetCatalogResult {
 
+        /**
+         * The catalog.
+         */
         protected Catalog catalog;
+        /**
+         * Indicate if the catalog was checked modified.
+         */
         protected boolean notModified;
 
+        /**
+         * Constructor.
+         * @param catalog the catalog, null if get catalog failed or checked not midified
+         * @param notModified true if checked the catalog not modified
+         */
         public GetCatalogResult(Catalog catalog, boolean notModified) {
             this.catalog = catalog;
             this.notModified = notModified;
         }
 
+        /**
+         * Get the catalog.
+         * @return the catalog, null if get catalog failed or checked not midified
+         */
         public Catalog getCatalog() {
             return catalog;
         }
 
+        /**
+         * Check if the catalog was checked modified.
+         * @return true if checked the catalog not modified
+         */
         public boolean isNotModified() {
             return notModified;
         }
