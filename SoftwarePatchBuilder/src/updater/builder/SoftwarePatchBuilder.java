@@ -9,15 +9,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-import javax.crypto.BadPaddingException;
-import javax.xml.transform.TransformerException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -31,7 +27,6 @@ import org.tukaani.xz.XZInputStream;
 import org.tukaani.xz.XZOutputStream;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.xml.sax.SAXException;
 import updater.crypto.AESKey;
 import updater.crypto.KeyGenerator;
 import updater.crypto.RSAKey;
@@ -42,7 +37,6 @@ import updater.patch.PatchPacker;
 import updater.patch.Patcher;
 import updater.patch.PatcherListener;
 import updater.script.Client;
-import updater.script.InvalidFormatException;
 import updater.script.Patch;
 import updater.util.CommonUtil;
 import updater.util.XMLUtil;
@@ -147,10 +141,12 @@ public class SoftwarePatchBuilder {
 
         options.addOption(new Option("h", "help", false, "print this message"));
         options.addOption(new Option("v", "version", false, "show the version of this software"));
+        options.addOption(new Option("vb", "verbose", false, "turn on verbose mode, output details when encounter error"));
 
         CommandLineParser parser = new GnuParser();
+        CommandLine line = null;
         try {
-            CommandLine line = parser.parse(options, args);
+            line = parser.parse(options, args);
             if (line.hasOption("sha256")) {
                 sha256(line, options);
             } else if (line.hasOption("genkey")) {
@@ -191,12 +187,16 @@ public class SoftwarePatchBuilder {
         } catch (ParseException ex) {
             System.out.println(ex.getMessage());
             showHelp(options);
-        } catch (IOException ex) {
-            System.out.println(ex.getMessage());
+        } catch (Exception ex) {
+            if (line.hasOption("verbose")) {
+                ex.printStackTrace(System.out);
+            } else {
+                System.out.println(ex.getMessage());
+            }
         }
     }
 
-    public static void sha256(CommandLine line, Options options) throws ParseException, IOException {
+    public static void sha256(CommandLine line, Options options) throws ParseException, Exception {
         String sha256Arg = line.getOptionValue("sha256");
         String outputArg = line.getOptionValue("output");
 
@@ -214,9 +214,9 @@ public class SoftwarePatchBuilder {
         System.out.println("Checksum: " + sha256);
     }
 
-    public static void genkey(CommandLine line, Options options) throws ParseException, IOException {
+    public static void genkey(CommandLine line, Options options) throws ParseException, Exception {
         if (!line.hasOption("output")) {
-            throw new IOException("Please specify the path to output the key file using --output or -o");
+            throw new Exception("Please specify the path to output the key file using --output or -o");
         }
 
         String[] genkeyArgs = line.getOptionValues("genkey");
@@ -234,7 +234,7 @@ public class SoftwarePatchBuilder {
         try {
             keySize = Integer.parseInt(genkeyArgs[1]);
             if (genkeyArgs[0].equals("rsa") && keySize < 512) {
-                throw new IOException("Key length should at least 512 bits for RSA.");
+                throw new Exception("Key length should at least 512 bits for RSA.");
             }
             if (keySize % 8 != 0) {
                 throw new ParseException("Key length should be a multiple of 8.");
@@ -248,39 +248,29 @@ public class SoftwarePatchBuilder {
         System.out.println("Output path: " + outputArg);
         System.out.println();
 
-        try {
-            if (genkeyArgs[0].equals("aes")) {
-                KeyGenerator.generateAES(keySize, new File(outputArg));
-            } else {
-                KeyGenerator.generateRSA(keySize, new File(outputArg));
-            }
-        } catch (IOException ex) {
-            throw new IOException("Error occurred when outputting to " + outputArg);
+        if (genkeyArgs[0].equals("aes")) {
+            KeyGenerator.generateAES(keySize, new File(outputArg));
+        } else {
+            KeyGenerator.generateRSA(keySize, new File(outputArg));
         }
 
         System.out.println("Key generated and saved to " + outputArg);
     }
 
-    public static void renew(CommandLine line, Options options) throws ParseException, IOException {
+    public static void renew(CommandLine line, Options options) throws ParseException, Exception {
         String renewArg = line.getOptionValue("renew");
 
         System.out.println("Key file: " + renewArg);
         System.out.println();
 
-        try {
-            KeyGenerator.renewAESIV(new File(renewArg));
-        } catch (IOException ex) {
-            throw new IOException("Error occurred when reading/writing to " + renewArg);
-        } catch (InvalidFormatException ex) {
-            throw new IOException("The file is not a valid AES key file.");
-        }
+        KeyGenerator.renewAESIV(new File(renewArg));
 
         System.out.println("AES IV renewal succeed.");
     }
 
-    public static void diff(CommandLine line, Options options) throws ParseException, IOException {
+    public static void diff(CommandLine line, Options options) throws ParseException, Exception {
         if (!line.hasOption("output")) {
-            throw new IOException("Please specify the path to output the diff file using --output or -o");
+            throw new Exception("Please specify the path to output the diff file using --output or -o");
         }
 
         String[] diffArgs = line.getOptionValues("diff");
@@ -300,11 +290,7 @@ public class SoftwarePatchBuilder {
             fout = new FileOutputStream(new File(outputArg));
             DiffWriter diffOut = new GDiffWriter(fout);
             Delta delta = new Delta();
-            try {
-                delta.compute(new File(diffArgs[0]), new File(diffArgs[1]), diffOut);
-            } catch (IOException ex) {
-                throw new IOException("Error occurred when computing the diff.");
-            }
+            delta.compute(new File(diffArgs[0]), new File(diffArgs[1]), diffOut);
         } finally {
             if (fout != null) {
                 fout.close();
@@ -314,9 +300,9 @@ public class SoftwarePatchBuilder {
         System.out.println("Diff file generated.");
     }
 
-    public static void diffpatch(CommandLine line, Options options) throws ParseException, IOException {
+    public static void diffpatch(CommandLine line, Options options) throws ParseException, Exception {
         if (!line.hasOption("output")) {
-            throw new IOException("Please specify the path to output the patched file using --output or -o");
+            throw new Exception("Please specify the path to output the patched file using --output or -o");
         }
 
         String[] diffpatchArgs = line.getOptionValues("diffpatch");
@@ -332,19 +318,15 @@ public class SoftwarePatchBuilder {
         System.out.println();
 
         GDiffPatcher diffPatcher = new GDiffPatcher();
-        try {
-            diffPatcher.patch(new File(diffpatchArgs[0]), new File(diffpatchArgs[1]), new File(outputArg));
-        } catch (IOException ex) {
-            throw new IOException("Error occurred when patching the file.");
-        }
+        diffPatcher.patch(new File(diffpatchArgs[0]), new File(diffpatchArgs[1]), new File(outputArg));
 
         System.out.println("Patching completed.");
     }
 
-    public static void compress(CommandLine line, Options options) throws ParseException, IOException {
+    public static void compress(CommandLine line, Options options) throws ParseException, Exception {
         // file patch
         if (!line.hasOption("output")) {
-            throw new IOException("Please specify the path to output the compressed file using --output or -o");
+            throw new Exception("Please specify the path to output the compressed file using --output or -o");
         }
 
         String compressArg = line.getOptionValue("compress");
@@ -376,7 +358,7 @@ public class SoftwarePatchBuilder {
             }
 
             if (cumulateByteRead != inFileLength) {
-                throw new IOException("Error occurred when reading the input file.");
+                throw new Exception("Error occurred when reading the input file.");
             }
 
             xzOut.finish();
@@ -392,10 +374,10 @@ public class SoftwarePatchBuilder {
         System.out.println("Compression completed.");
     }
 
-    public static void decompress(CommandLine line, Options options) throws ParseException, IOException {
+    public static void decompress(CommandLine line, Options options) throws ParseException, Exception {
         // file patch
         if (!line.hasOption("output")) {
-            throw new IOException("Please specify the path to output the decompressed file using --output or -o");
+            throw new Exception("Please specify the path to output the decompressed file using --output or -o");
         }
 
         String decompressArg = line.getOptionValue("decompress");
@@ -427,7 +409,7 @@ public class SoftwarePatchBuilder {
             }
 
             if (cumulateByteRead != inFileLength) {
-                throw new IOException("Error occurred when reading the input file.");
+                throw new Exception("Error occurred when reading the input file.");
             }
         } finally {
             if (fin != null) {
@@ -441,7 +423,7 @@ public class SoftwarePatchBuilder {
         System.out.println("Decompression completed.");
     }
 
-    public static void doPatch(CommandLine line, Options options) throws ParseException, IOException {
+    public static void doPatch(CommandLine line, Options options) throws ParseException, Exception {
         String[] doArgs = line.getOptionValues("do");
 
         if (doArgs.length != 2) {
@@ -460,20 +442,14 @@ public class SoftwarePatchBuilder {
         AESKey aesKey = null;
         File decryptedPatchFile = null;
         if (line.hasOption("key")) {
-            try {
-                aesKey = AESKey.read(Util.readFile(new File(line.getOptionValue("key"))));
-            } catch (InvalidFormatException ex) {
-                throw new IOException("The file is not a valid AES key file: " + line.hasOption("key"));
-            }
+            aesKey = AESKey.read(Util.readFile(new File(line.getOptionValue("key"))));
             if (aesKey.getKey().length != 32) {
-                throw new IOException("Currently only support 256 bits AES key.");
+                throw new Exception("Currently only support 256 bits AES key.");
             }
 
             decryptedPatchFile = new File(tempDir.getAbsolutePath() + File.separator + patchFile.getName() + ".decrypted");
             decryptedPatchFile.delete();
             decryptedPatchFile.deleteOnExit();
-
-//            PatchReadUtil.decrypt(aesKey, patchFile, decryptedPatchFile);
 
             patchFile = decryptedPatchFile;
         }
@@ -498,6 +474,7 @@ public class SoftwarePatchBuilder {
         patcher.doPatch(patchFile, 0, 0, aesKey, decryptedPatchFile);
         logger.close();
 
+        // preserve the log
 //        Util.truncateFolder(tempDir);
 //        tempDir.delete();
 
@@ -505,15 +482,15 @@ public class SoftwarePatchBuilder {
         System.out.println("Patch applied successfully.");
     }
 
-    public static void full(CommandLine line, Options options) throws ParseException, IOException {
+    public static void full(CommandLine line, Options options) throws ParseException, Exception {
         if (!line.hasOption("output")) {
-            throw new IOException("Please specify the path to output the patch using --output");
+            throw new Exception("Please specify the path to output the patch using --output");
         }
         if (!line.hasOption("from") && !line.hasOption("from-sub")) {
-            throw new IOException("Please specify the version number of the old version --from or --from-sub");
+            throw new Exception("Please specify the version number of the old version --from or --from-sub");
         }
         if (!line.hasOption("to")) {
-            throw new IOException("Please specify the version number of the new version using --to");
+            throw new Exception("Please specify the version number of the new version using --to");
         }
 
         String fullArg = line.getOptionValue("full");
@@ -538,13 +515,9 @@ public class SoftwarePatchBuilder {
 
         AESKey aesKey = null;
         if (line.hasOption("key")) {
-            try {
-                aesKey = AESKey.read(Util.readFile(new File(line.getOptionValue("key"))));
-            } catch (InvalidFormatException ex) {
-                throw new IOException("The file is not a valid AES key file: " + line.hasOption("key"));
-            }
+            aesKey = AESKey.read(Util.readFile(new File(line.getOptionValue("key"))));
             if (aesKey.getKey().length != 32) {
-                throw new IOException("Currently only support 256 bits AES key.");
+                throw new Exception("Currently only support 256 bits AES key.");
             }
         }
         File patchFile = new File(outputArg);
@@ -552,11 +525,7 @@ public class SoftwarePatchBuilder {
         encryptedPatchFile.delete();
         encryptedPatchFile.deleteOnExit();
 
-        try {
-            PatchCreator.createFullPatch(new File(fullArg), tempDir, new File(outputArg), -1, fromArg, fromSubsequentArg, toArg, aesKey, encryptedPatchFile);
-        } catch (IOException ex) {
-            throw new IOException("Error occurred when creating patch.");
-        }
+        PatchCreator.createFullPatch(new File(fullArg), tempDir, new File(outputArg), -1, fromArg, fromSubsequentArg, toArg, aesKey, encryptedPatchFile);
 
         Util.truncateFolder(tempDir);
         tempDir.delete();
@@ -564,15 +533,15 @@ public class SoftwarePatchBuilder {
         System.out.println("Patch created.");
     }
 
-    public static void patch(CommandLine line, Options options) throws ParseException, IOException {
+    public static void patch(CommandLine line, Options options) throws ParseException, Exception {
         if (!line.hasOption("output")) {
-            throw new IOException("Please specify the path to output the patch using --output");
+            throw new Exception("Please specify the path to output the patch using --output");
         }
         if (!line.hasOption("from")) {
-            throw new IOException("Please specify the version number of the old version using --from");
+            throw new Exception("Please specify the version number of the old version using --from");
         }
         if (!line.hasOption("to")) {
-            throw new IOException("Please specify the version number of the new version using --to");
+            throw new Exception("Please specify the version number of the new version using --to");
         }
 
         String[] patchArgs = line.getOptionValues("patch");
@@ -599,13 +568,9 @@ public class SoftwarePatchBuilder {
 
         AESKey aesKey = null;
         if (line.hasOption("key")) {
-            try {
-                aesKey = AESKey.read(Util.readFile(new File(line.getOptionValue("key"))));
-            } catch (InvalidFormatException ex) {
-                throw new IOException("The file is not a valid AES key file: " + line.hasOption("key"));
-            }
+            aesKey = AESKey.read(Util.readFile(new File(line.getOptionValue("key"))));
             if (aesKey.getKey().length != 32) {
-                throw new IOException("Currently only support 256 bits AES key.");
+                throw new Exception("Currently only support 256 bits AES key.");
             }
         }
         File patchFile = new File(outputArg);
@@ -613,11 +578,7 @@ public class SoftwarePatchBuilder {
         encryptedPatchFile.delete();
         encryptedPatchFile.deleteOnExit();
 
-        try {
-            PatchCreator.createPatch(new File(patchArgs[0]), new File(patchArgs[1]), tempDir, patchFile, -1, fromArg, toArg, aesKey, encryptedPatchFile);
-        } catch (IOException ex) {
-            throw new IOException("Error occurred when creating patch.");
-        }
+        PatchCreator.createPatch(new File(patchArgs[0]), new File(patchArgs[1]), tempDir, patchFile, -1, fromArg, toArg, aesKey, encryptedPatchFile);
 
         Util.truncateFolder(tempDir);
         tempDir.delete();
@@ -625,7 +586,7 @@ public class SoftwarePatchBuilder {
         System.out.println("Patch created.");
     }
 
-    public static void extract(CommandLine line, Options options) throws ParseException, IOException {
+    public static void extract(CommandLine line, Options options) throws ParseException, Exception {
         // file folder
         String[] extractArgs = line.getOptionValues("extract");
 
@@ -642,13 +603,9 @@ public class SoftwarePatchBuilder {
 
         AESKey aesKey = null;
         if (line.hasOption("key")) {
-            try {
-                aesKey = AESKey.read(Util.readFile(new File(line.getOptionValue("key"))));
-            } catch (InvalidFormatException ex) {
-                throw new IOException("The file is not a valid AES key file: " + line.hasOption("key"));
-            }
+            aesKey = AESKey.read(Util.readFile(new File(line.getOptionValue("key"))));
             if (aesKey.getKey().length != 32) {
-                throw new IOException("Currently only support 256 bits AES key.");
+                throw new Exception("Currently only support 256 bits AES key.");
             }
         }
         File patchFile = new File(extractArgs[0]);
@@ -656,11 +613,7 @@ public class SoftwarePatchBuilder {
         decryptedPatchFile.delete();
         decryptedPatchFile.deleteOnExit();
 
-        try {
-            PatchExtractor.extract(patchFile, new File(extractArgs[1]), aesKey, decryptedPatchFile);
-        } catch (InvalidFormatException ex) {
-            throw new IOException(ex);
-        }
+        PatchExtractor.extract(patchFile, new File(extractArgs[1]), aesKey, decryptedPatchFile);
 
         Util.truncateFolder(tempDir);
         tempDir.delete();
@@ -668,9 +621,9 @@ public class SoftwarePatchBuilder {
         System.out.println("Extraction completed.");
     }
 
-    public static void pack(CommandLine line, Options options) throws ParseException, IOException {
+    public static void pack(CommandLine line, Options options) throws ParseException, Exception {
         if (!line.hasOption("output")) {
-            throw new IOException("Please specify the path to output the patch using --output");
+            throw new Exception("Please specify the path to output the patch using --output");
         }
 
         String packArg = line.getOptionValue("pack");
@@ -683,13 +636,9 @@ public class SoftwarePatchBuilder {
         AESKey aesKey = null;
 
         if (line.hasOption("key")) {
-            try {
-                aesKey = AESKey.read(Util.readFile(new File(line.getOptionValue("key"))));
-            } catch (InvalidFormatException ex) {
-                throw new IOException("The file is not a valid AES key file: " + line.hasOption("key"));
-            }
+            aesKey = AESKey.read(Util.readFile(new File(line.getOptionValue("key"))));
             if (aesKey.getKey().length != 32) {
-                throw new IOException("Currently only support 256 bits AES key.");
+                throw new Exception("Currently only support 256 bits AES key.");
             }
         }
         File sourceFolder = new File(packArg);
@@ -697,21 +646,17 @@ public class SoftwarePatchBuilder {
         encryptedPatchFile.delete();
         encryptedPatchFile.deleteOnExit();
 
-        try {
-            PatchPacker.pack(sourceFolder, new File(outputArg), aesKey, encryptedPatchFile);
-        } catch (InvalidFormatException ex) {
-            throw new IOException(ex);
-        }
+        PatchPacker.pack(sourceFolder, new File(outputArg), aesKey, encryptedPatchFile);
 
         System.out.println("Packing completed.");
     }
 
-    public static void catalog(CommandLine line, Options options) throws ParseException, IOException {
+    public static void catalog(CommandLine line, Options options) throws ParseException, Exception {
         if (!line.hasOption("key")) {
-            throw new IOException("Please specify the key file to use using --key");
+            throw new Exception("Please specify the key file to use using --key");
         }
         if (!line.hasOption("output")) {
-            throw new IOException("Please specify the path to output the XML file using --output");
+            throw new Exception("Please specify the path to output the XML file using --output");
         }
 
         String[] catalogArgs = line.getOptionValues("catalog");
@@ -725,12 +670,7 @@ public class SoftwarePatchBuilder {
             throw new ParseException("Catalog mode should be either 'e' or 'd' but not " + catalogArgs[0]);
         }
 
-        RSAKey rsaKey = null;
-        try {
-            rsaKey = RSAKey.read(Util.readFile(new File(keyArg)));
-        } catch (InvalidFormatException ex) {
-            throw new IOException("The file is not a valid RSA key file: " + catalogArgs[1]);
-        }
+        RSAKey rsaKey = RSAKey.read(Util.readFile(new File(keyArg)));
 
         System.out.println("Mode: " + (catalogArgs[0].equals("e") ? "encrypt" : "decrypt"));
         System.out.println("Catalog file: " + catalogArgs[1]);
@@ -738,76 +678,56 @@ public class SoftwarePatchBuilder {
         System.out.println("Output file: " + outputArg);
         System.out.println();
 
-        try {
-            File in = new File(catalogArgs[1]);
-            File out = new File(outputArg);
-            BigInteger mod = new BigInteger(rsaKey.getModulus());
+        File in = new File(catalogArgs[1]);
+        File out = new File(outputArg);
+        BigInteger mod = new BigInteger(rsaKey.getModulus());
 
-            if (catalogArgs[0].equals("e")) {
-                BigInteger privateExp = new BigInteger(rsaKey.getPrivateExponent());
+        if (catalogArgs[0].equals("e")) {
+            BigInteger privateExp = new BigInteger(rsaKey.getPrivateExponent());
 
-                RSAPrivateKey privateKey = null;
-                try {
-                    privateKey = CommonUtil.getPrivateKey(mod, privateExp);
-                } catch (InvalidKeySpecException ex) {
-                    throw new IOException("RSA key is invalid: " + ex.getMessage());
-                }
+            RSAPrivateKey privateKey = CommonUtil.getPrivateKey(mod, privateExp);
 
-                // compress
-                ByteArrayOutputStream bout = new ByteArrayOutputStream();
-                GZIPOutputStream gout = new GZIPOutputStream(bout);
-                gout.write(Util.readFile(in));
-                gout.finish();
-                byte[] compressedData = bout.toByteArray();
+            // compress
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
+            GZIPOutputStream gout = new GZIPOutputStream(bout);
+            gout.write(Util.readFile(in));
+            gout.finish();
+            byte[] compressedData = bout.toByteArray();
 
-                // encrypt
-                int blockSize = mod.bitLength() / 8;
-                byte[] encrypted = Util.rsaEncrypt(privateKey, blockSize, blockSize - 11, compressedData);
+            // encrypt
+            int blockSize = mod.bitLength() / 8;
+            byte[] encrypted = Util.rsaEncrypt(privateKey, blockSize, blockSize - 11, compressedData);
 
-                // write to file
-                Util.writeFile(out, encrypted);
-            } else {
-                BigInteger publicExp = new BigInteger(rsaKey.getPublicExponent());
+            // write to file
+            Util.writeFile(out, encrypted);
+        } else {
+            BigInteger publicExp = new BigInteger(rsaKey.getPublicExponent());
+            RSAPublicKey publicKey = CommonUtil.getPublicKey(mod, publicExp);
 
-                RSAPublicKey publicKey = null;
-                try {
-                    publicKey = CommonUtil.getPublicKey(mod, publicExp);
-                } catch (InvalidKeySpecException ex) {
-                    throw new IOException("RSA key is invalid: " + ex.getMessage());
-                }
+            // decrypt
+            int blockSize = mod.bitLength() / 8;
+            byte[] decrypted = Util.rsaDecrypt(publicKey, blockSize, Util.readFile(in));
 
-                // decrypt
-                int blockSize = mod.bitLength() / 8;
-                byte[] decrypted;
-                try {
-                    decrypted = Util.rsaDecrypt(publicKey, blockSize, Util.readFile(in));
-                } catch (BadPaddingException ex) {
-                    throw new IOException(ex);
-                }
+            // decompress
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
+            ByteArrayInputStream bin = new ByteArrayInputStream(decrypted);
+            GZIPInputStream gin = new GZIPInputStream(bin);
 
-                // decompress
-                ByteArrayOutputStream bout = new ByteArrayOutputStream();
-                ByteArrayInputStream bin = new ByteArrayInputStream(decrypted);
-                GZIPInputStream gin = new GZIPInputStream(bin);
-
-                int byteRead;
-                byte[] b = new byte[1024];
-                while ((byteRead = gin.read(b)) != -1) {
-                    bout.write(b, 0, byteRead);
-                }
-                byte[] decompressedData = bout.toByteArray();
-
-                // write to file
-                Util.writeFile(out, decompressedData);
+            int byteRead;
+            byte[] b = new byte[1024];
+            while ((byteRead = gin.read(b)) != -1) {
+                bout.write(b, 0, byteRead);
             }
-        } catch (IOException ex) {
-            throw new IOException("Error occurred when reading from " + catalogArgs[1] + " or outputting to " + outputArg);
+            byte[] decompressedData = bout.toByteArray();
+
+            // write to file
+            Util.writeFile(out, decompressedData);
         }
 
         System.out.println("Manipulation succeed.");
     }
 
-    public static void validate(CommandLine line, Options options) throws ParseException, IOException {
+    public static void validate(CommandLine line, Options options) throws ParseException, Exception {
         String validateArg = line.getOptionValue("validate");
         String outputArg = line.getOptionValue("output");
 
@@ -817,32 +737,20 @@ public class SoftwarePatchBuilder {
         }
         System.out.println();
 
-        byte[] scriptContent = null;
-        Document doc = null;
-        try {
-            scriptContent = Util.readFile(new File(validateArg));
-            doc = XMLUtil.readDocument(scriptContent);
-        } catch (SAXException ex) {
-            throw new IOException(ex);
-        }
+        byte[] scriptContent = Util.readFile(new File(validateArg));
+        Document doc = XMLUtil.readDocument(scriptContent);
         Element rootElement = doc.getDocumentElement();
 
         byte[] contentToOutput = null;
         String rootElementTag = rootElement.getTagName();
-        try {
-            if (rootElementTag.equals("patches")) {
-                contentToOutput = updater.script.Catalog.read(scriptContent).output();
-            } else if (rootElementTag.equals("patch")) {
-                contentToOutput = Patch.read(scriptContent).output();
-            } else if (rootElementTag.equals("root")) {
-                contentToOutput = Client.read(scriptContent).output();
-            } else {
-                throw new IOException("Failed to recognize the script file.");
-            }
-        } catch (InvalidFormatException ex) {
-            throw new IOException(ex);
-        } catch (TransformerException ex) {
-            throw new IOException(ex);
+        if (rootElementTag.equals("patches")) {
+            contentToOutput = updater.script.Catalog.read(scriptContent).output();
+        } else if (rootElementTag.equals("patch")) {
+            contentToOutput = Patch.read(scriptContent).output();
+        } else if (rootElementTag.equals("root")) {
+            contentToOutput = Client.read(scriptContent).output();
+        } else {
+            throw new Exception("Failed to recognize the script file.");
         }
 
         if (outputArg != null) {

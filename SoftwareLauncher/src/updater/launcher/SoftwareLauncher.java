@@ -2,6 +2,8 @@ package updater.launcher;
 
 import java.awt.Image;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,9 +19,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.imageio.ImageIO;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import updater.gui.UpdaterWindow;
 import updater.launcher.BatchPatcher.UpdateResult;
 import updater.patch.Patcher.Replacement;
+import updater.patch.PatcherListener;
 import updater.script.Client;
 import updater.script.Client.Information;
 import updater.script.InvalidFormatException;
@@ -38,6 +43,14 @@ public class SoftwareLauncher {
     protected SoftwareLauncher() {
     }
 
+    /**
+     * Start update (if any) and launch/start the software.
+     * @param clientScriptPath the path of the client script file
+     * @param args the arguments to pass-in to launch/start the software
+     * @throws IOException possible failure: failed to copy self-updater to desire destination, failed to write to replacement file or failed to execute the command
+     * @throws InvalidFormatException the format of the client script is invalid
+     * @throws LaunchFailedException launch failed, possible jar not found, class not found or main method not found
+     */
     public static void start(String clientScriptPath, String[] args) throws IOException, InvalidFormatException, LaunchFailedException {
         File clientScript = new File(clientScriptPath);
         Client client = Client.read(Util.readFile(clientScript));
@@ -46,13 +59,20 @@ public class SoftwareLauncher {
         }
     }
 
+    /**
+     * Start update (if any) and launch/start the software.
+     * @param clientScriptFile the client script file
+     * @param client the client script
+     * @param args the arguments to pass-in to launch/start the software
+     * @throws IOException possible failure: failed to copy self-updater to desire destination, failed to write to replacement file or failed to execute the command
+     * @throws LaunchFailedException launch failed, possible jar not found, class not found or main method not found
+     */
     public static void start(File clientScriptFile, Client client, String[] args) throws IOException, LaunchFailedException {
         String launchType = client.getLaunchType();
         String afterLaunchOperation = client.getLaunchAfterLaunch();
         String jarPath = client.getLaunchJarPath();
         String mainClass = client.getLaunchMainClass();
         List<String> launchCommands = client.getLaunchCommands();
-
         String storagePath = client.getStoragePath();
         Information clientInfo = client.getInformation();
 
@@ -85,52 +105,77 @@ public class SoftwareLauncher {
         }
         //</editor-fold>
 
-        UpdateResult updateResult = BatchPatcher.update(clientScriptFile, client, new File(storagePath), clientInfo.getSoftwareName(), softwareIcon, clientInfo.getLauncherTitle(), updaterIcon);
+        final BatchPatcher batchPatcher = new BatchPatcher();
 
-        List<Replacement> replacementList = updateResult.getReplacementList();
-        if (replacementList != null && !replacementList.isEmpty()) {
-            Util.writeFile(new File(client.getStoragePath() + File.separator + "SoftwareSelfUpdater.jar"), Util.readResourceFile("/SoftwareSelfUpdater.jar"));
+        // GUI
+        final Thread currentThread = Thread.currentThread();
+        final UpdaterWindow updaterGUI = new UpdaterWindow(clientInfo.getSoftwareName(), softwareIcon, clientInfo.getLauncherTitle(), updaterIcon);
+        updaterGUI.addListener(new ActionListener() {
 
-            File replacementFile = new File(storagePath + File.separator + "replacement.txt");
-            writeReplacement(replacementFile, replacementList);
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                batchPatcher.pause(true);
 
-            List<String> commands = new ArrayList<String>();
+                Object[] options = {"Yes", "No"};
+                int result = JOptionPane.showOptionDialog(null, "Are you sure to cancel update?", "Canel Update", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+                if (result == 0) {
+                    updaterGUI.setCancelEnabled(false);
+                    currentThread.interrupt();
+                }
 
-            String javaBinary = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
-            String launcherPath = null;
-            try {
-                launcherPath = SoftwareLauncher.class.getProtectionDomain().getCodeSource().getLocation().toURI().toString();
-            } catch (URISyntaxException ex) {
-                JOptionPane.showMessageDialog(null, "Fatal error occurred: jar path detected is invalid.");
-                Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
-                return;
+                batchPatcher.pause(false);
             }
+        });
+        updaterGUI.setProgress(0);
+        updaterGUI.setMessage("Preparing ...");
+        JFrame updaterFrame = updaterGUI.getGUI();
+        updaterFrame.setVisible(true);
 
-            commands.add(javaBinary);
-            commands.add("-jar");
-            commands.add(client.getStoragePath() + File.separator + "SoftwareSelfUpdater.jar");
-            commands.add(storagePath + File.separator + "update.lck");
-            commands.add(replacementFile.getAbsolutePath());
-            //storagePath
+        // update
+        boolean launchSoftware = false;
+        UpdateResult updateResult = null;
+        try {
+            updateResult = batchPatcher.update(clientScriptFile, client, new File(storagePath), new PatcherListener() {
 
-            if (launchType.equals("jar")) {
-                commands.add(javaBinary);
-                commands.addAll(ManagementFactory.getRuntimeMXBean().getInputArguments());
-                commands.add("-jar");
-                commands.add(launcherPath);
-                commands.addAll(Arrays.asList(args));
-            } else {
-                for (String _command : launchCommands) {
-                    commands.add(_command.replace("{java}", javaBinary));
+                @Override
+                public void patchProgress(int percentage, String message) {
+                    updaterGUI.setProgress(percentage);
+                    updaterGUI.setMessage(message);
+                }
+
+                @Override
+                public void patchFinished() {
+                }
+
+                @Override
+                public void patchEnableCancel(boolean enable) {
+                    updaterGUI.setCancelEnabled(enable);
+                }
+            });
+
+            // check if there is any replacement failed and do the replacement with the self updater
+            handleReplacement(client, updateResult.getReplacementList(), args);
+        } catch (Exception ex) {
+            Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
+
+            JOptionPane.showMessageDialog(updaterFrame, "Error occurred when updating the software.");
+
+            if (updaterGUI.isCancelEnabled()) {
+                Object[] options = {"Launch", "Exit"};
+                int result = JOptionPane.showOptionDialog(updaterFrame, "Continue to launch the software?", "Continue Action", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+                if (result == 0) {
+                    launchSoftware = true;
+                } else {
+                    JOptionPane.showMessageDialog(updaterFrame, "You can restart the software to try to update software again.");
                 }
             }
-
-            ProcessBuilder builder = new ProcessBuilder(commands);
-            builder.start();
-            System.exit(0);
+        } finally {
+            updaterFrame.setVisible(false);
+            updaterFrame.dispose();
         }
 
-        if (updateResult.isUpdateSucceed() || updateResult.isLaunchSoftware()) {
+        // launch/start the software
+        if ((updateResult != null && updateResult.isUpdateSucceed()) || launchSoftware) {
             if (launchType.equals("jar")) {
                 startSoftware(jarPath, mainClass, args);
             } else {
@@ -143,6 +188,12 @@ public class SoftwareLauncher {
         }
     }
 
+    /**
+     * Write the replacement list into the file. (destination, then new file path, line by line)
+     * @param file the file to write into
+     * @param replacementList the replacement list
+     * @throws IOException error occurred when writing to the file
+     */
     protected static void writeReplacement(File file, List<Replacement> replacementList) throws IOException {
         PrintWriter writer = null;
         try {
@@ -157,6 +208,68 @@ public class SoftwareLauncher {
         }
     }
 
+    public static void handleReplacement(Client clientScript, List<Replacement> replacementList, String[] launchArgs) throws IOException {
+        if (replacementList == null || replacementList.isEmpty()) {
+            return;
+        }
+        if (clientScript == null) {
+            throw new NullPointerException("argument 'clientScript' cannot be null");
+        }
+        if (launchArgs == null) {
+            throw new NullPointerException("argument 'launchArgs' cannot be null");
+        }
+
+        // copy the self updater to the storage path from inside the jar
+        Util.writeFile(new File(clientScript.getStoragePath() + File.separator + "SoftwareSelfUpdater.jar"), Util.readResourceFile("/SoftwareSelfUpdater.jar"));
+
+        // prepare the replacement file for the self updater
+        File replacementFile = new File(clientScript.getStoragePath() + File.separator + "replacement.txt");
+        writeReplacement(replacementFile, replacementList);
+
+        // prepare the command to execute the self updater
+        List<String> commands = new ArrayList<String>();
+
+        String javaBinary = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
+        // the physical/file path of this launcher jar
+        String launcherPath = null;
+        try {
+            launcherPath = SoftwareLauncher.class.getProtectionDomain().getCodeSource().getLocation().toURI().toString();
+        } catch (URISyntaxException ex) {
+            JOptionPane.showMessageDialog(null, "Fatal error occurred: jar path detected of this launcher is invalid.");
+            Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
+            return;
+        }
+
+        commands.add(javaBinary);
+        commands.add("-jar");
+        commands.add(clientScript.getStoragePath() + File.separator + "SoftwareSelfUpdater.jar");
+        commands.add(clientScript.getStoragePath() + File.separator + "update.lck");
+        commands.add(replacementFile.getAbsolutePath());
+
+        if (clientScript.getLaunchType().equals("jar")) {
+            commands.add(javaBinary);
+            commands.addAll(ManagementFactory.getRuntimeMXBean().getInputArguments());
+            commands.add("-jar");
+            commands.add(launcherPath);
+            commands.addAll(Arrays.asList(launchArgs));
+        } else {
+            for (String _command : clientScript.getLaunchCommands()) {
+                commands.add(_command.replace("{java}", javaBinary));
+            }
+        }
+
+        ProcessBuilder builder = new ProcessBuilder(commands);
+        builder.start();
+        System.exit(0);
+    }
+
+    /**
+     * Load the jar and execute the main method.
+     * @param jarPath the path of the jar file
+     * @param mainClass the class that contain the main method
+     * @param args arguments to pass-in to the main method
+     * @throws LaunchFailedException launch failed, possible jar not found, class not found or main method not found
+     */
     protected static void startSoftware(String jarPath, String mainClass, String[] args) throws LaunchFailedException {
         try {
             ClassLoader loader = URLClassLoader.newInstance(new URL[]{new File(jarPath).toURI().toURL()}, SoftwareLauncher.class.getClassLoader());
@@ -192,20 +305,20 @@ public class SoftwareLauncher {
             return;
         }
 
-        try {
-            if (result.getClientScript() != null) {
+        if (result.getClientScript() != null) {
+            try {
                 SoftwareLauncher.start(new File(result.getClientScriptPath()), result.getClientScript(), args);
-            } else {
-                JOptionPane.showMessageDialog(null, "Config file not found, is empty or is invalid.");
+            } catch (IOException ex) {
+                Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
+                JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software-icon or root->information->updater-icon.");
+                return;
+            } catch (LaunchFailedException ex) {
+                Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
+                JOptionPane.showMessageDialog(null, "Failed to launch the software.");
+                return;
             }
-        } catch (IOException ex) {
-            Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
-            JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software-icon or root->information->updater-icon.");
-            return;
-        } catch (LaunchFailedException ex) {
-            Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
-            JOptionPane.showMessageDialog(null, "Failed to launch the software.");
-            return;
+        } else {
+            JOptionPane.showMessageDialog(null, "Config file not found, is empty or is invalid.");
         }
     }
 }

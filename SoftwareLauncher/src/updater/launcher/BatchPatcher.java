@@ -1,8 +1,5 @@
 package updater.launcher;
 
-import java.awt.Image;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -12,13 +9,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import updater.crypto.AESKey;
-import updater.gui.UpdaterWindow;
 import updater.patch.PatchLogReader;
 import updater.patch.PatchLogReader.UnfinishedPatch;
 import updater.patch.PatchLogWriter;
@@ -42,64 +33,64 @@ public class BatchPatcher {
         String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
         debug = debugMode == null || !debugMode.equals("true") ? false : true;
     }
+    protected Patcher patcher;
 
-    protected BatchPatcher() {
+    public BatchPatcher() {
     }
 
-    protected static int getPatchStartIndex(Patch update, PatchLogReader patchLogReader) {
+    /**
+     * Get the starting file index of the <code>patch</code> from the <code>patchLogReader</code>.
+     * If last time the update failed (during doReplacement), the updater will start from that failed position and resume, that position is this 'patch start index'.
+     * @param patch the patch
+     * @param patchLogReader the log to read
+     * @return the index, start from 0
+     */
+    protected static int getPatchStartIndex(Patch patch, PatchLogReader patchLogReader) {
+        if (patch == null) {
+            throw new NullPointerException("argument 'patch' cannot be null");
+        }
+
         if (patchLogReader == null) {
             return 0;
         }
+
         UnfinishedPatch unfinishedPatch = patchLogReader.getUnfinishedPatch();
-        if (unfinishedPatch != null && unfinishedPatch.getPatchId() == update.getId()) {
+        if (unfinishedPatch != null && unfinishedPatch.getPatchId() == patch.getId()) {
             return unfinishedPatch.getFileIndex();
         }
+
         return 0;
     }
 
-    public static UpdateResult update(File clientScriptFile, Client clientScript, File tempDir, String windowTitle, Image windowIcon, String title, Image icon) {
-        Map<String, Replacement> replacementMap = new HashMap<String, Replacement>();
-        UpdateResult returnResult = new UpdateResult(false, false, new ArrayList<Replacement>());
+    public void pause(boolean pause) {
+        if (patcher != null) {
+            patcher.pause(pause);
+        }
+    }
 
-        final AtomicReference<Patcher> patcherRef = new AtomicReference<Patcher>();
+    public UpdateResult update(File clientScriptFile, Client clientScript, File tempDir, final PatcherListener listener) throws Exception {
+        if (clientScriptFile == null) {
+            throw new NullPointerException("argument 'clientScriptFile' cannot be null");
+        }
+        if (clientScript == null) {
+            throw new NullPointerException("argument 'clientScript' cannot be null");
+        }
+        if (tempDir == null) {
+            throw new NullPointerException("argument 'tempDir' cannot be null");
+        }
+        if (listener == null) {
+            throw new NullPointerException("argument 'listener' cannot be null");
+        }
+
+        UpdateResult returnResult = new UpdateResult(false, new ArrayList<Replacement>());
 
         List<Patch> patches = clientScript.getPatches();
         if (patches.isEmpty()) {
-            return new UpdateResult(true, true, new ArrayList<Replacement>());
+            return new UpdateResult(true, new ArrayList<Replacement>());
         }
 
         // action log
         File logFile = new File(tempDir + "/action.log");
-
-        // GUI
-        final Thread currentThread = Thread.currentThread();
-        final UpdaterWindow updaterGUI = new UpdaterWindow(windowTitle, windowIcon, title, icon);
-        updaterGUI.addListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Patcher _patcher = patcherRef.get();
-                if (_patcher == null) {
-                    updaterGUI.setCancelEnabled(false);
-                    currentThread.interrupt();
-                } else {
-                    _patcher.pause(true);
-
-                    Object[] options = {"Yes", "No"};
-                    int result = JOptionPane.showOptionDialog(null, "Are you sure to cancel update?", "Canel Update", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
-                    if (result == 0) {
-                        updaterGUI.setCancelEnabled(false);
-                        currentThread.interrupt();
-                    }
-
-                    _patcher.pause(false);
-                }
-            }
-        });
-        updaterGUI.setProgress(0);
-        updaterGUI.setMessage("Preparing ...");
-        JFrame updaterFrame = updaterGUI.getGUI();
-        updaterFrame.setVisible(true);
 
         // patch
         FileOutputStream lockFileOut = null;
@@ -107,6 +98,7 @@ public class BatchPatcher {
         PatchLogWriter patchActionLogWriter = null;
         try {
             PatchLogReader patchLogReader = null;
+            Map<String, Replacement> replacementMap = new HashMap<String, Replacement>(); // use map to prevent duplication
             //<editor-fold defaultstate="collapsed" desc="read log">
             try {
                 patchLogReader = new PatchLogReader(logFile);
@@ -134,13 +126,12 @@ public class BatchPatcher {
                 }
 
                 if (patches.isEmpty()) {
-                    return new UpdateResult(true, true, new ArrayList<Replacement>());
+                    return new UpdateResult(true, new ArrayList<Replacement>());
                 }
             }
             //</editor-fold>
 
-            updaterGUI.setProgress(1);
-            updaterGUI.setMessage("Check to see if there is another updater running ...");
+            listener.patchProgress(1, "Check to see if there is another updater running ...");
             // acquire lock
             lockFileOut = new FileOutputStream(tempDir + "/update.lck");
             lock = lockFileOut.getChannel().tryLock();
@@ -148,15 +139,13 @@ public class BatchPatcher {
                 throw new IOException("There is another updater running.");
             }
 
-            updaterGUI.setProgress(2);
-            updaterGUI.setMessage("Clear log ...");
+            listener.patchProgress(2, "Clear log ...");
             // truncate log file
             new FileOutputStream(logFile).close();
             // open log file
             patchActionLogWriter = new PatchLogWriter(logFile);
 
-            updaterGUI.setProgress(3);
-            updaterGUI.setMessage("Starting ...");
+            listener.patchProgress(3, "Starting ...");
             // iterate patches and do patch
             final float stepSize = 97F / (float) patches.size();
             int count = -1;
@@ -205,14 +194,13 @@ public class BatchPatcher {
 
                 // initialize patcher
                 final int _count = count;
-                Patcher _patcher = new Patcher(new PatcherListener() {
+                patcher = new Patcher(new PatcherListener() {
 
                     @Override
                     public void patchProgress(int percentage, String message) {
                         float base = 3F + (stepSize * (float) _count);
                         float addition = ((float) percentage / 100F) * stepSize;
-                        updaterGUI.setProgress((int) (base + addition));
-                        updaterGUI.setMessage(message);
+                        listener.patchProgress((int) (base + addition), message);
                     }
 
                     @Override
@@ -221,15 +209,14 @@ public class BatchPatcher {
 
                     @Override
                     public void patchEnableCancel(boolean enable) {
-                        updaterGUI.setCancelEnabled(enable);
+                        listener.patchEnableCancel(enable);
                     }
                 }, patchActionLogWriter, new File("." + File.separator), tempDirForPatch);
-                patcherRef.set(_patcher);
-                List<Replacement> replacementList = _patcher.doPatch(patchFile, _update.getId(), getPatchStartIndex(_update, patchLogReader), aesKey, decryptedPatchFile);
+                List<Replacement> replacementList = patcher.doPatch(patchFile, _update.getId(), getPatchStartIndex(_update, patchLogReader), aesKey, decryptedPatchFile);
                 for (Replacement _replacement : replacementList) {
                     replacementMap.put(_replacement.getDestination(), _replacement);
                 }
-                patcherRef.set(null);
+                patcher = null;
 
                 // remove 'update' from updates list
                 iterator.remove();
@@ -245,42 +232,12 @@ public class BatchPatcher {
                 patchFile.delete();
             }
 
-            List<Replacement> replacementList = new ArrayList<Replacement>();
-            for (Replacement _replacement : replacementMap.values()) {
-                replacementList.add(_replacement);
-            }
-
-            returnResult = new UpdateResult(true, true, replacementList);
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(updaterFrame, "Error occurred when updating the software.");
-
-            boolean launchSoftware = false;
-
-            if (updaterGUI.isCancelEnabled()) {
-                Object[] options = {"Launch", "Exit"};
-                int result = JOptionPane.showOptionDialog(updaterFrame, "Continue to launch the software?", "Continue Action", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-                if (result == 0) {
-                    launchSoftware = true;
-                } else {
-                    JOptionPane.showMessageDialog(updaterFrame, "You can restart the software to try to update software again.");
-                }
-            }
-
-            returnResult = new UpdateResult(false, launchSoftware, new ArrayList<Replacement>());
-
-            if (debug) {
-                Logger.getLogger(BatchPatcher.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            returnResult = new UpdateResult(true, new ArrayList<Replacement>(replacementMap.values()));
         } finally {
-            updaterFrame.setVisible(false);
-            updaterFrame.dispose();
             if (lock != null) {
                 try {
                     lock.release();
                 } catch (IOException ex) {
-                    if (debug) {
-                        Logger.getLogger(BatchPatcher.class.getName()).log(Level.SEVERE, null, ex);
-                    }
                 }
             }
             Util.closeQuietly(lockFileOut);
@@ -291,29 +248,47 @@ public class BatchPatcher {
             }
         }
 
+        listener.patchFinished();
+
         return returnResult;
     }
 
+    /**
+     * The update result for {@link #update(java.io.File, updater.script.Client, java.io.File, java.lang.String, java.awt.Image, java.lang.String, java.awt.Image)}.
+     */
     public static class UpdateResult {
 
+        /**
+         * Indicate if the update succeed or not.
+         */
         protected boolean updateSucceed;
-        protected boolean launchSoftware;
+        /**
+         * The list of file that failed do the replace operation due to possibly file locking.
+         */
         protected List<Replacement> replacementList;
 
-        public UpdateResult(boolean updateSucceed, boolean launchSoftware, List<Replacement> replacementList) {
+        /**
+         * Constructor.
+         * @param updateSucceed true if the update succeed, false if not
+         * @param replacementList the list of file that failed do the replace operation due to possibly file locking
+         */
+        public UpdateResult(boolean updateSucceed, List<Replacement> replacementList) {
             this.updateSucceed = updateSucceed;
-            this.launchSoftware = launchSoftware;
             this.replacementList = replacementList == null ? new ArrayList<Replacement>() : new ArrayList<Replacement>(replacementList);
         }
 
+        /**
+         * Check if the update succeed or not.
+         * @return true if the update succeed, false if not
+         */
         public boolean isUpdateSucceed() {
             return updateSucceed;
         }
 
-        public boolean isLaunchSoftware() {
-            return launchSoftware;
-        }
-
+        /**
+         * Get the list of file that failed do the replace operation due to possibly file locking.
+         * @return the list
+         */
         public List<Replacement> getReplacementList() {
             return new ArrayList<Replacement>(replacementList);
         }

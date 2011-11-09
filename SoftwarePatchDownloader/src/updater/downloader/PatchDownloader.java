@@ -43,13 +43,51 @@ public class PatchDownloader {
     protected PatchDownloader() {
     }
 
+    /**
+     * Download specified patches and update the client script.
+     * @param listener the download patch listener listen to progress and result
+     * @param clientScriptPath the file path of the client script
+     * @param patches the patches to download
+     * @throws InvalidFormatException the format of the client script is invalid
+     * @throws IOException error occurred when reading the client script
+     */
     public static void downloadPatches(DownloadPatchesListener listener, String clientScriptPath, List<Patch> patches) throws InvalidFormatException, IOException {
+        if (clientScriptPath == null) {
+            throw new NullPointerException("argument 'clientScriptPath' cannot be null");
+        }
         byte[] clientScriptData = Util.readFile(new File(clientScriptPath));
         downloadPatches(listener, new File(clientScriptPath), Client.read(clientScriptData), patches);
     }
 
+    /**
+     * Download specified patches and update the client script.
+     * @param listener the download patch listener listen to progress and result
+     * @param clientScriptFile the file of the client script
+     * @param clientScript the client script content/object
+     * @param patches the patches to download
+     */
     public static void downloadPatches(final DownloadPatchesListener listener, File clientScriptFile, Client clientScript, List<Patch> patches) {
+        if (listener == null) {
+            throw new NullPointerException("argument 'listener' cannot be null");
+        }
+        if (clientScriptFile == null) {
+            throw new NullPointerException("argument 'clientScriptFile' cannot be null");
+        }
+        if (clientScript == null) {
+            throw new NullPointerException("argument 'clientScript' cannot be null");
+        }
+        if (patches == null) {
+            throw new NullPointerException("argument 'patches' cannot be null");
+        }
+
         if (patches.isEmpty()) {
+            return;
+        }
+
+        // check if there are patches downloaded and not be installed yet
+        if (!clientScript.getPatches().isEmpty()) {
+            // You have to restart the application to to install the update.
+            listener.downloadPatchesResult(DownloadPatchesListener.DownloadPatchesResult.PATCHES_EXIST);
             return;
         }
 
@@ -57,7 +95,7 @@ public class PatchDownloader {
         FileOutputStream lockFileOut = null;
         FileLock lock = null;
         try {
-            lockFileOut = new FileOutputStream(clientScript.getStoragePath() + "/update.lck");
+            lockFileOut = new FileOutputStream(clientScript.getStoragePath() + File.separator + "update.lck");
             lock = lockFileOut.getChannel().tryLock();
             if (lock == null) {
                 throw new IOException("Acquire exclusive lock failed");
@@ -70,9 +108,6 @@ public class PatchDownloader {
                 try {
                     lock.release();
                 } catch (IOException ex1) {
-                    if (debug) {
-                        Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex1);
-                    }
                 }
             }
             Util.closeQuietly(lockFileOut);
@@ -84,12 +119,6 @@ public class PatchDownloader {
             listener.downloadPatchesProgress(0);
             listener.downloadPatchesMessage("Getting patches catalog ...");
 
-            if (!clientScript.getPatches().isEmpty()) {
-                // You have to restart the application to make the update take effect.
-                listener.downloadPatchesResult(DownloadPatchesListener.DownloadPatchesResult.PATCHES_EXIST);
-                return;
-            }
-
             final AtomicInteger downloadedSize = new AtomicInteger(0);
             final AtomicLong lastRefreshTime = new AtomicLong(0L);
             final AtomicInteger downloadedSizeSinceLastRefresh = new AtomicInteger(0);
@@ -97,6 +126,9 @@ public class PatchDownloader {
             final DownloadProgressUtil downloadProgress = new DownloadProgressUtil();
             downloadProgress.setTotalSize(totalDownloadSize);
             GetPatchListener getPatchListener = new GetPatchListener() {
+
+                private String totalDownloadSizeString = Util.humanReadableByteCount(totalDownloadSize, false);
+                private float totalDownloadSizeFloat = (float) totalDownloadSize;
 
                 @Override
                 public void downloadInterrupted() {
@@ -118,7 +150,6 @@ public class PatchDownloader {
 //                try {
 //                    Thread.sleep(1);
 //                } catch (InterruptedException ex) {
-//                    Logger.getLogger(SoftwarePatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
 //                }
 
                     long currentTime = System.currentTimeMillis();
@@ -128,17 +159,17 @@ public class PatchDownloader {
                         downloadedSize.set(downloadedSize.get() + downloadedSizeSinceLastRefresh.get());
                         downloadProgress.feed(downloadedSizeSinceLastRefresh.get());
                         downloadedSizeSinceLastRefresh.set(0);
-                        listener.downloadPatchesProgress((int) ((float) downloadedSize.get() * 100F / (float) totalDownloadSize));
+                        listener.downloadPatchesProgress((int) ((float) downloadedSize.get() * 100F / totalDownloadSizeFloat));
                         // Downloading: 1.6 MiB / 240 MiB, 2.6 MiB/s, 1m 32s remaining
                         listener.downloadPatchesMessage("Downloading: "
-                                + Util.humanReadableByteCount(downloadedSize.get(), false) + " / " + Util.humanReadableByteCount(totalDownloadSize, false) + ", "
+                                + Util.humanReadableByteCount(downloadedSize.get(), false) + " / " + totalDownloadSizeString + ", "
                                 + Util.humanReadableByteCount(downloadProgress.getSpeed(), false) + "/s" + ", "
                                 + Util.humanReadableTimeCount(downloadProgress.getTimeRemaining(), 3) + " remaining");
                     }
                 }
             };
 
-            List<Patch> existingUpdates = clientScript.getPatches();
+            List<Patch> existingUpdates = clientScript.getPatches(); // should be empty
 
             // download
             for (Patch update : patches) {
@@ -190,15 +221,16 @@ public class PatchDownloader {
                 try {
                     lock.release();
                 } catch (IOException ex) {
-                    if (debug) {
-                        Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
-                    }
                 }
             }
             Util.closeQuietly(lockFileOut);
         }
     }
 
+    /**
+     * The download patch listener for {@link #downloadPatches(updater.downloader.PatchDownloader.DownloadPatchesListener, java.lang.String, java.util.List)} and {@link #downloadPatches(updater.downloader.PatchDownloader.DownloadPatchesListener, java.io.File, updater.script.Client, java.util.List)}.
+     * This is used to listen to download patch progress and result notification.
+     */
     public static interface DownloadPatchesListener {
 
         public static enum DownloadPatchesResult {
@@ -206,17 +238,41 @@ public class PatchDownloader {
             ACQUIRE_LOCK_FAILED, MULTIPLE_UPDATER_RUNNING, PATCHES_EXIST, SAVE_TO_CLIENT_SCRIPT_FAIL, DOWNLOAD_INTERRUPTED, ERROR, COMPLETED
         }
 
+        /**
+         * Notify the result of the 'get patch' process. This should be called at last.
+         * @param result the download patch result
+         */
         void downloadPatchesResult(DownloadPatchesResult result);
 
+        /**
+         * Notify the download progress.
+         * @param progress the progress range from 0 to 100
+         */
         void downloadPatchesProgress(int progress);
 
+        /**
+         * Notify the change in description of current taking action.
+         * @param message the message/description
+         */
         void downloadPatchesMessage(String message);
     }
 
+    /**
+     * Determine the suitable patches to download to upgrade the current version of software to highest possible version with least download size.
+     * @param catalog the patches catalog
+     * @param currentVersion the current software version
+     * @return the list of suitable patches
+     */
     public static List<Patch> getSuitablePatches(Catalog catalog, String currentVersion) {
         return getSuitablePatches(catalog.getPatchs(), currentVersion);
     }
 
+    /**
+     * Determine the suitable patches to download to upgrade the software with version <code>fromVersion</code> to highest possible version with least download size.
+     * @param allPatches all available patches to choose from
+     * @param fromVersion the starting version to match
+     * @return the list of suitable patches
+     */
     protected static List<Patch> getSuitablePatches(List<Patch> allPatches, String fromVersion) {
         List<Patch> returnResult = new ArrayList<Patch>();
 
@@ -252,6 +308,11 @@ public class PatchDownloader {
         return returnResult;
     }
 
+    /**
+     * Calculate the summation of size of all patches in <code>allPatches</code>.
+     * @param allPatches the patches list
+     * @return the summation of size of all patches
+     */
     protected static long calculateTotalLength(List<Patch> allPatches) {
         long returnResult = 0;
         for (Patch patch : allPatches) {
@@ -260,11 +321,24 @@ public class PatchDownloader {
         return returnResult;
     }
 
+    /**
+     * Get the updated catalog.
+     * @param clientScriptPath the path of the file of the client script
+     * @return the catalog, null means no newer version of catalog is available
+     * @throws IOException error occurred when reading the client script
+     * @throws InvalidFormatException the format of the client script is invalid
+     */
     public static Catalog getUpdatedCatalog(String clientScriptPath) throws IOException, InvalidFormatException {
         byte[] clientScriptData = Util.readFile(new File(clientScriptPath));
         return getUpdatedCatalog(Client.read(clientScriptData));
     }
 
+    /**
+     * Get the updated catalog.
+     * @param client the path of the file of the client script
+     * @return the catalog, null means no newer version of catalog is available
+     * @throws IOException RSA key invalid or error occurred when getting the catalog
+     */
     protected static Catalog getUpdatedCatalog(Client client) throws IOException {
         String catalogURL = client.getCatalogUrl();
 

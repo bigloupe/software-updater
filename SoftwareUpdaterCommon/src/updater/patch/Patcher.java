@@ -353,9 +353,9 @@ public class Patcher {
         float decryptProgress = 0;
         float prepareProgress = 5;
         float updateProgress = 60;
-        float checkAccessibilityProgress = 5;
+        float checkAccessibilityProgress = 0;
         float replaceFilesProgress = 5;
-        float validateFilesProgress = 25;
+        float validateFilesProgress = 30;
 
 
         float stageMinimumProgress = 0;

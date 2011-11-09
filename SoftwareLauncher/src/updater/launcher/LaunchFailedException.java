@@ -1,6 +1,7 @@
 package updater.launcher;
 
 /**
+ * An exception indicating failed to launch the software.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class LaunchFailedException extends Exception {
