@@ -343,15 +343,17 @@ public class PatchDownloader {
         String catalogURL = client.getCatalogUrl();
 
         RSAPublicKey publicKey = null;
+        int keyLength = 0;
         if (client.getCatalogPublicKeyModulus() != null) {
             try {
                 publicKey = Util.getPublicKey(new BigInteger(client.getCatalogPublicKeyModulus(), 16), new BigInteger(client.getCatalogPublicKeyExponent(), 16));
+                keyLength = new BigInteger(client.getCatalogPublicKeyModulus(), 16).bitLength() / 8;
             } catch (InvalidKeySpecException ex) {
                 throw new IOException("RSA key invalid: " + ex.getMessage());
             }
         }
 
-        GetCatalogResult getCatalogResult = RemoteContent.getCatalog(catalogURL, client.getCatalogLastUpdated(), publicKey, new BigInteger(client.getCatalogPublicKeyModulus(), 16).bitLength() / 8);
+        GetCatalogResult getCatalogResult = RemoteContent.getCatalog(catalogURL, client.getCatalogLastUpdated(), publicKey, keyLength);
         if (getCatalogResult.isNotModified()) {
             return null;
         }

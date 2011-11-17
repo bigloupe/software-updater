@@ -135,42 +135,53 @@ public class SoftwarePatchDownloader {
             Image softwareIcon = null;
             Image updaterIcon = null;
             //<editor-fold defaultstate="collapsed" desc="icons">
-            try {
-                if (clientInfo.getSoftwareIconLocation() != null) {
-                    if (clientInfo.getSoftwareIconLocation().equals("jar")) {
-                        URL resourceURL = PatchDownloader.class.getResource(clientInfo.getSoftwareIconPath());
-                        if (resourceURL != null) {
-                            softwareIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
+            if (clientInfo != null) {
+                try {
+                    if (clientInfo.getSoftwareIconLocation() != null) {
+                        if (clientInfo.getSoftwareIconLocation().equals("jar")) {
+                            URL resourceURL = PatchDownloader.class.getResource(clientInfo.getSoftwareIconPath());
+                            if (resourceURL != null) {
+                                softwareIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
+                            } else {
+                                throw new IOException("Resource not found: " + clientInfo.getSoftwareIconPath());
+                            }
                         } else {
-                            throw new IOException("Resource not found: " + clientInfo.getSoftwareIconPath());
+                            softwareIcon = ImageIO.read(new File(clientInfo.getSoftwareIconPath()));
                         }
-                    } else {
-                        softwareIcon = ImageIO.read(new File(clientInfo.getSoftwareIconPath()));
                     }
-                }
-                if (clientInfo.getDownloaderIconLocation() != null) {
-                    if (clientInfo.getDownloaderIconLocation().equals("jar")) {
-                        URL resourceURL = PatchDownloader.class.getResource(clientInfo.getDownloaderIconPath());
-                        if (resourceURL != null) {
-                            updaterIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
+                    if (clientInfo.getDownloaderIconLocation() != null) {
+                        if (clientInfo.getDownloaderIconLocation().equals("jar")) {
+                            URL resourceURL = PatchDownloader.class.getResource(clientInfo.getDownloaderIconPath());
+                            if (resourceURL != null) {
+                                updaterIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
+                            } else {
+                                throw new IOException("Resource not found: " + clientInfo.getDownloaderIconPath());
+                            }
                         } else {
-                            throw new IOException("Resource not found: " + clientInfo.getDownloaderIconPath());
+                            updaterIcon = ImageIO.read(new File(clientInfo.getDownloaderIconPath()));
                         }
-                    } else {
-                        updaterIcon = ImageIO.read(new File(clientInfo.getDownloaderIconPath()));
                     }
+                } catch (Exception ex) {
+                    Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+                    JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software->icon or root->information->downloader->icon.");
+                    return;
                 }
-            } catch (Exception ex) {
-                Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
-                JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software->icon or root->information->downloader->icon.");
-                return;
+            }
+            if (softwareIcon == null) {
+                softwareIcon = Toolkit.getDefaultToolkit().getImage(SoftwarePatchDownloader.class.getResource("/software_icon.png"));
+            }
+            if (updaterIcon == null) {
+                softwareIcon = Toolkit.getDefaultToolkit().getImage(SoftwarePatchDownloader.class.getResource("/updater_icon.png"));
             }
             //</editor-fold>
+
+            String softwareName = clientInfo != null && clientInfo.getSoftwareName() != null ? clientInfo.getSoftwareName() : "Software Patches Downloader";
+            String downloaderName = clientInfo != null && clientInfo.getDownloaderName() != null ? clientInfo.getDownloaderName() : "Patches Downloader";
 
             // GUI
             // record the current thread, for the use of following action listener triggered by swing dispatching to interrupt this thread
             final Thread currentThread = Thread.currentThread();
-            final UpdaterWindow updaterGUI = new UpdaterWindow(clientInfo.getSoftwareName(), softwareIcon, clientInfo.getDownloaderName(), updaterIcon);
+            final UpdaterWindow updaterGUI = new UpdaterWindow(softwareName, softwareIcon, downloaderName, updaterIcon);
             final JFrame updaterFrame = updaterGUI.getGUI();
             updaterGUI.addListener(new ActionListener() {
 

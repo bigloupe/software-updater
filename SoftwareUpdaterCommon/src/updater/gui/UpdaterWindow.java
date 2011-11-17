@@ -97,7 +97,7 @@ public class UpdaterWindow {
 
         // main content panel
         JTitledPanel panel = new JTitledPanel();
-        panel.setTitle(title, new ImageIcon(icon));
+        panel.setTitle(title, icon != null ? new ImageIcon(icon) : null);
         panel.getContentPanel().add(messageBox);
         panel.getContentPanel().add(progressBox);
         panel.getContentPanel().add(buttonBox);

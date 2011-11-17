@@ -133,11 +133,15 @@ public class RemoteContent {
             // decompress
             ByteArrayOutputStream decompressedOut = new ByteArrayOutputStream();
             ByteArrayInputStream compressedIn = new ByteArrayInputStream(content);
-            GZIPInputStream decompressedGIn = new GZIPInputStream(compressedIn);
-            while ((byteRead = decompressedGIn.read(b)) != -1) {
-                decompressedOut.write(b, 0, byteRead);
+            try {
+                GZIPInputStream decompressedGIn = new GZIPInputStream(compressedIn);
+                while ((byteRead = decompressedGIn.read(b)) != -1) {
+                    decompressedOut.write(b, 0, byteRead);
+                }
+                content = decompressedOut.toByteArray();
+            } catch (Exception ex) {
+                // not GZIP compressed
             }
-            content = decompressedOut.toByteArray();
 
             returnResult = new GetCatalogResult(Catalog.read(content), false);
         } catch (Exception ex) {

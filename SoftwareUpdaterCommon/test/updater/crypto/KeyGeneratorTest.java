@@ -75,9 +75,9 @@ public class KeyGeneratorTest {
 
             byte[] testContent = CommonUtil.readFile(tmpFile);
             RSAKey rsaKey = RSAKey.read(testContent);
-            assertEquals(bits / 8, rsaKey.getModulus().length);
-
             BigInteger mod = new BigInteger(rsaKey.getModulus());
+            assertEquals(bits, mod.bitLength());
+
             RSAPrivateKeySpec privateKeySpec = new RSAPrivateKeySpec(mod, new BigInteger(rsaKey.getPrivateExponent()));
             RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(mod, new BigInteger(rsaKey.getPublicExponent()));
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");

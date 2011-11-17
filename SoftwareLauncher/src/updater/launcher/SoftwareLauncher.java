@@ -68,6 +68,10 @@ public class SoftwareLauncher {
      * @throws LaunchFailedException launch failed, possible jar not found, class not found or main method not found
      */
     public static void start(File clientScriptFile, Client client, String[] args) throws IOException, LaunchFailedException {
+        if (client.getPatches().isEmpty()) {
+            return;
+        }
+
         String launchType = client.getLaunchType();
         String afterLaunchOperation = client.getLaunchAfterLaunch();
         String jarPath = client.getLaunchJarPath();
@@ -79,37 +83,48 @@ public class SoftwareLauncher {
         Image softwareIcon = null;
         Image updaterIcon = null;
         //<editor-fold defaultstate="collapsed" desc="get icons">
-        if (clientInfo.getSoftwareIconLocation() != null) {
-            if (clientInfo.getSoftwareIconLocation().equals("jar")) {
-                URL resourceURL = SoftwareLauncher.class.getResource(clientInfo.getSoftwareIconPath());
-                if (resourceURL != null) {
-                    softwareIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
+        if (clientInfo != null) {
+            if (clientInfo.getSoftwareIconLocation() != null) {
+                if (clientInfo.getSoftwareIconLocation().equals("jar")) {
+                    URL resourceURL = SoftwareLauncher.class.getResource(clientInfo.getSoftwareIconPath());
+                    if (resourceURL != null) {
+                        softwareIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
+                    } else {
+                        throw new IOException("Resource not found: " + clientInfo.getSoftwareIconPath());
+                    }
                 } else {
-                    throw new IOException("Resource not found: " + clientInfo.getSoftwareIconPath());
+                    softwareIcon = ImageIO.read(new File(clientInfo.getSoftwareIconPath()));
                 }
-            } else {
-                softwareIcon = ImageIO.read(new File(clientInfo.getSoftwareIconPath()));
+            }
+            if (clientInfo.getLauncherIconLocation() != null) {
+                if (clientInfo.getLauncherIconLocation().equals("jar")) {
+                    URL resourceURL = SoftwareLauncher.class.getResource(clientInfo.getLauncherIconPath());
+                    if (resourceURL != null) {
+                        updaterIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
+                    } else {
+                        throw new IOException("Resource not found: " + clientInfo.getLauncherIconPath());
+                    }
+                } else {
+                    updaterIcon = ImageIO.read(new File(clientInfo.getLauncherIconPath()));
+                }
             }
         }
-        if (clientInfo.getLauncherIconLocation() != null) {
-            if (clientInfo.getLauncherIconLocation().equals("jar")) {
-                URL resourceURL = SoftwareLauncher.class.getResource(clientInfo.getLauncherIconPath());
-                if (resourceURL != null) {
-                    updaterIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
-                } else {
-                    throw new IOException("Resource not found: " + clientInfo.getLauncherIconPath());
-                }
-            } else {
-                updaterIcon = ImageIO.read(new File(clientInfo.getLauncherIconPath()));
-            }
+        if (softwareIcon == null) {
+            softwareIcon = Toolkit.getDefaultToolkit().getImage(SoftwareLauncher.class.getResource("/software_icon.png"));
+        }
+        if (updaterIcon == null) {
+            softwareIcon = Toolkit.getDefaultToolkit().getImage(SoftwareLauncher.class.getResource("/updater_icon.png"));
         }
         //</editor-fold>
 
         final BatchPatcher batchPatcher = new BatchPatcher();
 
+        String softwareName = clientInfo != null && clientInfo.getSoftwareName() != null ? clientInfo.getSoftwareName() : "Software Updater";
+        String launcherName = clientInfo != null && clientInfo.getLauncherTitle() != null ? clientInfo.getLauncherTitle() : "Software Updater";
+
         // GUI
         final Thread currentThread = Thread.currentThread();
-        final UpdaterWindow updaterGUI = new UpdaterWindow(clientInfo.getSoftwareName(), softwareIcon, clientInfo.getLauncherTitle(), updaterIcon);
+        final UpdaterWindow updaterGUI = new UpdaterWindow(softwareName, softwareIcon, launcherName, updaterIcon);
         updaterGUI.addListener(new ActionListener() {
 
             @Override
