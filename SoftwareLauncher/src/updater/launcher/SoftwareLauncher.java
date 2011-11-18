@@ -196,11 +196,11 @@ public class SoftwareLauncher {
                 ProcessBuilder builder = new ProcessBuilder(launchCommands);
                 try {
                     builder.start();
-                    if (afterLaunchOperation != null && afterLaunchOperation.equals("exit")) {
-                        System.exit(0);
-                    }
                 } catch (Exception ex) {
                     throw new LaunchFailedException();
+                }
+                if (afterLaunchOperation != null && afterLaunchOperation.equals("exit")) {
+                    System.exit(0);
                 }
             }
         }
