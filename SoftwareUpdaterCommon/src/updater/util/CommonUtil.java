@@ -442,7 +442,7 @@ public class CommonUtil {
                         long compareVersionResult = compareVersion(newConfigClientScript.getVersion(), clientScript.getVersion());
                         if (compareVersionResult > 0) {
                             configFile.delete();
-                            CommonUtil.fileRename(newConfigFile, configFile, 1000, 50);
+                            newConfigFile.renameTo(configFile);
 
                             clientScript = newConfigClientScript;
                             clientScriptPath = newConfigFile.getAbsolutePath();
@@ -450,13 +450,13 @@ public class CommonUtil {
                     }
                 } else {
                     configFile.delete();
-                    CommonUtil.fileRename(newConfigFile, configFile, 1000, 50);
+                    newConfigFile.renameTo(configFile);
                     clientScript = Client.read(readFile(configFile));
                 }
             }
         } else {
             if (newConfigFile.exists()) {
-                CommonUtil.fileRename(newConfigFile, configFile, 1000, 50);
+                newConfigFile.renameTo(configFile);
                 clientScript = Client.read(readFile(configFile));
             }
         }
@@ -507,7 +507,8 @@ public class CommonUtil {
 
         File clientScriptTemp = new File(getFileDirectory(clientScriptFile) + File.separator + clientScriptFile.getName() + ".new");
         writeFile(clientScriptTemp, clientScript.output());
-        if (!clientScriptFile.delete() || !CommonUtil.fileRename(clientScriptTemp, clientScriptFile, 1000, 50)) {
+        clientScriptFile.delete();
+        if (!clientScriptTemp.renameTo(clientScriptFile)) {
             throw new IOException("Failed to save to script to path: " + clientScriptFile.getAbsolutePath());
         }
     }
@@ -938,30 +939,5 @@ public class CommonUtil {
                 }
             }
         }
-    }
-
-    /**
-     * Rename a file from {@code fromFile} to {@code toFile} with retry
-     * @param fromFile the file to move
-     * @param toFile the destination to move to
-     * @param retryTime the rename process will keep retry within this time interval (in ms)
-     * @param retryInterval the time to wait before retry
-     * @return true if rename succeed, fail if not
-     */
-    public static boolean fileRename(File fromFile, File toFile, int retryTime, int retryInterval) {
-        long startTime = System.currentTimeMillis();
-        while (!fromFile.renameTo(toFile)) {
-            if (System.currentTimeMillis() - startTime > retryTime) {
-                return false;
-            }
-            try {
-                Thread.sleep(retryInterval);
-            } catch (InterruptedException ex) {
-                if (debug) {
-                    Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        }
-        return true;
     }
 }

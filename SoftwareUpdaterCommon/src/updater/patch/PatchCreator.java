@@ -183,7 +183,7 @@ public class PatchCreator {
             PatchWriteUtil.encrypt(aesKey, null, patch, tempFileForEncryption);
 
             patch.delete();
-            CommonUtil.fileRename(tempFileForEncryption, patch, 1000, 50);
+            tempFileForEncryption.renameTo(patch);
         }
     }
 
@@ -468,7 +468,7 @@ public class PatchCreator {
             PatchWriteUtil.encrypt(aesKey, null, patch, tempFileForEncryption);
 
             patch.delete();
-            CommonUtil.fileRename(tempFileForEncryption, patch, 1000, 50);
+            tempFileForEncryption.renameTo(patch);
         }
     }
 

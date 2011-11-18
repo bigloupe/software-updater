@@ -84,7 +84,7 @@ public class PatchPacker {
             PatchWriteUtil.encrypt(aesKey, null, saveToFile, tempFileForEncryption);
 
             saveToFile.delete();
-            CommonUtil.fileRename(tempFileForEncryption, saveToFile, 1000, 50);
+            tempFileForEncryption.renameTo(saveToFile);
         }
     }
 }
