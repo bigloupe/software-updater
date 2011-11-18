@@ -313,7 +313,7 @@ public class Patcher {
                     File newFile = new File(softwareDir + _operation.getNewFilePath());
                     new File(CommonUtil.getFileDirectory(newFile)).mkdirs();
                     newFile.delete();
-                    if (!new File(tempDir + File.separator + i).renameTo(newFile)) {
+                    if (!CommonUtil.fileRename(new File(tempDir + File.separator + i), newFile, 1000, 50)) {
                         replacementFailedList.add(new Replacement(softwareDir + _operation.getNewFilePath(), tempDir + File.separator + i));
                     }
                 }
@@ -321,7 +321,7 @@ public class Patcher {
                 // patch or replace
                 listener.patchProgress((int) progress, "Copying from " + _operation.getOldFilePath() + " to " + _operation.getNewFilePath() + " ...");
                 new File(softwareDir + _operation.getNewFilePath()).delete();
-                if (!new File(tempDir + File.separator + i).renameTo(new File(softwareDir + _operation.getNewFilePath()))) {
+                if (!CommonUtil.fileRename(new File(tempDir + File.separator + i), new File(softwareDir + _operation.getNewFilePath()), 1000, 50)) {
                     replacementFailedList.add(new Replacement(softwareDir + _operation.getNewFilePath(), tempDir + File.separator + i));
                 }
             }

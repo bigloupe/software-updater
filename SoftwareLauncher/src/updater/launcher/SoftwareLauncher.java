@@ -197,7 +197,7 @@ public class SoftwareLauncher {
                 try {
                     builder.start();
                 } catch (Exception ex) {
-                    throw new LaunchFailedException();
+                    throw new LaunchFailedException(ex);
                 }
                 if (afterLaunchOperation != null && afterLaunchOperation.equals("exit")) {
                     System.exit(0);
