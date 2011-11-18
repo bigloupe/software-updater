@@ -507,7 +507,8 @@ public class CommonUtil {
 
         File clientScriptTemp = new File(getFileDirectory(clientScriptFile) + File.separator + clientScriptFile.getName() + ".new");
         writeFile(clientScriptTemp, clientScript.output());
-        if (!clientScriptFile.delete() || !clientScriptTemp.renameTo(clientScriptFile)) {
+        clientScriptFile.delete();
+        if (!clientScriptTemp.renameTo(clientScriptFile)) {
             throw new IOException("Failed to save to script to path: " + clientScriptFile.getAbsolutePath());
         }
     }

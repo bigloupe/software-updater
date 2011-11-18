@@ -37,7 +37,7 @@ public class SoftwareLauncher {
 
     static {
         // set debug mode
-        System.setProperty("SoftwareUpdaterDebugMode", "false");
+        System.setProperty("SoftwareUpdaterDebugMode", "true");
     }
 
     protected SoftwareLauncher() {
@@ -68,136 +68,139 @@ public class SoftwareLauncher {
      * @throws LaunchFailedException launch failed, possible jar not found, class not found or main method not found
      */
     public static void start(File clientScriptFile, Client client, String[] args) throws IOException, LaunchFailedException {
-        if (client.getPatches().isEmpty()) {
-            return;
-        }
-
-        String launchType = client.getLaunchType();
-        String afterLaunchOperation = client.getLaunchAfterLaunch();
-        String jarPath = client.getLaunchJarPath();
-        String mainClass = client.getLaunchMainClass();
-        List<String> launchCommands = client.getLaunchCommands();
-        String storagePath = client.getStoragePath();
-        Information clientInfo = client.getInformation();
-
-        Image softwareIcon = null;
-        Image updaterIcon = null;
-        //<editor-fold defaultstate="collapsed" desc="get icons">
-        if (clientInfo != null) {
-            if (clientInfo.getSoftwareIconLocation() != null) {
-                if (clientInfo.getSoftwareIconLocation().equals("jar")) {
-                    URL resourceURL = SoftwareLauncher.class.getResource(clientInfo.getSoftwareIconPath());
-                    if (resourceURL != null) {
-                        softwareIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
-                    } else {
-                        throw new IOException("Resource not found: " + clientInfo.getSoftwareIconPath());
-                    }
-                } else {
-                    softwareIcon = ImageIO.read(new File(clientInfo.getSoftwareIconPath()));
-                }
-            }
-            if (clientInfo.getLauncherIconLocation() != null) {
-                if (clientInfo.getLauncherIconLocation().equals("jar")) {
-                    URL resourceURL = SoftwareLauncher.class.getResource(clientInfo.getLauncherIconPath());
-                    if (resourceURL != null) {
-                        updaterIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
-                    } else {
-                        throw new IOException("Resource not found: " + clientInfo.getLauncherIconPath());
-                    }
-                } else {
-                    updaterIcon = ImageIO.read(new File(clientInfo.getLauncherIconPath()));
-                }
-            }
-        }
-        if (softwareIcon == null) {
-            softwareIcon = Toolkit.getDefaultToolkit().getImage(SoftwareLauncher.class.getResource("/software_icon.png"));
-        }
-        if (updaterIcon == null) {
-            softwareIcon = Toolkit.getDefaultToolkit().getImage(SoftwareLauncher.class.getResource("/updater_icon.png"));
-        }
-        //</editor-fold>
-
-        final BatchPatcher batchPatcher = new BatchPatcher();
-
-        String softwareName = clientInfo != null && clientInfo.getSoftwareName() != null ? clientInfo.getSoftwareName() : "Software Updater";
-        String launcherName = clientInfo != null && clientInfo.getLauncherTitle() != null ? clientInfo.getLauncherTitle() : "Software Updater";
-
-        // GUI
-        final Thread currentThread = Thread.currentThread();
-        final UpdaterWindow updaterGUI = new UpdaterWindow(softwareName, softwareIcon, launcherName, updaterIcon);
-        updaterGUI.addListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                batchPatcher.pause(true);
-
-                Object[] options = {"Yes", "No"};
-                int result = JOptionPane.showOptionDialog(null, "Are you sure to cancel update?", "Canel Update", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
-                if (result == 0) {
-                    updaterGUI.setCancelEnabled(false);
-                    currentThread.interrupt();
-                }
-
-                batchPatcher.pause(false);
-            }
-        });
-        updaterGUI.setProgress(0);
-        updaterGUI.setMessage("Preparing ...");
-        JFrame updaterFrame = updaterGUI.getGUI();
-        updaterFrame.setVisible(true);
-
-        // update
         boolean launchSoftware = false;
         UpdateResult updateResult = null;
-        try {
-            updateResult = batchPatcher.update(clientScriptFile, client, new File(storagePath), new PatcherListener() {
+        if (!client.getPatches().isEmpty()) {
+            String storagePath = client.getStoragePath();
+            Information clientInfo = client.getInformation();
 
-                @Override
-                public void patchProgress(int percentage, String message) {
-                    updaterGUI.setProgress(percentage);
-                    updaterGUI.setMessage(message);
+            Image softwareIcon = null;
+            Image updaterIcon = null;
+            //<editor-fold defaultstate="collapsed" desc="get icons">
+            if (clientInfo != null) {
+                if (clientInfo.getSoftwareIconLocation() != null) {
+                    if (clientInfo.getSoftwareIconLocation().equals("jar")) {
+                        URL resourceURL = SoftwareLauncher.class.getResource(clientInfo.getSoftwareIconPath());
+                        if (resourceURL != null) {
+                            softwareIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
+                        } else {
+                            throw new IOException("Resource not found: " + clientInfo.getSoftwareIconPath());
+                        }
+                    } else {
+                        softwareIcon = ImageIO.read(new File(clientInfo.getSoftwareIconPath()));
+                    }
                 }
-
-                @Override
-                public void patchFinished() {
-                }
-
-                @Override
-                public void patchEnableCancel(boolean enable) {
-                    updaterGUI.setCancelEnabled(enable);
-                }
-            });
-
-            // check if there is any replacement failed and do the replacement with the self updater
-            handleReplacement(client, updateResult.getReplacementList(), args);
-        } catch (Exception ex) {
-            Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
-
-            JOptionPane.showMessageDialog(updaterFrame, "Error occurred when updating the software.");
-
-            if (updaterGUI.isCancelEnabled()) {
-                Object[] options = {"Launch", "Exit"};
-                int result = JOptionPane.showOptionDialog(updaterFrame, "Continue to launch the software?", "Continue Action", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-                if (result == 0) {
-                    launchSoftware = true;
-                } else {
-                    JOptionPane.showMessageDialog(updaterFrame, "You can restart the software to try to update software again.");
+                if (clientInfo.getLauncherIconLocation() != null) {
+                    if (clientInfo.getLauncherIconLocation().equals("jar")) {
+                        URL resourceURL = SoftwareLauncher.class.getResource(clientInfo.getLauncherIconPath());
+                        if (resourceURL != null) {
+                            updaterIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
+                        } else {
+                            throw new IOException("Resource not found: " + clientInfo.getLauncherIconPath());
+                        }
+                    } else {
+                        updaterIcon = ImageIO.read(new File(clientInfo.getLauncherIconPath()));
+                    }
                 }
             }
-        } finally {
-            updaterFrame.setVisible(false);
-            updaterFrame.dispose();
+            if (softwareIcon == null) {
+                softwareIcon = Toolkit.getDefaultToolkit().getImage(SoftwareLauncher.class.getResource("/software_icon.png"));
+            }
+            if (updaterIcon == null) {
+                updaterIcon = Toolkit.getDefaultToolkit().getImage(SoftwareLauncher.class.getResource("/updater_icon.png"));
+            }
+            //</editor-fold>
+
+            final BatchPatcher batchPatcher = new BatchPatcher();
+
+            String softwareName = clientInfo != null && clientInfo.getSoftwareName() != null ? clientInfo.getSoftwareName() : "Software Updater";
+            String launcherName = clientInfo != null && clientInfo.getLauncherTitle() != null ? clientInfo.getLauncherTitle() : "Software Updater";
+
+            // GUI
+            final Thread currentThread = Thread.currentThread();
+            final UpdaterWindow updaterGUI = new UpdaterWindow(softwareName, softwareIcon, launcherName, updaterIcon);
+            updaterGUI.addListener(new ActionListener() {
+
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    batchPatcher.pause(true);
+
+                    Object[] options = {"Yes", "No"};
+                    int result = JOptionPane.showOptionDialog(null, "Are you sure to cancel update?", "Canel Update", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+                    if (result == 0) {
+                        updaterGUI.setCancelEnabled(false);
+                        currentThread.interrupt();
+                    }
+
+                    batchPatcher.pause(false);
+                }
+            });
+            updaterGUI.setProgress(0);
+            updaterGUI.setMessage("Preparing ...");
+            JFrame updaterFrame = updaterGUI.getGUI();
+            updaterFrame.setVisible(true);
+
+            // update
+            try {
+                updateResult = batchPatcher.update(clientScriptFile, client, new File(storagePath), new PatcherListener() {
+
+                    @Override
+                    public void patchProgress(int percentage, String message) {
+                        updaterGUI.setProgress(percentage);
+                        updaterGUI.setMessage(message);
+                    }
+
+                    @Override
+                    public void patchFinished() {
+                    }
+
+                    @Override
+                    public void patchEnableCancel(boolean enable) {
+                        updaterGUI.setCancelEnabled(enable);
+                    }
+                });
+
+                // check if there is any replacement failed and do the replacement with the self updater
+                handleReplacement(client, updateResult.getReplacementList(), args);
+            } catch (Exception ex) {
+                Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
+
+                JOptionPane.showMessageDialog(updaterFrame, "Error occurred when updating the software.");
+
+                if (updaterGUI.isCancelEnabled()) {
+                    Object[] options = {"Launch", "Exit"};
+                    int result = JOptionPane.showOptionDialog(updaterFrame, "Continue to launch the software?", "Continue Action", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+                    if (result == 0) {
+                        launchSoftware = true;
+                    } else {
+                        JOptionPane.showMessageDialog(updaterFrame, "You can restart the software to try to update software again.");
+                    }
+                }
+            } finally {
+                updaterFrame.setVisible(false);
+                updaterFrame.dispose();
+            }
         }
 
         // launch/start the software
-        if ((updateResult != null && updateResult.isUpdateSucceed()) || launchSoftware) {
+        if (updateResult == null || (updateResult.isUpdateSucceed() || launchSoftware)) {
+            String launchType = client.getLaunchType();
+            String afterLaunchOperation = client.getLaunchAfterLaunch();
+            String jarPath = client.getLaunchJarPath();
+            String mainClass = client.getLaunchMainClass();
+            List<String> launchCommands = client.getLaunchCommands();
+
             if (launchType.equals("jar")) {
                 startSoftware(jarPath, mainClass, args);
             } else {
                 ProcessBuilder builder = new ProcessBuilder(launchCommands);
-                builder.start();
-                if (afterLaunchOperation.equals("exit")) {
-                    System.exit(0);
+                try {
+                    builder.start();
+                    if (afterLaunchOperation != null && afterLaunchOperation.equals("exit")) {
+                        System.exit(0);
+                    }
+                } catch (Exception ex) {
+                    throw new LaunchFailedException();
                 }
             }
         }

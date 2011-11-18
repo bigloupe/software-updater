@@ -171,7 +171,7 @@ public class SoftwarePatchDownloader {
                 softwareIcon = Toolkit.getDefaultToolkit().getImage(SoftwarePatchDownloader.class.getResource("/software_icon.png"));
             }
             if (updaterIcon == null) {
-                softwareIcon = Toolkit.getDefaultToolkit().getImage(SoftwarePatchDownloader.class.getResource("/updater_icon.png"));
+                updaterIcon = Toolkit.getDefaultToolkit().getImage(SoftwarePatchDownloader.class.getResource("/updater_icon.png"));
             }
             //</editor-fold>
 
