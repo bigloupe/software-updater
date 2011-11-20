@@ -1,0 +1,60 @@
+=SoftwareLauncher=
+dir: src/org/apache/commons/codec/
+dir: src/watne/
+file: src/updater/crypto/AESKey.java
+file: src/updater/gui/JTitledPanel.java
+file: src/updater/gui/UpdaterWindow.java
+file: src/updater/script/Client.java
+file: src/updater/script/InvalidFormatException.java
+file: src/updater/script/Patch.java
+file: src/updater/patch/Compression.java
+file: src/updater/patch/PatchReadUtil.java
+file: src/updater/patch/PatchLogReader.java
+file: src/updater/patch/PatchLogWriter.java
+file: src/updater/patch/Patcher.java
+file: src/updater/patch/PatcherListener.java
+file: src/updater/util/CommonUtil.java
+file: src/updater/util/InterruptibleInputStream.java
+file: src/updater/util/InterruptibleOutputStream.java
+file: src/updater/util/XMLUtil.java
+file: src/updater/util/SeekableFile.java
+file: test/updater/TestCommon.java
+
+=SoftwarePatchBuilder-
+dir:  src/org/apache/commons/codec/
+dir:  src/watne/
+file: src/updater/crypto/AESKey.java
+file: src/updater/crypto/KeyGenerator.java
+file: src/updater/crypto/RSAKey.java
+file: src/updater/script/Catalog.java
+file: src/updater/script/Client.java
+file: src/updater/script/InvalidFormatException.java
+file: src/updater/script/Patch.java
+file: src/updater/patch/Compression.java
+file: src/updater/patch/PatchCreator.java
+file: src/updater/patch/PatchExtractor.java
+file: src/updater/patch/PatchReadUtil.java
+file: src/updater/patch/PatchWriteUtil.java
+file: src/updater/patch/PatchLogReader.java
+file: src/updater/patch/PatchLogWriter.java
+file: src/updater/patch/PatchPacker.java
+file: src/updater/patch/Patcher.java
+file: src/updater/patch/PatcherListener.java
+file: src/updater/util/CommonUtil.java
+file: src/updater/util/InterruptibleInputStream.java
+file: src/updater/util/InterruptibleOutputStream.java
+file: src/updater/util/XMLUtil.java
+file: src/updater/util/SeekableFile.java
+file: test/updater/TestCommon.java
+
+=SoftwarePatchDownloader=
+file: src/updater/gui/JTitledPanel.java
+file: src/updater/gui/UpdaterWindow.java
+file: src/updater/script/Catalog.java
+file: src/updater/script/Client.java
+file: src/updater/script/InvalidFormatException.java
+file: src/updater/script/Patch.java
+file: src/updater/util/CommonUtil.java
+file: src/updater/util/DownloadProgressUtil.java
+file: src/updater/util/XMLUtil.java
+file: test/updater/TestCommon.java
