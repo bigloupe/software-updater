@@ -38,10 +38,12 @@ linkFile src/updater/patch/Patcher.java
 linkFile src/updater/patch/PatcherListener.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/util"
 linkFile src/updater/util/CommonUtil.java
+linkFile src/updater/util/Interruptible.java
 linkFile src/updater/util/InterruptibleInputStream.java
 linkFile src/updater/util/InterruptibleOutputStream.java
-linkFile src/updater/util/XMLUtil.java
+linkFile src/updater/util/Pausable.java
 linkFile src/updater/util/SeekableFile.java
+linkFile src/updater/util/XMLUtil.java
 mkdir -p "$SOFTWARE_DIRECTORY/test/updater"
 linkFile test/updater/TestCommon.java
 
@@ -74,10 +76,12 @@ linkFile src/updater/patch/Patcher.java
 linkFile src/updater/patch/PatcherListener.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/util"
 linkFile src/updater/util/CommonUtil.java
+linkFile src/updater/util/Interruptible.java
 linkFile src/updater/util/InterruptibleInputStream.java
 linkFile src/updater/util/InterruptibleOutputStream.java
-linkFile src/updater/util/XMLUtil.java
+linkFile src/updater/util/Pausable.java
 linkFile src/updater/util/SeekableFile.java
+linkFile src/updater/util/XMLUtil.java
 mkdir -p "$SOFTWARE_DIRECTORY/test/updater"
 linkFile test/updater/TestCommon.java
 
@@ -94,7 +98,9 @@ linkFile src/updater/script/InvalidFormatException.java
 linkFile src/updater/script/Patch.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/util"
 linkFile src/updater/util/CommonUtil.java
+linkFile src/updater/util/DownloadProgressListener.java
 linkFile src/updater/util/DownloadProgressUtil.java
+linkFile src/updater/util/HTTPDownloader.java
 linkFile src/updater/util/XMLUtil.java
 mkdir -p "$SOFTWARE_DIRECTORY/test/updater"
 linkFile test/updater/TestCommon.java

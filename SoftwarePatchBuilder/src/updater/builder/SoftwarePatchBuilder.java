@@ -292,9 +292,7 @@ public class SoftwarePatchBuilder {
             Delta delta = new Delta();
             delta.compute(new File(diffArgs[0]), new File(diffArgs[1]), diffOut);
         } finally {
-            if (fout != null) {
-                fout.close();
-            }
+            Util.closeQuietly(fout);
         }
 
         System.out.println("Diff file generated.");
@@ -363,12 +361,8 @@ public class SoftwarePatchBuilder {
 
             xzOut.finish();
         } finally {
-            if (fin != null) {
-                fin.close();
-            }
-            if (fout != null) {
-                fout.close();
-            }
+            Util.closeQuietly(fin);
+            Util.closeQuietly(fout);
         }
 
         System.out.println("Compression completed.");
@@ -412,12 +406,8 @@ public class SoftwarePatchBuilder {
                 throw new Exception("Error occurred when reading the input file.");
             }
         } finally {
-            if (fin != null) {
-                fin.close();
-            }
-            if (fout != null) {
-                fout.close();
-            }
+            Util.closeQuietly(fin);
+            Util.closeQuietly(fout);
         }
 
         System.out.println("Decompression completed.");

@@ -141,7 +141,7 @@ public class BatchPatcher {
 
             listener.patchProgress(2, "Clear log ...");
             // truncate log file
-            new FileOutputStream(logFile).close();
+            Util.truncateFile(logFile);
             // open log file
             patchActionLogWriter = new PatchLogWriter(logFile);
 

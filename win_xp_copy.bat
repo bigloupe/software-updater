@@ -27,10 +27,12 @@ call:copyFile src\updater\patch\Patcher.java
 call:copyFile src\updater\patch\PatcherListener.java
 mkdir "%softwareDirectory%\src\updater\util"
 call:copyFile src\updater\util\CommonUtil.java
+call:copyFile src\updater\util\Interruptible.java
 call:copyFile src\updater\util\InterruptibleInputStream.java
 call:copyFile src\updater\util\InterruptibleOutputStream.java
-call:copyFile src\updater\util\XMLUtil.java
+call:copyFile src\updater\util\Pausable.java
 call:copyFile src\updater\util\SeekableFile.java
+call:copyFile src\updater\util\XMLUtil.java
 mkdir "%softwareDirectory%\test\updater"
 call:copyFile test\updater\TestCommon.java
 
@@ -63,10 +65,12 @@ call:copyFile src\updater\patch\Patcher.java
 call:copyFile src\updater\patch\PatcherListener.java
 mkdir "%softwareDirectory%\src\updater\util"
 call:copyFile src\updater\util\CommonUtil.java
+call:copyFile src\updater\util\Interruptible.java
 call:copyFile src\updater\util\InterruptibleInputStream.java
 call:copyFile src\updater\util\InterruptibleOutputStream.java
-call:copyFile src\updater\util\XMLUtil.java
+call:copyFile src\updater\util\Pausable.java
 call:copyFile src\updater\util\SeekableFile.java
+call:copyFile src\updater\util\XMLUtil.java
 mkdir "%softwareDirectory%\test\updater"
 call:copyFile test\updater\TestCommon.java
 
@@ -83,7 +87,9 @@ call:copyFile src\updater\script\InvalidFormatException.java
 call:copyFile src\updater\script\Patch.java
 mkdir "%softwareDirectory%\src\updater\util"
 call:copyFile src\updater\util\CommonUtil.java
+call:copyFile src\updater\util\DownloadProgressListener.java
 call:copyFile src\updater\util\DownloadProgressUtil.java
+call:copyFile src\updater\util\HTTPDownloader.java
 call:copyFile src\updater\util\XMLUtil.java
 mkdir "%softwareDirectory%\test\updater"
 call:copyFile test\updater\TestCommon.java

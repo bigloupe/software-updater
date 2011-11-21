@@ -92,8 +92,8 @@ public class DownloadProgressUtil {
      * @param averageTimeSpan the time in milli second
      */
     public synchronized void setAverageTimeSpan(int averageTimeSpan) {
-        if (totalSize < 1) {
-            throw new IllegalArgumentException("argument 'totalSize' should >= 1");
+        if (averageTimeSpan < 1) {
+            throw new IllegalArgumentException("argument 'averageTimeSpan' should >= 1");
         }
         this.averageTimeSpan = averageTimeSpan;
         updateSpeed();

@@ -14,13 +14,15 @@ file: src/updater/patch/PatchLogWriter.java
 file: src/updater/patch/Patcher.java
 file: src/updater/patch/PatcherListener.java
 file: src/updater/util/CommonUtil.java
+file: src/updater/util/Interruptible.java
 file: src/updater/util/InterruptibleInputStream.java
 file: src/updater/util/InterruptibleOutputStream.java
-file: src/updater/util/XMLUtil.java
+file: src/updater/util/Pausable.java
 file: src/updater/util/SeekableFile.java
+file: src/updater/util/XMLUtil.java
 file: test/updater/TestCommon.java
 
-=SoftwarePatchBuilder-
+=SoftwarePatchBuilder=
 dir:  src/org/apache/commons/codec/
 dir:  src/watne/
 file: src/updater/crypto/AESKey.java
@@ -41,10 +43,12 @@ file: src/updater/patch/PatchPacker.java
 file: src/updater/patch/Patcher.java
 file: src/updater/patch/PatcherListener.java
 file: src/updater/util/CommonUtil.java
+file: src/updater/util/Interruptible.java
 file: src/updater/util/InterruptibleInputStream.java
 file: src/updater/util/InterruptibleOutputStream.java
-file: src/updater/util/XMLUtil.java
+file: src/updater/util/Pausable.java
 file: src/updater/util/SeekableFile.java
+file: src/updater/util/XMLUtil.java
 file: test/updater/TestCommon.java
 
 =SoftwarePatchDownloader=
@@ -55,6 +59,8 @@ file: src/updater/script/Client.java
 file: src/updater/script/InvalidFormatException.java
 file: src/updater/script/Patch.java
 file: src/updater/util/CommonUtil.java
+file: src/updater/util/DownloadProgressListener.java
 file: src/updater/util/DownloadProgressUtil.java
+file: src/updater/util/HTTPDownloader.java
 file: src/updater/util/XMLUtil.java
 file: test/updater/TestCommon.java

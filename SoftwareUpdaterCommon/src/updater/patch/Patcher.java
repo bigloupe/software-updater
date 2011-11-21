@@ -175,15 +175,9 @@ public class Patcher {
 
                     @Override
                     public void run() {
-                        try {
-                            _tempNewFileOut.close();
-                            _interruptiblePatchIn.close();
-                            _randomAccessOldFile.close();
-                        } catch (IOException ex) {
-                            if (debug) {
-                                Logger.getLogger(Patcher.class.getName()).log(Level.SEVERE, null, ex);
-                            }
-                        }
+                        CommonUtil.closeQuietly(_tempNewFileOut);
+                        CommonUtil.closeQuietly(_interruptiblePatchIn);
+                        CommonUtil.closeQuietly(_randomAccessOldFile);
                     }
                 };
                 tempNewFileOut.addInterruptedTask(interruptedTask);
@@ -200,14 +194,8 @@ public class Patcher {
 
                     @Override
                     public void run() {
-                        try {
-                            _tempNewFileOut.close();
-                            _interruptiblePatchIn.close();
-                        } catch (IOException ex) {
-                            if (debug) {
-                                Logger.getLogger(Patcher.class.getName()).log(Level.SEVERE, null, ex);
-                            }
-                        }
+                        CommonUtil.closeQuietly(_tempNewFileOut);
+                        CommonUtil.closeQuietly(_interruptiblePatchIn);
                     }
                 };
                 tempNewFileOut.addInterruptedTask(interruptedTask);

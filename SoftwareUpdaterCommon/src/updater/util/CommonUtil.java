@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -156,7 +157,8 @@ public class CommonUtil {
             }
 
             if (cumulateByteRead != fileLength) {
-                throw new IOException("The total number of bytes read does not match the file size. Actual file size: " + fileLength + ", bytes read: " + cumulateByteRead + ", path: " + file.getAbsolutePath());
+                throw new IOException(String.format("The total number of bytes read does not match the file size. Actual file size: %1$d, bytes read: %2$d, path: %3$s",
+                        fileLength, cumulateByteRead, file.getAbsolutePath()));
             }
 
             return messageDigest.digest();
@@ -276,7 +278,8 @@ public class CommonUtil {
             }
 
             if (cumulateByteRead != fromFileLength) {
-                throw new IOException("The total number of bytes read does not match the file size. Actual file size: " + fromFileLength + ", bytes read: " + cumulateByteRead + ", path: " + fromFile.getAbsolutePath());
+                throw new IOException(String.format("The total number of bytes read does not match the file size. Actual file size: %1$d, bytes read: %2$d, path: %3$s",
+                        fromFileLength, cumulateByteRead, fromFile.getAbsolutePath()));
             }
         } finally {
             closeQuietly(fromFileChannel);
@@ -313,7 +316,8 @@ public class CommonUtil {
             }
 
             if (cumulateByteRead != fileLength) {
-                throw new IOException("The total number of bytes read does not match the file size. Actual file size: " + fileLength + ", bytes read: " + cumulateByteRead + ", path: " + file.getAbsolutePath());
+                throw new IOException(String.format("The total number of bytes read does not match the file size. Actual file size: %1$d, bytes read: %2$d, path: %3$s",
+                        fileLength, cumulateByteRead, file.getAbsolutePath()));
             }
         } finally {
             closeQuietly(fin);
@@ -375,6 +379,7 @@ public class CommonUtil {
      */
     public static long compareVersion(String version1, String version2) {
         if (!validateVersion(version1) || !validateVersion(version2)) {
+            String.format("Valid version number should be [0-9]+(\\.[0-9]+)*, found: %1$d, %2$d", version1, version2);
             throw new IllegalArgumentException("Valid version number should be [0-9]+(\\.[0-9]+)*, found: " + version1 + ", " + version2);
         }
 
@@ -655,7 +660,8 @@ public class CommonUtil {
         }
 
         if (b.length % blockSize != 0) {
-            throw new BadPaddingException("Data length is not a multiple of RSA block size. Data length: " + b.length + ", RSA block size: " + blockSize + ", data length % RSA block size: " + b.length % blockSize);
+            throw new BadPaddingException(String.format("Data length is not a multiple of RSA block size. Data length: %1$d, RSA block size: %2$d, data length % RSA block size: %3$d",
+                    b.length, blockSize, b.length % blockSize));
         }
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream(b.length);
@@ -874,7 +880,8 @@ public class CommonUtil {
             }
 
             if (cumulateByteRead != oldFileLength) {
-                throw new IOException("The total number of bytes read does not match the file size. Actual file size: " + oldFileLength + ", bytes read: " + cumulateByteRead + ", path: " + file1.getAbsolutePath() + " & " + file2.getAbsolutePath());
+                throw new IOException(String.format("The total number of bytes read does not match the file size. Actual file size: %1$d, bytes read: %2$d, path: %3$s & %4$s",
+                        oldFileLength, cumulateByteRead, file1.getAbsolutePath(), file2.getAbsolutePath()));
             }
         } finally {
             closeQuietly(oldFin);
@@ -910,7 +917,7 @@ public class CommonUtil {
             byteRead = in.read(b, cumulateByteRead, length - cumulateByteRead);
             if (byteRead == -1) {
                 if (length != cumulateByteRead) {
-                    throw new IOException("Reach the end of stream but the total number of bytes read do not meet the requirement. Expected: " + length + ", bytes read: " + cumulateByteRead);
+                    throw new IOException(String.format("Reach the end of stream but the total number of bytes read do not meet the requirement. Expected: %1$d, bytes read: %2$d", length, cumulateByteRead));
                 }
                 return;
             }
@@ -922,7 +929,7 @@ public class CommonUtil {
         }
 
         if (length != cumulateByteRead) {
-            throw new IOException("The total number of bytes read does not match the requirement. Expected: " + length + ", bytes read: " + cumulateByteRead);
+            String.format("The total number of bytes read does not match the requirement. Expected: %1$d, bytes read: %2$d", length, cumulateByteRead);
         }
     }
 
@@ -939,6 +946,20 @@ public class CommonUtil {
                     Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
+        }
+    }
+
+    /**
+     * Truncate a file to zero width.
+     * @param file the file to truncate
+     */
+    public static void truncateFile(File file) {
+        FileOutputStream fout = null;
+        try {
+            fout = new FileOutputStream(file);
+        } catch (FileNotFoundException ex) {
+        } finally {
+            closeQuietly(fout);
         }
     }
 }

@@ -72,7 +72,8 @@ public class XMLUtil {
         }
 
         if ((minSize != -1 && nodeArrayList.size() < minSize) || (maxSize != -1 && nodeArrayList.size() > maxSize)) {
-            throw new InvalidFormatException("The number of elements <" + tagName + "> in <" + element.getTagName() + "> not meet the size requirement. Size requirement: min: " + minSize + ", max: " + maxSize + ", found: " + nodeArrayList.size());
+            throw new InvalidFormatException(String.format("The number of elements <%1$s> in <%2$s> not meet the size requirement. Size requirement: min: %3$d, max: %4$d, found: %5$d",
+                    tagName, element.getTagName(), minSize, maxSize, nodeArrayList.size()));
         }
 
         return new XMLElementNodeList(nodeArrayList);
