@@ -8,9 +8,10 @@ import updater.util.CommonUtil;
 import updater.util.XMLUtil;
 
 /**
- * The AES key.
- * <p>This read and write the key and IV in XML format.<br />
- * Operations are not thread-safe.</p>
+ * The AES key reader and writer.
+ * <p> This read and write the key and IV in XML format.
+ * <br> Operations are not thread-safe.
+ * 
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class AESKey {
@@ -26,20 +27,28 @@ public class AESKey {
 
     /**
      * Constructor.
-     * @param key see {@link #key}
-     * @param IV see {@link #IV}
+     * @param key the cipher key
+     * @param IV the initial vector, should be exactly 16 bytes (128 bits).
      */
     public AESKey(byte[] key, byte[] IV) {
         setKey(key);
         setIV(IV);
     }
 
+    /**
+     * Get the cipher key.
+     * @return the cipher key
+     */
     public byte[] getKey() {
         byte[] returnKey = new byte[key.length];
         System.arraycopy(key, 0, returnKey, 0, key.length);
         return returnKey;
     }
 
+    /**
+     * Set the cipher key.
+     * @param key the cipher key
+     */
     public void setKey(byte[] key) {
         if (key == null) {
             throw new NullPointerException("argument 'key' cannot be null");
@@ -48,6 +57,10 @@ public class AESKey {
         System.arraycopy(key, 0, this.key, 0, key.length);
     }
 
+    /**
+     * Get the initial vector.
+     * @return the initial vector
+     */
     public byte[] getIV() {
         byte[] returnKey = new byte[IV.length];
         System.arraycopy(IV, 0, returnKey, 0, IV.length);
@@ -56,7 +69,7 @@ public class AESKey {
 
     /**
      * Set the initial vector. The length of the IV should be 128 bits (16 bytes).
-     * @param IV see {@link #IV}
+     * @param IV the initial vector
      */
     public void setIV(byte[] IV) {
         if (IV == null) {

@@ -4,6 +4,7 @@ WORKING_DIRECTORY=$(pwd)
 
 
 linkFile() {
+  rm $SOFTWARE_DIRECTORY"/$1"
   ln -s -f "$WORKING_DIRECTORY/SoftwareUpdaterCommon/$1" $SOFTWARE_DIRECTORY"/$1"
 }
 

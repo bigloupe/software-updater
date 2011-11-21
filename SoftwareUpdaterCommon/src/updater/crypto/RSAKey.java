@@ -8,9 +8,10 @@ import updater.util.CommonUtil;
 import updater.util.XMLUtil;
 
 /**
- * The RSA key.
- * <p>This read and write the modulus and exponents in XML format.<br />
- * Operations are not thread-safe.</p>
+ * The RSA key reader and writer.
+ * <p>This read and write the modulus and exponents in XML format.
+ * <br> Operations are not thread-safe.
+ * 
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class RSAKey {
@@ -30,9 +31,9 @@ public class RSAKey {
 
     /**
      * Constructor.
-     * @param modulus see {@link #modulus}
-     * @param publicExponent see {@link #publicExponent}
-     * @param privateExponent  see {@link #privateExponent}
+     * @param modulus the modulus
+     * @param publicExponent the public exponent
+     * @param privateExponent the private exponent
      */
     public RSAKey(byte[] modulus, byte[] publicExponent, byte[] privateExponent) {
         setModulus(modulus);
@@ -40,12 +41,20 @@ public class RSAKey {
         setPrivateExponent(privateExponent);
     }
 
+    /**
+     * Get the modulus.
+     * @return the modulus
+     */
     public byte[] getModulus() {
         byte[] returnKey = new byte[modulus.length];
         System.arraycopy(modulus, 0, returnKey, 0, modulus.length);
         return returnKey;
     }
 
+    /**
+     * Set the modulus.
+     * @param modulus the modulus
+     */
     public void setModulus(byte[] modulus) {
         if (modulus == null) {
             throw new NullPointerException("argument 'modulus' cannot be null");
@@ -54,12 +63,20 @@ public class RSAKey {
         System.arraycopy(modulus, 0, this.modulus, 0, modulus.length);
     }
 
+    /**
+     * Get the public exponent.
+     * @return the public exponent
+     */
     public byte[] getPublicExponent() {
         byte[] returnKey = new byte[publicExponent.length];
         System.arraycopy(publicExponent, 0, returnKey, 0, publicExponent.length);
         return returnKey;
     }
 
+    /**
+     * Set the public exponent.
+     * @param publicExponent 
+     */
     public void setPublicExponent(byte[] publicExponent) {
         if (publicExponent == null) {
             throw new NullPointerException("argument 'publicExponent' cannot be null");
@@ -68,12 +85,20 @@ public class RSAKey {
         System.arraycopy(publicExponent, 0, this.publicExponent, 0, publicExponent.length);
     }
 
+    /**
+     * Get the private exponent.
+     * @return the private exponent
+     */
     public byte[] getPrivateExponent() {
         byte[] returnKey = new byte[privateExponent.length];
         System.arraycopy(privateExponent, 0, returnKey, 0, privateExponent.length);
         return returnKey;
     }
 
+    /**
+     * Set the private exponent.
+     * @param privateExponent the private exponent
+     */
     public void setPrivateExponent(byte[] privateExponent) {
         if (privateExponent == null) {
             throw new NullPointerException("argument 'privateExponent' cannot be null");

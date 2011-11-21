@@ -1,6 +1,7 @@
 package updater.script;
 
 /**
+ * Thrown when the format of the XML file is invalid.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class InvalidFormatException extends Exception {

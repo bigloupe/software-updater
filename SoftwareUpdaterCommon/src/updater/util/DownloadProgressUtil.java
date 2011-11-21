@@ -11,11 +11,11 @@ import java.util.List;
 public class DownloadProgressUtil {
 
     /**
-     * Current downloaded size.
+     * Current downloaded size in bytes.
      */
     protected long downloadedSize;
     /**
-     * Total size needed to download.
+     * Total size needed to download (in bytes).
      */
     protected long totalSize;
     /**
@@ -27,43 +27,70 @@ public class DownloadProgressUtil {
      */
     protected List<Record> records;
     /**
-     * The current download speed. It is bytes/second.
+     * The current download speed within {@link averageTimeSpan}. It is bytes/second.
      */
     protected long speed;
-    
+
+    /**
+     * Constructor.
+     */
     public DownloadProgressUtil() {
         downloadedSize = 0;
         totalSize = 0;
         records = new LinkedList<Record>();
         speed = 0;
     }
-    
+
+    /**
+     * Get the current downloaded size.
+     * @return the size in bytes
+     */
     public long getDownloadedSize() {
         return downloadedSize;
     }
-    
+
+    /**
+     * Set the current downloaded size.
+     * @param downloadedSize the size in bytes
+     */
     public void setDownloadedSize(long downloadedSize) {
         if (downloadedSize < 0) {
             throw new IllegalArgumentException("argument 'downloadSize' should >= 0");
         }
         this.downloadedSize = downloadedSize;
     }
-    
+
+    /**
+     * Get total size needed to download (in bytes).
+     * @return the size
+     */
     public long getTotalSize() {
         return totalSize;
     }
-    
+
+    /**
+     * Set total size needed to download (in bytes).
+     * @param totalSize the size
+     */
     public void setTotalSize(long totalSize) {
         if (totalSize < 0) {
             throw new IllegalArgumentException("argument 'totalSize' should >= 0");
         }
         this.totalSize = totalSize;
     }
-    
+
+    /**
+     * Get the time span. See {@link #averageTimeSpan} in advance.
+     * @return the time in milli second
+     */
     public int getAverageTimeSpan() {
         return averageTimeSpan;
     }
-    
+
+    /**
+     * Set the time span. See {@link #averageTimeSpan} in advance.
+     * @param averageTimeSpan the time in milli second
+     */
     public synchronized void setAverageTimeSpan(int averageTimeSpan) {
         if (totalSize < 1) {
             throw new IllegalArgumentException("argument 'totalSize' should >= 1");
@@ -84,22 +111,33 @@ public class DownloadProgressUtil {
         records.add(new Record(bytesDownloaded));
         updateSpeed();
     }
-    
+
+    /**
+     * Get the current download speed within {@link averageTimeSpan}.
+     * @return the speed is bytes/second
+     */
     public long getSpeed() {
         return speed;
     }
-    
+
+    /**
+     * Get the remaining download time.
+     * @return the time in second
+     */
     public int getTimeRemaining() {
         return speed == 0 ? 0 : (int) ((double) (totalSize - downloadedSize) / (double) speed);
     }
-    
+
+    /**
+     * Update {@link #speed}, it will also remove expired records according to {@link #averageTimeSpan} from {@link #records}.
+     */
     protected void updateSpeed() {
         // should be synchronized
         long currentTime = System.currentTimeMillis();
-        
+
         long minimumTime = currentTime;
         long bytesDownloadedWithinPeriod = 0;
-        
+
         Iterator<Record> iterator = records.iterator();
         while (iterator.hasNext()) {
             Record record = iterator.next();
@@ -112,18 +150,29 @@ public class DownloadProgressUtil {
                 bytesDownloadedWithinPeriod += record.byteDownloaded;
             }
         }
-        
+
         speed = currentTime == minimumTime ? 0 : (long) ((double) bytesDownloadedWithinPeriod / ((double) (currentTime - minimumTime) / 1000F));
     }
-    
+
+    /**
+     * Feed record used by {@link #feed(long)}.
+     * <p>For performance concern, no getter/setter methods, direct access only.
+     */
     protected static class Record {
 
         /**
-         * For performance concern, no getter/setter methods, direct access only.
+         * The time when this record is constructed.
          */
         protected long time;
+        /**
+         * The byte downloaded in one feed.
+         */
         protected long byteDownloaded;
-        
+
+        /**
+         * Constructor.
+         * @param byteDownloaded the byte downloaded in one feed
+         */
         protected Record(long byteDownloaded) {
             time = System.currentTimeMillis();
             this.byteDownloaded = byteDownloaded;

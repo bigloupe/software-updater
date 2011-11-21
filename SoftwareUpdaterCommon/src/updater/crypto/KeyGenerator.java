@@ -38,7 +38,7 @@ public class KeyGenerator {
 
     /**
      * Generate a RSA key and save to file.
-     * @param keySize the key size in bits, must >= 512
+     * @param keySize the key size in bits, must >= 512 (required by Java).
      * @param saveTo the place to save the generated file
      * @throws IOException error occurred when writing to file
      */

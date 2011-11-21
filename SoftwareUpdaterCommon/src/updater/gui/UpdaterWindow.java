@@ -24,10 +24,17 @@ import javax.swing.JTextField;
  */
 public class UpdaterWindow {
 
+    /**
+     * List of listeners.
+     */
     protected final List<ActionListener> listeners;
-    //
+    /**
+     * Updater window/frame.
+     */
     protected JFrame frame;
-    //
+    /**
+     * Components
+     */
     protected JTextField messageField;
     protected JLabel progressLabel;
     protected JProgressBar progressBar;
@@ -187,6 +194,7 @@ public class UpdaterWindow {
 
     /**
      * Set enable the cancel or not. (update cancel button)
+     * @param enable true to enable, false to disable
      */
     public void setCancelEnabled(boolean enable) {
         cancelButton.setEnabled(enable);

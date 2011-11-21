@@ -8,18 +8,37 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * Interruptible input stream.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
-public class InterruptibleInputStream extends FilterInputStream {
+public class InterruptibleInputStream extends FilterInputStream implements Pausable, Interruptible {
 
-    protected int sizeAvailable;
+    /**
+     * List of tasks to be executed after interrupted.
+     */
     protected final List<Runnable> interruptedTasks;
+    /**
+     * Indicate currently is paused or not.
+     */
     protected boolean pause;
+    /**
+     * Current remaining size available for read, -1 means remaining size is not limited.
+     */
+    protected int sizeAvailable;
 
+    /**
+     * Constructor.
+     * @param in the input stream to read on
+     */
     public InterruptibleInputStream(InputStream in) {
         this(in, -1);
     }
 
+    /**
+     * Constructor.
+     * @param in the input stream to read on
+     * @param sizeAvailable current remaining size available for read, -1 means remaining size is not limited
+     */
     public InterruptibleInputStream(InputStream in, int sizeAvailable) {
         super(in);
 
@@ -35,6 +54,10 @@ public class InterruptibleInputStream extends FilterInputStream {
         pause = false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void addInterruptedTask(Runnable task) {
         if (task == null) {
             return;
@@ -42,6 +65,10 @@ public class InterruptibleInputStream extends FilterInputStream {
         interruptedTasks.add(task);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void removeInterruptedTask(Runnable task) {
         if (task == null) {
             return;
@@ -49,6 +76,10 @@ public class InterruptibleInputStream extends FilterInputStream {
         interruptedTasks.remove(task);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void pause(boolean pause) {
         synchronized (this) {
             this.pause = pause;
@@ -157,6 +188,9 @@ public class InterruptibleInputStream extends FilterInputStream {
         return in.markSupported();
     }
 
+    /**
+     * Check if paused or interrupted.
+     */
     protected void check() {
         synchronized (this) {
             if (pause) {

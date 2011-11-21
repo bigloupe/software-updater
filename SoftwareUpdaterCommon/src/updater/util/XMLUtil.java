@@ -194,8 +194,15 @@ public class XMLUtil {
      */
     protected static class XMLElementNodeList implements NodeList {
 
+        /**
+         * The node list.
+         */
         protected Node[] nodeList;
 
+        /**
+         * Constructor.
+         * @param nodeList the node list
+         */
         protected XMLElementNodeList(List<Node> nodeList) {
             this.nodeList = nodeList == null ? new Node[0] : nodeList.toArray(new Node[nodeList.size()]);
         }

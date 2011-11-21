@@ -8,13 +8,24 @@ import java.util.Collections;
 import java.util.List;
 
 /**
+ * Interruptible output stream.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
-public class InterruptibleOutputStream extends FilterOutputStream {
+public class InterruptibleOutputStream extends FilterOutputStream implements Pausable, Interruptible {
 
+    /**
+     * List of tasks to be executed after interrupted.
+     */
     protected final List<Runnable> interruptedTasks;
+    /**
+     * Indicate currently is paused or not.
+     */
     protected boolean pause;
 
+    /**
+     * Constructor.
+     * @param out the output stream to output to
+     */
     public InterruptibleOutputStream(OutputStream out) {
         super(out);
 
@@ -26,6 +37,10 @@ public class InterruptibleOutputStream extends FilterOutputStream {
         pause = false;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void addInterruptedTask(Runnable task) {
         if (task == null) {
             return;
@@ -33,6 +48,10 @@ public class InterruptibleOutputStream extends FilterOutputStream {
         interruptedTasks.add(task);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void removeInterruptedTask(Runnable task) {
         if (task == null) {
             return;
@@ -40,6 +59,10 @@ public class InterruptibleOutputStream extends FilterOutputStream {
         interruptedTasks.remove(task);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void pause(boolean pause) {
         synchronized (this) {
             this.pause = pause;
@@ -79,6 +102,9 @@ public class InterruptibleOutputStream extends FilterOutputStream {
         out.close();
     }
 
+    /**
+     * Check if paused or interrupted.
+     */
     protected void check() {
         synchronized (this) {
             if (pause) {
