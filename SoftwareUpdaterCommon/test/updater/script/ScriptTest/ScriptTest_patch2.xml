@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <patch id="2">
+  <type>full</type>
   <version>
     <from-subsequent>1.0.1</from-subsequent>
     <to>1.0.2</to>

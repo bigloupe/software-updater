@@ -62,7 +62,7 @@ public class PatchCreator {
         List<Operation> operations = new ArrayList<Operation>();
         List<ValidationFile> validations = new ArrayList<ValidationFile>();
         Patch patchScript = new Patch(patchId,
-                fromVersion, fromSubsequentVersion, toVersion,
+                "full", fromVersion, fromSubsequentVersion, toVersion,
                 null, null, -1,
                 null, null, null,
                 operations, validations);
@@ -214,7 +214,7 @@ public class PatchCreator {
         List<Operation> operations = new ArrayList<Operation>();
         List<ValidationFile> validations = new ArrayList<ValidationFile>();
         Patch patchScript = new Patch(patchId,
-                fromVersion, null, toVersion,
+                "patch", fromVersion, null, toVersion,
                 null, null, -1,
                 null, null, null,
                 operations, validations);

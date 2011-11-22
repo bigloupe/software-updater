@@ -16,6 +16,7 @@ import updater.util.XMLUtil;
 public class Patch {
 
     protected int id;
+    protected String type;
     protected String versionFrom;
     protected String versionFromSubsequent;
     protected String versionTo;
@@ -29,12 +30,13 @@ public class Patch {
     protected List<ValidationFile> validations;
 
     public Patch(int id,
-            String versionFrom, String versionFromSubsequent, String versionTo,
+            String type, String versionFrom, String versionFromSubsequent, String versionTo,
             String downloadUrl, String downloadChecksum, int downloadLength,
             String downloadEncryptionType, String downloadEncryptionKey, String downloadEncryptionIV,
             List<Operation> operations, List<ValidationFile> validations) {
         this.id = id;
 
+        this.type = type;
         this.versionFrom = versionFrom;
         this.versionFromSubsequent = versionFromSubsequent;
         this.versionTo = versionTo;
@@ -56,6 +58,14 @@ public class Patch {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getVersionFrom() {
@@ -181,6 +191,8 @@ public class Patch {
             throw new InvalidFormatException("attribute 'id' for 'update' element not exist");
         }
 
+        String _type = XMLUtil.getTextContent(patchElement, "type", false);
+
         Element _versionElement = XMLUtil.getElement(patchElement, "version", true);
         String _versionFrom = XMLUtil.getTextContent(_versionElement, "from", false);
         String _versionFromSubsequent = XMLUtil.getTextContent(_versionElement, "from-subsequent", false);
@@ -236,7 +248,7 @@ public class Patch {
         }
 
         return new Patch(_id,
-                _versionFrom, _versionFromSubsequent, _versionTo,
+                _type, _versionFrom, _versionFromSubsequent, _versionTo,
                 _downloadUrl, _downloadChecksum, _downloadLength,
                 _downloadEncryptionType, _downloadEncryptionKey, _downloadEncryptionIV,
                 _operations, _validations);
@@ -261,6 +273,12 @@ public class Patch {
 
         Element patchElement = doc.createElement("patch");
         patchElement.setAttribute("id", Integer.toString(id));
+
+        if (type != null) {
+            Element typeElement = doc.createElement("type");
+            typeElement.setTextContent(type);
+            patchElement.appendChild(typeElement);
+        }
 
         Element versionElement = doc.createElement("version");
         patchElement.appendChild(versionElement);

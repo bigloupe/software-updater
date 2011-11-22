@@ -7,6 +7,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.logging.Level;
@@ -15,7 +16,7 @@ import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import updater.downloader.PatchDownloader.DownloadPatchesListener;
-import updater.downloader.PatchDownloader.DownloadPatchesListener.DownloadPatchesResult;
+import updater.downloader.PatchDownloader.DownloadPatchesResult;
 import updater.gui.UpdaterWindow;
 import updater.script.Catalog;
 import updater.script.Client;
@@ -49,50 +50,6 @@ public class SoftwarePatchDownloader {
     }
 
     /**
-     * Check for updates and download.
-     * @param clientScriptFile the file of the client script
-     * @param clientScript the client script
-     * @param updaterGUI the updater GUI, null means no updater GUI
-     * @return true if there is update available, false if not
-     * @throws IOException error occurred when getting the patches catalog
-     */
-    public static boolean checkForUpdates(File clientScriptFile, Client clientScript, DownloadPatchesListener downloadPatchesListener) throws IOException, InvalidFormatException {
-        if (clientScriptFile == null) {
-            throw new NullPointerException("argument 'clientScriptFile' cannot be null");
-        }
-        if (clientScript == null) {
-            throw new NullPointerException("argument 'clientScript' cannot be null");
-        }
-
-        // check and download the catalog
-        Catalog catalog = PatchDownloader.getUpdatedCatalog(clientScript);
-        if (catalog == null) {
-            return false;
-        }
-
-        // determine suitable patches to download
-        List<Patch> updatePatches = PatchDownloader.getSuitablePatches(catalog, clientScript.getVersion());
-        if (updatePatches.isEmpty()) {
-            // record the last updated time of patches catalog
-            clientScript.setCatalogLastUpdated(System.currentTimeMillis());
-            try {
-                Util.saveClientScript(clientScriptFile, clientScript);
-            } catch (Exception ex) {
-                // should be a fatal problem but at this stage it is not
-                if (debug) {
-                    Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-            return false;
-        }
-
-        // download patches
-        PatchDownloader.downloadPatches(downloadPatchesListener, clientScriptFile, clientScript, updatePatches);
-
-        return true;
-    }
-
-    /**
      * Dispose the window
      * @param window the window to dispose, accept null
      */
@@ -103,6 +60,10 @@ public class SoftwarePatchDownloader {
         }
     }
 
+    /**
+     * Main function of main class.
+     * @param args the first argument (if any) indicate the location of the client script ({@link updater.script.Client})
+     */
     public static void main(String[] args) {
         // set look & feel
         try {
@@ -125,154 +86,179 @@ public class SoftwarePatchDownloader {
             return;
         }
 
+
         // check and download patches if any
-        if (result.getClientScript() != null) {
-            final Client clientScript = result.getClientScript();
-            final File clientScriptFile = new File(result.getClientScriptPath());
-            Information clientInfo = clientScript.getInformation();
+        final Client clientScript = result.getClientScript();
+        final File clientScriptFile = new File(result.getClientScriptPath());
+        Information clientInfo = clientScript.getInformation();
 
-            // get the icon for GUI (if any specified)
-            Image softwareIcon = null;
-            Image updaterIcon = null;
-            //<editor-fold defaultstate="collapsed" desc="icons">
-            if (clientInfo != null) {
-                try {
-                    if (clientInfo.getSoftwareIconLocation() != null) {
-                        if (clientInfo.getSoftwareIconLocation().equals("jar")) {
-                            URL resourceURL = PatchDownloader.class.getResource(clientInfo.getSoftwareIconPath());
-                            if (resourceURL != null) {
-                                softwareIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
-                            } else {
-                                throw new IOException("Resource not found: " + clientInfo.getSoftwareIconPath());
-                            }
-                        } else {
-                            softwareIcon = ImageIO.read(new File(clientInfo.getSoftwareIconPath()));
-                        }
-                    }
-                    if (clientInfo.getDownloaderIconLocation() != null) {
-                        if (clientInfo.getDownloaderIconLocation().equals("jar")) {
-                            URL resourceURL = PatchDownloader.class.getResource(clientInfo.getDownloaderIconPath());
-                            if (resourceURL != null) {
-                                updaterIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
-                            } else {
-                                throw new IOException("Resource not found: " + clientInfo.getDownloaderIconPath());
-                            }
-                        } else {
-                            updaterIcon = ImageIO.read(new File(clientInfo.getDownloaderIconPath()));
-                        }
-                    }
-                } catch (Exception ex) {
-                    Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
-                    JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software->icon or root->information->downloader->icon.");
-                    return;
-                }
-            }
-            if (softwareIcon == null) {
-                softwareIcon = Toolkit.getDefaultToolkit().getImage(SoftwarePatchDownloader.class.getResource("/software_icon.png"));
-            }
-            if (updaterIcon == null) {
-                updaterIcon = Toolkit.getDefaultToolkit().getImage(SoftwarePatchDownloader.class.getResource("/updater_icon.png"));
-            }
-            //</editor-fold>
-
-            String softwareName = clientInfo != null && clientInfo.getSoftwareName() != null ? clientInfo.getSoftwareName() : "Software Patches Downloader";
-            String downloaderName = clientInfo != null && clientInfo.getDownloaderName() != null ? clientInfo.getDownloaderName() : "Patches Downloader";
-
-            // GUI
-            // record the current thread, for the use of following action listener triggered by swing dispatching to interrupt this thread
-            final Thread currentThread = Thread.currentThread();
-            final UpdaterWindow updaterGUI = new UpdaterWindow(softwareName, softwareIcon, downloaderName, updaterIcon);
-            final JFrame updaterFrame = updaterGUI.getGUI();
-            updaterGUI.addListener(new ActionListener() {
-
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    // user press cancel, ask for confirmation
-                    Object[] options = {"Yes", "No"};
-                    int result = JOptionPane.showOptionDialog(updaterFrame, "Are you sure to cancel download?", "Canel Download", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
-                    if (result == 0) {
-                        updaterGUI.setCancelEnabled(false);
-                        currentThread.interrupt();
-                    }
-                }
-            });
-            updaterGUI.setProgress(0);
-            updaterGUI.setMessage("Getting patches catalog ...");
-            updaterFrame.setVisible(true);
-
-            DownloadPatchesListener downloadPatchesListener = new DownloadPatchesListener() {
-
-                @Override
-                public void downloadPatchesResult(DownloadPatchesResult result) {
-                    switch (result) {
-                        case ACQUIRE_LOCK_FAILED:
-                        case MULTIPLE_UPDATER_RUNNING:
-                            JOptionPane.showMessageDialog(updaterFrame, "There is another updater running.");
-                            disposeWindow(updaterFrame);
-                            break;
-                        case PATCHES_EXIST:
-                            JOptionPane.showMessageDialog(updaterFrame, "There are patches downloaded, you have to restart the application to install the update.");
-                            disposeWindow(updaterFrame);
-                            break;
-                        case DOWNLOAD_INTERRUPTED:
-                            // user cancel
-                            disposeWindow(updaterFrame);
-                            break;
-                        case ERROR:
-                            JOptionPane.showMessageDialog(updaterFrame, "Error occurred when getting the update patch.");
-                            disposeWindow(updaterFrame);
-                            break;
-                        case SAVE_TO_CLIENT_SCRIPT_FAIL:
-                            JOptionPane.showMessageDialog(updaterFrame, "Error occurred when getting the update patch (save to client script).");
-                            disposeWindow(updaterFrame);
-                            break;
-                        case COMPLETED:
-                            JOptionPane.showMessageDialog(updaterFrame, "Download patches finished.");
-                            JOptionPane.showMessageDialog(updaterFrame, "You have to restart the application to install the update.");
-
-                            clientScript.setCatalogLastUpdated(System.currentTimeMillis());
-                            try {
-                                Util.saveClientScript(clientScriptFile, clientScript);
-                            } catch (Exception ex) {
-                                // should be a fatal problem but at this stage it is not
-                                if (debug) {
-                                    Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
-                                }
-                            }
-
-                            disposeWindow(updaterFrame);
-                            break;
-                    }
-                }
-
-                @Override
-                public void downloadPatchesProgress(int progress) {
-                    updaterGUI.setProgress(progress);
-                }
-
-                @Override
-                public void downloadPatchesMessage(String message) {
-                    updaterGUI.setMessage(message);
-                }
-            };
-
+        // get the icon for GUI (if any specified)
+        Image softwareIcon = null;
+        Image updaterIcon = null;
+        //<editor-fold defaultstate="collapsed" desc="icons">
+        if (clientInfo != null) {
             try {
-                boolean updateAvailable = checkForUpdates(clientScriptFile, clientScript, downloadPatchesListener);
-                if (!updateAvailable) {
-                    JOptionPane.showMessageDialog(updaterFrame, "There are no updates available.");
-                    disposeWindow(updaterFrame);
+                if (clientInfo.getSoftwareIconLocation() != null) {
+                    if (clientInfo.getSoftwareIconLocation().equals("jar")) {
+                        URL resourceURL = PatchDownloader.class.getResource(clientInfo.getSoftwareIconPath());
+                        if (resourceURL != null) {
+                            softwareIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
+                        } else {
+                            throw new IOException("Resource not found: " + clientInfo.getSoftwareIconPath());
+                        }
+                    } else {
+                        softwareIcon = ImageIO.read(new File(clientInfo.getSoftwareIconPath()));
+                    }
                 }
-            } catch (InvalidFormatException ex) {
-                Logger.getLogger(SoftwarePatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
-                JOptionPane.showMessageDialog(updaterFrame, "Patches catalog invalid.");
-                disposeWindow(updaterFrame);
-            } catch (IOException ex) {
-                Logger.getLogger(SoftwarePatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
-                JOptionPane.showMessageDialog(updaterFrame, "Error occurred when getting the patches catalog.");
-                disposeWindow(updaterFrame);
+                if (clientInfo.getDownloaderIconLocation() != null) {
+                    if (clientInfo.getDownloaderIconLocation().equals("jar")) {
+                        URL resourceURL = PatchDownloader.class.getResource(clientInfo.getDownloaderIconPath());
+                        if (resourceURL != null) {
+                            updaterIcon = Toolkit.getDefaultToolkit().getImage(resourceURL);
+                        } else {
+                            throw new IOException("Resource not found: " + clientInfo.getDownloaderIconPath());
+                        }
+                    } else {
+                        updaterIcon = ImageIO.read(new File(clientInfo.getDownloaderIconPath()));
+                    }
+                }
+            } catch (Exception ex) {
+                Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+                JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software->icon or root->information->downloader->icon.");
+                return;
             }
-        } else {
-            JOptionPane.showMessageDialog(null, "Config file not found, is empty or is invalid.");
+        }
+        if (softwareIcon == null) {
+            softwareIcon = Toolkit.getDefaultToolkit().getImage(SoftwarePatchDownloader.class.getResource("/software_icon.png"));
+        }
+        if (updaterIcon == null) {
+            updaterIcon = Toolkit.getDefaultToolkit().getImage(SoftwarePatchDownloader.class.getResource("/updater_icon.png"));
+        }
+        //</editor-fold>
+
+        String softwareName = clientInfo != null && clientInfo.getSoftwareName() != null ? clientInfo.getSoftwareName() : "Software Patches Downloader";
+        String downloaderName = clientInfo != null && clientInfo.getDownloaderName() != null ? clientInfo.getDownloaderName() : "Patches Downloader";
+
+        // GUI
+        // record the current thread, for the use of following action listener triggered by swing dispatching to interrupt this thread
+        final Thread currentThread = Thread.currentThread();
+        final UpdaterWindow updaterGUI = new UpdaterWindow(softwareName, softwareIcon, downloaderName, updaterIcon);
+        final JFrame updaterFrame = updaterGUI.getGUI();
+        updaterGUI.addListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // user press cancel, ask for confirmation
+                Object[] options = {"Yes", "No"};
+                int result = JOptionPane.showOptionDialog(updaterFrame, "Are you sure to cancel download?", "Canel Download", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+                if (result == 0) {
+                    updaterGUI.setCancelEnabled(false);
+                    currentThread.interrupt();
+                }
+            }
+        });
+        updaterGUI.setProgress(0);
+        updaterGUI.setMessage("Getting patches catalog ...");
+        updaterFrame.setVisible(true);
+
+        DownloadPatchesListener downloadPatchesListener = new DownloadPatchesListener() {
+
+            @Override
+            public void downloadPatchesProgress(int progress) {
+                updaterGUI.setProgress(progress);
+            }
+
+            @Override
+            public void downloadPatchesMessage(String message) {
+                updaterGUI.setMessage(message);
+            }
+        };
+
+        // get catalog and check
+        Catalog catalog = null;
+        try {
+            // check and download the catalog
+            catalog = PatchDownloader.getUpdatedCatalog(clientScript);
+            if (catalog == null) {
+                JOptionPane.showMessageDialog(updaterFrame, "There are no updates available.");
+                disposeWindow(updaterFrame);
+                return;
+            }
+        } catch (InvalidFormatException ex) {
+            Logger.getLogger(SoftwarePatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(updaterFrame, "Patches catalog invalid.");
+            disposeWindow(updaterFrame);
+        } catch (IOException ex) {
+            Logger.getLogger(SoftwarePatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(updaterFrame, "Error occurred when getting the patches catalog.");
+            disposeWindow(updaterFrame);
+        }
+
+        // determine suitable patches to download
+        List<Patch> updatePatches = PatchDownloader.getSuitablePatches(catalog, clientScript.getVersion());
+        if (updatePatches.isEmpty()) {
+            // record the last updated time of patches catalog
+            clientScript.setCatalogLastUpdated(System.currentTimeMillis());
+            try {
+                Util.saveClientScript(clientScriptFile, clientScript);
+            } catch (Exception ex) {
+                // should be a fatal problem but at this stage it is not
+                if (debug) {
+                    Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            JOptionPane.showMessageDialog(updaterFrame, "There are no updates available.");
+            disposeWindow(updaterFrame);
+            return;
+        }
+
+        try {
+            // download patches
+            DownloadPatchesResult downloadResult = PatchDownloader.downloadPatches(downloadPatchesListener, clientScriptFile, clientScript, updatePatches, 10, 1000);
+
+            switch (downloadResult) {
+                case ACQUIRE_LOCK_FAILED:
+                case MULTIPLE_UPDATER_RUNNING:
+                    JOptionPane.showMessageDialog(updaterFrame, "There is another updater running.");
+                    disposeWindow(updaterFrame);
+                    break;
+                case PATCHES_EXIST:
+                    JOptionPane.showMessageDialog(updaterFrame, "There are patches downloaded, you have to restart the application to install the update.");
+                    disposeWindow(updaterFrame);
+                    break;
+                case DOWNLOAD_INTERRUPTED:
+                    // user cancel
+                    disposeWindow(updaterFrame);
+                    break;
+                case ERROR:
+                    JOptionPane.showMessageDialog(updaterFrame, "Error occurred when getting the update patch.");
+                    disposeWindow(updaterFrame);
+                    break;
+                case SAVE_TO_CLIENT_SCRIPT_FAIL:
+                    JOptionPane.showMessageDialog(updaterFrame, "Error occurred when getting the update patch (save to client script).");
+                    disposeWindow(updaterFrame);
+                    break;
+                case COMPLETED:
+                    JOptionPane.showMessageDialog(updaterFrame, "Download patches finished.");
+                    JOptionPane.showMessageDialog(updaterFrame, "You have to restart the application to install the update.");
+
+                    clientScript.setCatalogLastUpdated(System.currentTimeMillis());
+                    try {
+                        Util.saveClientScript(clientScriptFile, clientScript);
+                    } catch (Exception ex) {
+                        // should be a fatal problem but at this stage it is not
+                        if (debug) {
+                            Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+
+                    disposeWindow(updaterFrame);
+                    break;
+            }
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(SoftwarePatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(updaterFrame, "The URL of the patch is invalid.");
+            disposeWindow(updaterFrame);
         }
     }
 }

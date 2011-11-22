@@ -323,20 +323,16 @@ public class SoftwareLauncher {
             return;
         }
 
-        if (result.getClientScript() != null) {
-            try {
-                SoftwareLauncher.start(new File(result.getClientScriptPath()), result.getClientScript(), args);
-            } catch (IOException ex) {
-                Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
-                JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software-icon or root->information->updater-icon.");
-                return;
-            } catch (LaunchFailedException ex) {
-                Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
-                JOptionPane.showMessageDialog(null, "Failed to launch the software.");
-                return;
-            }
-        } else {
-            JOptionPane.showMessageDialog(null, "Config file not found, is empty or is invalid.");
+        try {
+            SoftwareLauncher.start(new File(result.getClientScriptPath()), result.getClientScript(), args);
+        } catch (IOException ex) {
+            Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software-icon or root->information->updater-icon.");
+            return;
+        } catch (LaunchFailedException ex) {
+            Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(null, "Failed to launch the software.");
+            return;
         }
     }
 }
