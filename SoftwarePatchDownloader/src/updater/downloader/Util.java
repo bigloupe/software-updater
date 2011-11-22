@@ -1,5 +1,9 @@
 package updater.downloader;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.zip.GZIPInputStream;
 import updater.util.CommonUtil;
 
 /**
@@ -9,6 +13,24 @@ import updater.util.CommonUtil;
 public class Util extends CommonUtil {
 
     protected Util() {
+    }
+
+    /**
+     * Decompress a GZIP compressed content.
+     * @param compressedData the compressed content
+     * @return the decompressed data
+     * @throws IOException the {@code compressedData} is not GZIP format
+     */
+    public static byte[] GZipDecompress(byte[] compressedData) throws IOException {
+        ByteArrayOutputStream decompressedOut = new ByteArrayOutputStream();
+        ByteArrayInputStream compressedIn = new ByteArrayInputStream(compressedData);
+        GZIPInputStream decompressedGIn = new GZIPInputStream(compressedIn);
+        int byteRead;
+        byte[] b = new byte[32768];
+        while ((byteRead = decompressedGIn.read(b)) != -1) {
+            decompressedOut.write(b, 0, byteRead);
+        }
+        return decompressedOut.toByteArray();
     }
 
     /**

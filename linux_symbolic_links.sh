@@ -101,6 +101,8 @@ linkFile src/updater/util/CommonUtil.java
 linkFile src/updater/util/DownloadProgressListener.java
 linkFile src/updater/util/DownloadProgressUtil.java
 linkFile src/updater/util/HTTPDownloader.java
+linkFile src/updater/util/Interruptible.java
+linkFile src/updater/util/Pausable.java
 linkFile src/updater/util/XMLUtil.java
 mkdir -p "$SOFTWARE_DIRECTORY/test/updater"
 linkFile test/updater/TestCommon.java

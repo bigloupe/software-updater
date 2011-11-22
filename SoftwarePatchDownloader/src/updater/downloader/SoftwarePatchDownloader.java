@@ -56,7 +56,7 @@ public class SoftwarePatchDownloader {
      * @return true if there is update available, false if not
      * @throws IOException error occurred when getting the patches catalog
      */
-    public static boolean checkForUpdates(File clientScriptFile, Client clientScript, DownloadPatchesListener downloadPatchesListener) throws IOException {
+    public static boolean checkForUpdates(File clientScriptFile, Client clientScript, DownloadPatchesListener downloadPatchesListener) throws IOException, InvalidFormatException {
         if (clientScriptFile == null) {
             throw new NullPointerException("argument 'clientScriptFile' cannot be null");
         }
@@ -262,6 +262,10 @@ public class SoftwarePatchDownloader {
                     JOptionPane.showMessageDialog(updaterFrame, "There are no updates available.");
                     disposeWindow(updaterFrame);
                 }
+            } catch (InvalidFormatException ex) {
+                Logger.getLogger(SoftwarePatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+                JOptionPane.showMessageDialog(updaterFrame, "Patches catalog invalid.");
+                disposeWindow(updaterFrame);
             } catch (IOException ex) {
                 Logger.getLogger(SoftwarePatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
                 JOptionPane.showMessageDialog(updaterFrame, "Error occurred when getting the patches catalog.");

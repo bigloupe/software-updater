@@ -90,6 +90,8 @@ call:copyFile src\updater\util\CommonUtil.java
 call:copyFile src\updater\util\DownloadProgressListener.java
 call:copyFile src\updater\util\DownloadProgressUtil.java
 call:copyFile src\updater\util\HTTPDownloader.java
+call:copyFile src\updater\util\Interruptible.java
+call:copyFile src\updater\util\Pausable.java
 call:copyFile src\updater\util\XMLUtil.java
 mkdir "%softwareDirectory%\test\updater"
 call:copyFile test\updater\TestCommon.java

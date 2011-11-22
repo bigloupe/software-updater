@@ -1,9 +1,11 @@
 package updater.downloader;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.MalformedURLException;
 import java.nio.channels.FileLock;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
@@ -14,16 +16,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import updater.downloader.PatchDownloader.DownloadPatchesListener.DownloadPatchesResult;
-import updater.downloader.RemoteContent.GetCatalogResult;
-import updater.downloader.RemoteContent.GetPatchListener;
-import updater.downloader.RemoteContent.GetPatchResult;
 import updater.script.Catalog;
 import updater.script.Client;
 import updater.script.InvalidFormatException;
 import updater.script.Patch;
 import updater.script.Patch.Operation;
 import updater.script.Patch.ValidationFile;
+import updater.util.DownloadProgressListener;
 import updater.util.DownloadProgressUtil;
+import updater.util.HTTPDownloader.DownloadResult;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>
@@ -66,7 +67,7 @@ public class PatchDownloader {
      * @param clientScript the client script content/object
      * @param patches the patches to download
      */
-    public static void downloadPatches(final DownloadPatchesListener listener, File clientScriptFile, Client clientScript, List<Patch> patches) {
+    public static void downloadPatches(final DownloadPatchesListener listener, File clientScriptFile, Client clientScript, List<Patch> patches) throws MalformedURLException {
         if (listener == null) {
             throw new NullPointerException("argument 'listener' cannot be null");
         }
@@ -125,16 +126,15 @@ public class PatchDownloader {
             final long totalDownloadSize = calculateTotalLength(patches);
             final DownloadProgressUtil downloadProgress = new DownloadProgressUtil();
             downloadProgress.setTotalSize(totalDownloadSize);
-            GetPatchListener getPatchListener = new GetPatchListener() {
+            DownloadProgressListener getPatchListener = new DownloadProgressListener() {
 
                 private String totalDownloadSizeString = Util.humanReadableByteCount(totalDownloadSize, false);
                 private float totalDownloadSizeFloat = (float) totalDownloadSize;
 
-                @Override
-                public void downloadInterrupted() {
-                    listener.downloadPatchesResult(DownloadPatchesListener.DownloadPatchesResult.DOWNLOAD_INTERRUPTED);
-                }
-
+//                @Override
+//                public void downloadInterrupted() {
+//                    listener.downloadPatchesResult(DownloadPatchesListener.DownloadPatchesResult.DOWNLOAD_INTERRUPTED);
+//                }
                 @Override
                 public void byteStart(long pos) {
                     downloadedSize.set(downloadedSize.get() + (int) pos);
@@ -167,6 +167,14 @@ public class PatchDownloader {
                                 + Util.humanReadableTimeCount(downloadProgress.getTimeRemaining(), 3) + " remaining");
                     }
                 }
+
+                @Override
+                public void byteTotal(long total) {
+                }
+
+                @Override
+                public void downloadRetry(DownloadResult result) {
+                }
             };
 
             List<Patch> existingUpdates = clientScript.getPatches(); // should be empty
@@ -176,8 +184,8 @@ public class PatchDownloader {
                 File saveToFile = new File(clientScript.getStoragePath() + File.separator + update.getId() + ".patch");
                 long saveToFileLength = saveToFile.length();
 
-                GetPatchResult updateResult = RemoteContent.getPatch(getPatchListener, update.getDownloadUrl(), saveToFile, update.getDownloadChecksum(), update.getDownloadLength());
-                if (!updateResult.isInterrupted() && !updateResult.getResult() && saveToFileLength != 0) {
+                DownloadResult updateResult = RemoteContent.getPatch(getPatchListener, update.getDownloadUrl(), saveToFile, update.getDownloadChecksum(), update.getDownloadLength());
+                if (updateResult != DownloadResult.INTERRUPTED && updateResult != DownloadResult.SUCCEED && saveToFileLength != 0) {
                     // if download failed and saveToFile is not empty, delete it and download again
                     if (saveToFile.exists() && saveToFile.length() > saveToFileLength) {
                         downloadedSize.set(downloadedSize.get() - (int) (saveToFile.length() - saveToFileLength));
@@ -185,8 +193,8 @@ public class PatchDownloader {
                     saveToFile.delete();
                     updateResult = RemoteContent.getPatch(getPatchListener, update.getDownloadUrl(), saveToFile, update.getDownloadChecksum(), update.getDownloadLength());
                 }
-                if (updateResult.isInterrupted() || !updateResult.getResult()) {
-                    if (!updateResult.isInterrupted()) {
+                if (updateResult == DownloadResult.INTERRUPTED || updateResult != DownloadResult.SUCCEED) {
+                    if (updateResult != DownloadResult.INTERRUPTED) {
                         listener.downloadPatchesResult(DownloadPatchesListener.DownloadPatchesResult.ERROR);
                     } else {
                         listener.downloadPatchesResult(DownloadPatchesListener.DownloadPatchesResult.DOWNLOAD_INTERRUPTED);
@@ -339,7 +347,7 @@ public class PatchDownloader {
      * @return the catalog, null means no newer version of catalog is available
      * @throws IOException RSA key invalid or error occurred when getting the catalog
      */
-    protected static Catalog getUpdatedCatalog(Client client) throws IOException {
+    protected static Catalog getUpdatedCatalog(Client client) throws IOException, InvalidFormatException {
         String catalogURL = client.getCatalogUrl();
 
         RSAPublicKey publicKey = null;
@@ -353,14 +361,16 @@ public class PatchDownloader {
             }
         }
 
-        GetCatalogResult getCatalogResult = RemoteContent.getCatalog(catalogURL, client.getCatalogLastUpdated(), publicKey, keyLength);
-        if (getCatalogResult.isNotModified()) {
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        DownloadResult getCatalogResult = RemoteContent.getCatalog(bout, catalogURL, client.getCatalogLastUpdated(), publicKey, keyLength);
+        if (getCatalogResult == DownloadResult.FILE_NOT_MODIFIED) {
             return null;
         }
-        if (getCatalogResult.getCatalog() == null) {
+        Catalog catalog = Catalog.read(bout.toByteArray());
+        if (catalog == null) {
             throw new IOException("Error occurred when getting the catalog.");
         }
 
-        return getCatalogResult.getCatalog();
+        return catalog;
     }
 }
