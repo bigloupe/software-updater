@@ -49,7 +49,7 @@ public class SoftwarePatchBuilder {
 
     static {
         // set debug mode
-        System.setProperty("SyntaxHighlighterDebugMode", "false");
+        System.setProperty("SoftwareUpdaterDebugMode", "false");
     }
     /**
      * Indicate whether it is in debug mode or not.
