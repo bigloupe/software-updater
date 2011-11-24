@@ -16,6 +16,7 @@ import watne.seis720.project.Mode;
 import watne.seis720.project.Padding;
 
 /**
+ * Functions for writing the patch.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class PatchWriteUtil {
@@ -23,6 +24,11 @@ public class PatchWriteUtil {
     protected PatchWriteUtil() {
     }
 
+    /**
+     * Write the patch header to {@code out}.
+     * @param out the stream to output
+     * @throws IOException error occurred when writing to {@code out}
+     */
     public static void writeHeader(OutputStream out) throws IOException {
         if (out == null) {
             throw new NullPointerException("argument 'out' cannot be null");
@@ -35,6 +41,13 @@ public class PatchWriteUtil {
         out.write('H');
     }
 
+    /**
+     * Write the compression method to the patch and return the compress output stream.
+     * @param out the stream to output
+     * @param compression the compression method
+     * @return the compress output stream
+     * @throws IOException error occurred when outputing the header or creating the compress output stream
+     */
     public static OutputStream writeCompressionMethod(OutputStream out, Compression compression) throws IOException {
         if (out == null) {
             throw new NullPointerException("argument 'out' cannot be null");
@@ -54,6 +67,12 @@ public class PatchWriteUtil {
         }
     }
 
+    /**
+     * Write the patch XML to the patch.
+     * @param out the stream to output
+     * @param content the content of patch XML
+     * @throws IOException error occurred when outputing to {@code out}
+     */
     public static void writeXML(OutputStream out, byte[] content) throws IOException {
         if (out == null) {
             throw new NullPointerException("argument 'out' cannot be null");
@@ -72,6 +91,12 @@ public class PatchWriteUtil {
         out.write(content);
     }
 
+    /**
+     * Write the content of the file to {@code toStream}.
+     * @param fromFile the file to read
+     * @param toStream the stream to output to
+     * @throws IOException error occurred when reading the file or outputing to {@code toStream}
+     */
     public static void writePatch(File fromFile, OutputStream toStream) throws IOException {
         if (fromFile == null) {
             throw new NullPointerException("argument 'fromFile' cannot be null");
@@ -98,13 +123,22 @@ public class PatchWriteUtil {
             }
 
             if (cumulativeByteRead != fileLength) {
-                throw new IOException("Number of bytes read not equals to the cumulative number of bytes read, from file: " + fromFile.getAbsolutePath() + ", cumulate: " + cumulativeByteRead + ", expected length: " + fileLength);
+                throw new IOException(String.format("Number of bytes read not equals to the cumulative number of bytes read, from file: %1$s, cumulate: %2$d, expected length: %3$d",
+                        fromFile.getAbsolutePath(), cumulativeByteRead, fileLength));
             }
         } finally {
             CommonUtil.closeQuietly(fin);
         }
     }
 
+    /**
+     * Encrypt the {@code patchFile} and save to {@code encryptTo}.
+     * @param aesKey the cipher key to use
+     * @param listener the progress listener, accept null
+     * @param patchFile the file to encrypt
+     * @param encryptTo the file to save the encrypted file
+     * @throws IOException error occurred when encrypting
+     */
     public static void encrypt(AESKey aesKey, AESForFileListener listener, File patchFile, File encryptTo) throws IOException {
         if (aesKey == null) {
             throw new NullPointerException("argument 'aesKey' cannot be null");
@@ -113,7 +147,7 @@ public class PatchWriteUtil {
             throw new NullPointerException("argument 'patchFile' cannot be null");
         }
         if (encryptTo == null) {
-            throw new NullPointerException("argument 'tempFileForEncryption' cannot be null");
+            throw new NullPointerException("argument 'encryptTo' cannot be null");
         }
 
         encryptTo.delete();

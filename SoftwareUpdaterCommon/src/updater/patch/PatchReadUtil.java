@@ -17,6 +17,7 @@ import watne.seis720.project.Mode;
 import watne.seis720.project.Padding;
 
 /**
+ * Functions for reading the patch.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class PatchReadUtil {
@@ -24,6 +25,11 @@ public class PatchReadUtil {
     protected PatchReadUtil() {
     }
 
+    /**
+     * Read the header from the stream.
+     * @param in the stream to read
+     * @throws IOException failed to get/detect a valid header
+     */
     public static void readHeader(InputStream in) throws IOException {
         if (in == null) {
             throw new NullPointerException("argument 'in' cannot be null");
@@ -39,6 +45,12 @@ public class PatchReadUtil {
         }
     }
 
+    /**
+     * Read the compression method used by the patch.
+     * @param in the stream to read
+     * @return the decompress stream of {@code in}
+     * @throws IOException error occurred when reading from {@code in}
+     */
     public static InputStream readCompressionMethod(InputStream in) throws IOException {
         if (in == null) {
             throw new NullPointerException("argument 'in' cannot be null");
@@ -63,6 +75,13 @@ public class PatchReadUtil {
         throw new IOException("Compression method not supported/not exist");
     }
 
+    /**
+     * Read the XML from the stream.
+     * @param in the stream to read
+     * @return the XML read
+     * @throws IOException error occurred when reading
+     * @throws InvalidFormatException the format of the XML read is incorrect
+     */
     public static Patch readXML(InputStream in) throws IOException, InvalidFormatException {
         if (in == null) {
             throw new NullPointerException("argument 'in' cannot be null");
@@ -81,6 +100,13 @@ public class PatchReadUtil {
         return Patch.read(xmlData);
     }
 
+    /**
+     * Read from the stream with size {@code length} and save to {@code saveTo}.
+     * @param saveTo the file to save to
+     * @param in the stream to read
+     * @param length the size to read
+     * @throws IOException error occurred when reading from {@code in} or saving to {@code saveTo}
+     */
     public static void readToFile(File saveTo, InputStream in, int length) throws IOException {
         if (saveTo == null) {
             throw new NullPointerException("argument 'saveTo' cannot be null");
@@ -94,12 +120,11 @@ public class PatchReadUtil {
 
         FileOutputStream fout = null;
         try {
-            byte[] b = new byte[32768];
-            int byteRead, cumulativeByteRead = 0, byteToRead;
             fout = new FileOutputStream(saveTo);
 
+            byte[] b = new byte[32768];
+            int byteRead, cumulativeByteRead = 0, byteToRead;
             byteToRead = length > b.length ? b.length : length;
-
             while ((byteRead = in.read(b, 0, byteToRead)) != -1) {
                 fout.write(b, 0, byteRead);
 
@@ -115,6 +140,14 @@ public class PatchReadUtil {
         }
     }
 
+    /**
+     * Decrypt the {@code patchFile} and save to {@code decryptTo}.
+     * @param aesKey the cipher key to use
+     * @param listener the progress listener, accept null
+     * @param patchFile the file to decrypt
+     * @param decryptTo the file to save the decrypted file
+     * @throws IOException error occurred when decrypting
+     */
     public static void decrypt(AESKey aesKey, AESForFileListener listener, File patchFile, File decryptTo) throws IOException {
         if (aesKey == null) {
             throw new NullPointerException("argument 'aesKey' cannot be null");
@@ -123,7 +156,7 @@ public class PatchReadUtil {
             throw new NullPointerException("argument 'patchFile' cannot be null");
         }
         if (decryptTo == null) {
-            throw new NullPointerException("argument 'tempFileForDecryption' cannot be null");
+            throw new NullPointerException("argument 'decryptTo' cannot be null");
         }
 
         decryptTo.delete();

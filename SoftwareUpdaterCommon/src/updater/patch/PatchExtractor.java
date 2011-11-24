@@ -15,6 +15,7 @@ import updater.script.Patch.Operation;
 import updater.util.CommonUtil;
 
 /**
+ * Patch Extractor.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class PatchExtractor {
@@ -32,6 +33,15 @@ public class PatchExtractor {
     protected PatchExtractor() {
     }
 
+    /**
+     * Extract the patch.
+     * @param patchFile the patch file
+     * @param saveToFolder where to save the extracted patch file
+     * @param aesKey the cipher key, null means no encryption used
+     * @param tempFileForDecryption if {@code aesKey} is specified, this should be provided to store the temporary decrypted file
+     * @throws IOException error occurred when extracting
+     * @throws InvalidFormatException the format of the patch XML in the patch is invalid
+     */
     public static void extract(File patchFile, File saveToFolder, AESKey aesKey, File tempFileForDecryption) throws IOException, InvalidFormatException {
         if (patchFile == null) {
             throw new NullPointerException("argument 'patchFile' cannot be null");
@@ -50,7 +60,7 @@ public class PatchExtractor {
             saveToFolder.mkdirs();
         }
         if (!saveToFolder.isDirectory()) {
-            throw new IOException("Please specify a valid folder.");
+            throw new IOException("Please specify a valid folder 'saveToFolder'.");
         }
 
         if (aesKey != null) {

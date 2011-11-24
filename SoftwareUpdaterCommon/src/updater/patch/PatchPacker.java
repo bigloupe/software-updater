@@ -13,6 +13,7 @@ import updater.script.Patch.Operation;
 import updater.util.CommonUtil;
 
 /**
+ * Patch packer.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class PatchPacker {
@@ -30,6 +31,15 @@ public class PatchPacker {
     protected PatchPacker() {
     }
 
+    /**
+     * Pack the patch from the folder.
+     * @param sourceFolder the folder that store the patch data to be pack
+     * @param saveToFile the place to store the packed patch
+     * @param aesKey the cipher key, null means don't use encryption
+     * @param tempFileForEncryption if {@code aesKey} is specified, this should be provided to store the temporary encrypted file
+     * @throws IOExceptionerror occurred when packing
+     * @throws InvalidFormatException the format of the patch XML in the patch is invalid
+     */
     public static void pack(File sourceFolder, File saveToFile, AESKey aesKey, File tempFileForEncryption) throws IOException, InvalidFormatException {
         if (sourceFolder == null) {
             throw new NullPointerException("argument 'sourceFolder' cannot be null");
