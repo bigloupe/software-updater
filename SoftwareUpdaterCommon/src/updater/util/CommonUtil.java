@@ -95,7 +95,7 @@ public class CommonUtil {
     }
 
     /**
-     * Convert the hex string to a byte array. The length of the <code>hexString</code> should be multiple of 2.
+     * Convert the hex string to a byte array. The length of the {@code hexString} should be multiple of 2.
      * @param hexString the hex string to convert
      * @return the byte array
      */
@@ -190,20 +190,13 @@ public class CommonUtil {
         if (file == null) {
             throw new NullPointerException("argument 'file' cannot be null");
         }
-        return file.isDirectory() ? file.getAbsolutePath() : getFileDirectory(file.getAbsolutePath());
-    }
-
-    /**
-     * Assume the filePath is a file path not a directory path.
-     * @param filePath the file path
-     * @return the file parent path
-     */
-    public static String getFileDirectory(String filePath) {
-        if (filePath == null) {
-            throw new NullPointerException("argument 'filePath' cannot be null");
+        if (file.isDirectory()) {
+            return file.getAbsolutePath();
+        } else {
+            String filePath = file.getAbsolutePath();
+            int pos = filePath.replace(File.separator, "/").lastIndexOf('/');
+            return pos != -1 ? filePath.substring(0, pos) : filePath;
         }
-        int pos = filePath.replace(File.separator, "/").lastIndexOf('/');
-        return pos != -1 ? filePath.substring(0, pos) : filePath;
     }
 
     /**
@@ -371,16 +364,15 @@ public class CommonUtil {
     }
 
     /**
-     * Compare <code>version1</code> and <code>version2</code>. Format: [0-9]{1,3}(\.[0-9]{1,3})*
+     * Compare {@code version1} and {@code version2}. Format: [0-9]{1,3}(\.[0-9]{1,3})*
      * @param version1 version string
      * @param version2 version string to compare to
-     * @return 0 if two version are equal, > 0 if <code>version1</code> is larger than <code>version2</code>, < 0 if <code>version1</code> is smaller than <code>version2</code>
-     * @throws updater.util.CommonUtil.InvalidVersionException version string is not a valid format
+     * @return 0 if two version are equal, > 0 if {@code version1} is larger than {@code version2}, < 0 if {@code version1} is smaller than {@code version2}
+     * @throws IllegalArgumentException version string is not a valid format
      */
     public static long compareVersion(String version1, String version2) {
         if (!validateVersion(version1) || !validateVersion(version2)) {
-            String.format("Valid version number should be [0-9]+(\\.[0-9]+)*, found: %1$d, %2$d", version1, version2);
-            throw new IllegalArgumentException("Valid version number should be [0-9]+(\\.[0-9]+)*, found: " + version1 + ", " + version2);
+            throw new IllegalArgumentException(String.format("Valid version number should be [0-9]+(\\.[0-9]+)*, found: %1$d, %2$d", version1, version2));
         }
 
         String[] version1Parted = version1.split("\\.");
@@ -479,18 +471,37 @@ public class CommonUtil {
      */
     public static class GetClientScriptResult {
 
+        /**
+         * The client script.
+         */
         protected Client clientScript;
+        /**
+         * The file path of the {@link #clientScript}.
+         */
         protected String clientScriptPath;
 
+        /**
+         * Constructor.
+         * @param clientScript the client script.
+         * @param clientScriptPath the file path of the {@code clientScript}.
+         */
         protected GetClientScriptResult(Client clientScript, String clientScriptPath) {
             this.clientScript = clientScript;
             this.clientScriptPath = clientScriptPath;
         }
 
+        /**
+         * Get the client script.
+         * @return the client script
+         */
         public Client getClientScript() {
             return clientScript;
         }
 
+        /**
+         * Get the path of the client script, {@link #clientScript}.
+         * @return the file path
+         */
         public String getClientScriptPath() {
             return clientScriptPath;
         }
@@ -520,7 +531,7 @@ public class CommonUtil {
     }
 
     /**
-     * Remove all folders and files in the <code>directory</code>. (The <code>directory</code> will not be removed)
+     * Remove all folders and files in the {@code directory}. (The {@code directory} will not be removed)
      * @param directory the directory to truncate
      * @return true if all folders and files has been removed successfully, false if failed to remove any
      */
@@ -546,7 +557,7 @@ public class CommonUtil {
     }
 
     /**
-     * Remove all folders and files in the <code>directory</code>. (The <code>directory</code> will be removed)
+     * Remove all folders and files in the {@code directory}. (The {@code directory} will be removed)
      * It is used by {@link #truncateFolder(java.io.File)}.
      * @param directory the directory to truncate
      * @return true if all folders and files has been removed successfully, false if failed to remove any
@@ -591,10 +602,10 @@ public class CommonUtil {
             throw new NullPointerException("argument 'b' cannot be null");
         }
         if (blockSize <= 0) {
-            throw new IllegalArgumentException("argument 'blockSize' should >= 0");
+            throw new IllegalArgumentException("argument 'blockSize' should > 0");
         }
         if (contentBlockSize <= 0) {
-            throw new IllegalArgumentException("argument 'contentBlockSize' should >= 0");
+            throw new IllegalArgumentException("argument 'contentBlockSize' should > 0");
         }
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream(((b.length / contentBlockSize) * blockSize) + (b.length % contentBlockSize == 0 ? 0 : blockSize));
@@ -646,7 +657,7 @@ public class CommonUtil {
      * @param blockSize the block size, it should be key size (in bits) divided by 8
      * @param b the data to decrypt
      * @return the decrypted data
-     * @throws BadPaddingException <code>b</code> is not a valid RSA encrypted data with the <code>key</code>
+     * @throws BadPaddingException {@code b} is not a valid RSA encrypted data with the {@code key}
      */
     public static byte[] rsaDecrypt(RSAPublicKey key, int blockSize, byte[] b) throws BadPaddingException {
         if (key == null) {
@@ -656,7 +667,7 @@ public class CommonUtil {
             throw new NullPointerException("argument 'b' cannot be null");
         }
         if (blockSize <= 0) {
-            throw new IllegalArgumentException("argument 'blockSize' should >= 0");
+            throw new IllegalArgumentException("argument 'blockSize' should > 0");
         }
 
         if (b.length % blockSize != 0) {
@@ -779,13 +790,13 @@ public class CommonUtil {
                 Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
             }
         } finally {
-            try {
-                if (lock != null) {
+            if (lock != null) {
+                try {
                     lock.release();
-                }
-            } catch (IOException ex) {
-                if (debug) {
-                    Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (IOException ex) {
+                    if (debug) {
+                        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
             closeQuietly(fout);
@@ -797,12 +808,12 @@ public class CommonUtil {
     /**
      * Search through the directory and find all sub-folders, files and those in its sub-folders recursively.
      * @param directory the directory to search through to get files
-     * @param rootPath the path to replace the map key in return result
-     * @return a map with the key be the path of the file and value be the file
+     * @param rootPath the path to use to replace the map key in return result
+     * @return a map with the key be the relative path of the file to the {@code directory} (start with "/") and value be the file
      */
     public static Map<String, File> getAllFiles(File directory, String rootPath) {
         if (directory == null) {
-            throw new NullPointerException("argument 'file' cannot be null");
+            throw new NullPointerException("argument 'directory' cannot be null");
         }
         if (rootPath == null) {
             throw new NullPointerException("argument 'rootPath' cannot be null");
@@ -834,15 +845,15 @@ public class CommonUtil {
      * Compare the content of two files byte by byte.
      * @param file1 the first file
      * @param file2 the second file
-     * @return true if the content of two files are identical
-     * @throws IOException error occurred when reading the file
+     * @return true if the content of two files are identical, false if not
+     * @throws IOException error occurred when reading the {@code file1} or {@code file2}
      */
     public static boolean compareFile(File file1, File file2) throws IOException {
         if (file1 == null) {
-            throw new NullPointerException("argument 'oldFile' cannot be null");
+            throw new NullPointerException("argument 'file1' cannot be null");
         }
         if (file2 == null) {
-            throw new NullPointerException("argument 'newFile' cannot be null");
+            throw new NullPointerException("argument 'file2' cannot be null");
         }
 
         long oldFileLength = file1.length();
@@ -852,23 +863,23 @@ public class CommonUtil {
             return false;
         }
 
-        FileInputStream oldFin = null;
-        FileInputStream newFin = null;
+        FileInputStream fin1 = null;
+        FileInputStream fin2 = null;
         try {
-            oldFin = new FileInputStream(file1);
-            newFin = new FileInputStream(file2);
+            fin1 = new FileInputStream(file1);
+            fin2 = new FileInputStream(file2);
 
-            byte[] ob = new byte[32768];
-            byte[] nb = new byte[32768];
+            byte[] b1 = new byte[32768];
+            byte[] b2 = new byte[32768];
 
             int byteToRead, cumulateByteRead = 0;
             while (cumulateByteRead < oldFileLength) {
                 byteToRead = (int) (oldFileLength - cumulateByteRead > 32768 ? 32768 : oldFileLength - cumulateByteRead);
 
-                fillBuffer(oldFin, ob, byteToRead);
-                fillBuffer(newFin, nb, byteToRead);
+                fillBuffer(fin1, b1, byteToRead);
+                fillBuffer(fin2, b2, byteToRead);
                 for (int i = 0; i < byteToRead; i++) {
-                    if (ob[i] != nb[i]) {
+                    if (b1[i] != b2[i]) {
                         return false;
                     }
                 }
@@ -884,19 +895,19 @@ public class CommonUtil {
                         oldFileLength, cumulateByteRead, file1.getAbsolutePath(), file2.getAbsolutePath()));
             }
         } finally {
-            closeQuietly(oldFin);
-            closeQuietly(newFin);
+            closeQuietly(fin1);
+            closeQuietly(fin2);
         }
 
         return true;
     }
 
     /**
-     * Fill the buffer <code>b</code> with specified <code>length</code> from the stream <code>in</code>.
+     * Fill the buffer {@code b} with specified {@code length} from the stream {@code in}.
      * @param in the stream to read from
      * @param b the buffer to fill-in
-     * @param length the length to fill-in the buffer <code>b</code>
-     * @throws IOException error occurred when read from stream or reach the end of stream but the <code>length</code> not fulfilled
+     * @param length the length to fill-in the buffer {@code b}
+     * @throws IOException error occurred when read from stream or reach the end of stream but the {@code length} not fulfilled
      */
     protected static void fillBuffer(InputStream in, byte[] b, int length) throws IOException {
         if (in == null) {
@@ -929,7 +940,7 @@ public class CommonUtil {
         }
 
         if (length != cumulateByteRead) {
-            String.format("The total number of bytes read does not match the requirement. Expected: %1$d, bytes read: %2$d", length, cumulateByteRead);
+            throw new IOException(String.format("The total number of bytes read does not match the requirement. Expected: %1$d, bytes read: %2$d", length, cumulateByteRead));
         }
     }
 
@@ -950,10 +961,13 @@ public class CommonUtil {
     }
 
     /**
-     * Truncate a file to zero width.
+     * Truncate a file to zero size.
      * @param file the file to truncate
      */
     public static void truncateFile(File file) {
+        if (file == null) {
+            throw new NullPointerException("argument 'file' cannot be null");
+        }
         FileOutputStream fout = null;
         try {
             fout = new FileOutputStream(file);

@@ -173,19 +173,18 @@ public class InterruptibleInputStream extends FilterInputStream implements Pausa
     @Override
     public void mark(int readlimit) {
         check();
-        in.mark(readlimit);
     }
 
     @Override
     public void reset() throws IOException {
         check();
-        in.reset();
+        throw new IOException("mark/reset not supported");
     }
 
     @Override
     public boolean markSupported() {
         check();
-        return in.markSupported();
+        return false;
     }
 
     /**
