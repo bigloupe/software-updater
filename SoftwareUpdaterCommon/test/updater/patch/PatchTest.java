@@ -1,5 +1,6 @@
 package updater.patch;
 
+import java.util.HashMap;
 import updater.crypto.AESKey;
 import java.io.File;
 import updater.TestCommon;
@@ -89,7 +90,7 @@ public class PatchTest {
             public void patchEnableCancel(boolean enable) {
             }
         }, logFile, tempDirForPatch, tempDirForApplyPatch);
-        patcher.doPatch(patch, 1, aesKey, tempFileForPatchDecryption);
+        patcher.doPatch(patch, 1, aesKey, tempFileForPatchDecryption, new HashMap<String, String>());
         // compare the new 'old' folder and the 'new' folder
         assertTrue(TestCommon.compareFolder(tempDirForPatch, newFolder));
 
@@ -121,7 +122,7 @@ public class PatchTest {
             public void patchEnableCancel(boolean enable) {
             }
         }, logFileForFullPatch, tempDirForFullPatch, tempDirForApplyFullPatch);
-        patcher.doPatch(fullPatch, 1, aesKey, tempFileForFullPatchDecryption);
+        patcher.doPatch(fullPatch, 1, aesKey, tempFileForFullPatchDecryption, new HashMap<String, String>());
         // compare the new 'old' folder and the 'new_over_old' folder
         assertTrue(TestCommon.compareFolder(tempDirForFullPatch, newOverOldFolder));
 

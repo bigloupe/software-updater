@@ -6,7 +6,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import updater.util.CommonUtil;
@@ -83,7 +86,8 @@ public class PatchLogReader {
         unfinishedReplacement = null;
         startFileIndex = -1;
 
-        List<PatchRecord> _revertList = new ArrayList<PatchRecord>();
+        TreeMap<Integer, PatchRecord> _revertMap = new TreeMap<Integer, PatchRecord>();
+        Map<Integer, PatchRecord> _failMap = new HashMap<Integer, PatchRecord>();
 
         Pattern logPattern = Pattern.compile("^\\(([0-9]+)\\s(?:(0|1)|(2)\\s([0-9]+)\\s([a-z0-9]+)\\s([a-z0-9]+)\\s([a-z0-9]+)|(3|4)\\s([0-9]+))\\)\t.+?$");
 
@@ -146,7 +150,7 @@ public class PatchLogReader {
                         if (currentFileIndex != Integer.parseInt(matcher.group(9))) {
                             throw new IOException("Log format invalid.");
                         }
-                        _revertList.add(new PatchRecord(currentFileIndex, currentBackupPath, currentfromPath, currentToPath));
+                        _revertMap.put(currentFileIndex, new PatchRecord(currentFileIndex, currentBackupPath, currentfromPath, currentToPath));
                         currentFileIndex++;
                         currentBackupPath = null;
                         break;
@@ -157,15 +161,18 @@ public class PatchLogReader {
                         if (currentFileIndex != Integer.parseInt(matcher.group(9))) {
                             throw new IOException("Log format invalid.");
                         }
-                        failList.add(new PatchRecord(currentFileIndex, currentBackupPath, currentfromPath, currentToPath));
+                        _failMap.put(currentFileIndex, new PatchRecord(currentFileIndex, currentBackupPath, currentfromPath, currentToPath));
                         currentFileIndex++;
                         currentBackupPath = null;
                         break;
                 }
             }
 
-            for (int i = _revertList.size() - 1; i >= 0; i--) {
-                revertList.add(_revertList.get(i));
+            for (Integer key : _revertMap.descendingKeySet()) {
+                revertList.add(_revertMap.get(key));
+            }
+            for (Integer key : _failMap.keySet()) {
+                failList.add(_failMap.get(key));
             }
 
             if (currentFileIndex != -1) {

@@ -12,9 +12,11 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import updater.crypto.AESKey;
+import updater.patch.PatchLogReader.PatchRecord;
 import updater.script.InvalidFormatException;
 import updater.script.Patch;
 import updater.script.Patch.Operation;
@@ -449,10 +451,11 @@ public class Patcher implements Pausable {
      * @param patchId the patch id
      * @param aesKey the cipher key, null means no encryption used
      * @param tempFileForDecryption if {@code aesKey} is specified, this should be provided to store the temporary decrypted file
+     * @param destinationReplacement a map that used to replace the destination path in {@code Operation}s in {@code patchFile}
      * @return a list containing those failed replacement
      * @throws IOException error occurred when doing patching
      */
-    public List<Replacement> doPatch(File patchFile, int patchId, AESKey aesKey, File tempFileForDecryption) throws IOException {
+    public List<Replacement> doPatch(File patchFile, int patchId, AESKey aesKey, File tempFileForDecryption, Map<String, String> destinationReplacement) throws IOException {
         if (patchFile == null) {
             throw new NullPointerException("argument 'patchFile' cannot be null");
         }
@@ -553,6 +556,12 @@ public class Patcher implements Pausable {
 
             List<Operation> operations = patch.getOperations();
             List<ValidationFile> validations = patch.getValidations();
+            for (Operation operation : operations) {
+                String destChangeTo = null;
+                if ((destChangeTo = destinationReplacement.get(operation.getDestFilePath())) != null) {
+                    operation.setDestFilePath(destChangeTo);
+                }
+            }
 
             // start log
             if (startFromFileIndex == 0) {
@@ -656,6 +665,45 @@ public class Patcher implements Pausable {
         }
 
         return replacementFailedList;
+    }
+
+    /**
+     * Revert the patching and restore to unpatched state.
+     * @throws IOException read log failed, or error occurred when doing revert (replacing file)
+     */
+    public void revert() throws IOException {
+        if (logFile.exists()) {
+            PatchLogReader logReader = new PatchLogReader(logFile);
+
+            PatchRecord unfinishedReplacement = logReader.getUnfinishedReplacement();
+            revertFile(unfinishedReplacement);
+
+            List<PatchRecord> revertList = logReader.getRevertList();
+            for (PatchRecord patchRecord : revertList) {
+                revertFile(patchRecord);
+            }
+        }
+    }
+
+    /**
+     * Revert the replacement according to {@code patchRecord}.
+     * @param patchRecord the patch record
+     * @throws IOException error occurred when doing revert (replacing file)
+     */
+    protected void revertFile(PatchRecord patchRecord) throws IOException {
+        File newFile = new File(patchRecord.getNewFilePath());
+        File destFile = new File(patchRecord.getDestinationFilePath());
+        File backupFile = new File(patchRecord.getBackupFilePath());
+        if (!newFile.exists() && destFile.exists()) {
+            if (!destFile.renameTo(newFile)) {
+                throw new IOException(String.format("Failed to move %1$s to %2$s (dest->new)", patchRecord.getDestinationFilePath(), patchRecord.getBackupFilePath()));
+            }
+        }
+        if (!destFile.exists() && backupFile.exists()) {
+            if (!backupFile.renameTo(destFile)) {
+                throw new IOException(String.format("Failed to move %1$s to %2$s (backup->dest)", patchRecord.getBackupFilePath(), patchRecord.getDestinationFilePath()));
+            }
+        }
     }
 
     /**
