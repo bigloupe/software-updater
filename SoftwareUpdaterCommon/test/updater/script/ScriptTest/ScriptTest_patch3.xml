@@ -13,13 +13,12 @@
         <length>100</length>
       </content>
       <file-type>file</file-type>
+      <destination>destPath</destination>
       <old-file>
-        <path>oldPath</path>
         <checksum>oldChecksum</checksum>
         <length>100</length>
       </old-file>
       <new-file>
-        <path>newPath</path>
         <checksum>newChecksum</checksum>
         <length>200</length>
       </new-file>
@@ -31,13 +30,12 @@
         <length>101</length>
       </content>
       <file-type>file</file-type>
+      <destination>destPath</destination>
       <old-file>
-        <path>oldPath1</path>
         <checksum>oldChecksum1</checksum>
         <length>1001</length>
       </old-file>
       <new-file>
-        <path>newPath2</path>
         <checksum>newChecksum2</checksum>
         <length>2002</length>
       </new-file>

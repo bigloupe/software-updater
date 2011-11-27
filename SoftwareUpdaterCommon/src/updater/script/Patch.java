@@ -361,24 +361,23 @@ public class Patch {
         //
         protected String fileType;
         //
-        protected String oldFilePath;
+        protected String destFilePath;
+        //
         protected String oldFileChecksum;
         protected int oldFileLength;
         //
-        protected String newFilePath;
         protected String newFileChecksum;
         protected int newFileLength;
 
-        public Operation(int id, String type, int patchPos, int patchLength, String fileType, String oldFilePath, String oldFileChecksum, int oldFileLength, String newFilePath, String newFileChecksum, int newFileLength) {
+        public Operation(int id, String type, int patchPos, int patchLength, String fileType, String destFilePath, String oldFileChecksum, int oldFileLength, String newFileChecksum, int newFileLength) {
             this.id = id;
             this.type = type;
             this.patchPos = patchPos;
             this.patchLength = patchLength;
             this.fileType = fileType;
-            this.oldFilePath = oldFilePath;
+            this.destFilePath = destFilePath;
             this.oldFileChecksum = oldFileChecksum;
             this.oldFileLength = oldFileLength;
-            this.newFilePath = newFilePath;
             this.newFileChecksum = newFileChecksum;
             this.newFileLength = newFileLength;
         }
@@ -423,12 +422,12 @@ public class Patch {
             this.fileType = fileType;
         }
 
-        public String getOldFilePath() {
-            return oldFilePath;
+        public String getDestFilePath() {
+            return destFilePath;
         }
 
-        public void setOldFilePath(String oldFilePath) {
-            this.oldFilePath = oldFilePath;
+        public void setDestFilePath(String destFilePath) {
+            this.destFilePath = destFilePath;
         }
 
         public String getOldFileChecksum() {
@@ -445,14 +444,6 @@ public class Patch {
 
         public void setOldFileLength(int oldFileLength) {
             this.oldFileLength = oldFileLength;
-        }
-
-        public String getNewFilePath() {
-            return newFilePath;
-        }
-
-        public void setNewFilePath(String newFilePath) {
-            this.newFilePath = newFilePath;
         }
 
         public String getNewFileChecksum() {
@@ -498,28 +489,25 @@ public class Patch {
             }
 
             String _fileType = XMLUtil.getTextContent(operationElement, "file-type", true);
+            String destPath = XMLUtil.getTextContent(operationElement, "destination", true);
 
-            String oldPath = null;
             String oldChecksum = null;
             int oldLength = -1;
             if (_type.equals("patch") || _type.equals("replace") || _type.equals("remove")) {
                 Element _oldFileElement = XMLUtil.getElement(operationElement, "old-file", true);
-                oldPath = XMLUtil.getTextContent(_oldFileElement, "path", true);
                 oldChecksum = XMLUtil.getTextContent(_oldFileElement, "checksum", true);
                 oldLength = Integer.parseInt(XMLUtil.getTextContent(_oldFileElement, "length", true));
             }
 
-            String newPath = null;
             String newChecksum = null;
             int newLength = -1;
             if (_type.equals("patch") || _type.equals("replace") || _type.equals("new") || _type.equals("force")) {
                 Element _newFileElement = XMLUtil.getElement(operationElement, "new-file", true);
-                newPath = XMLUtil.getTextContent(_newFileElement, "path", true);
                 newChecksum = XMLUtil.getTextContent(_newFileElement, "checksum", true);
                 newLength = Integer.parseInt(XMLUtil.getTextContent(_newFileElement, "length", true));
             }
 
-            return new Operation(_id, _type, pos, length, _fileType, oldPath, oldChecksum, oldLength, newPath, newChecksum, newLength);
+            return new Operation(_id, _type, pos, length, _fileType, destPath, oldChecksum, oldLength, newChecksum, newLength);
         }
 
         protected Element getElement(Document doc) {
@@ -553,14 +541,14 @@ public class Patch {
             _fileType.appendChild(doc.createTextNode(fileType));
             _operation.appendChild(_fileType);
 
+            Element _destFilePath = doc.createElement("destination");
+            _destFilePath.appendChild(doc.createTextNode(destFilePath));
+            _operation.appendChild(_destFilePath);
+
             //<editor-fold defaultstate="collapsed" desc="old">
-            if (oldFilePath != null) {
+            if (oldFileChecksum != null) {
                 Element _old = doc.createElement("old-file");
                 _operation.appendChild(_old);
-
-                Element _oldFilePath = doc.createElement("path");
-                _oldFilePath.appendChild(doc.createTextNode(oldFilePath));
-                _old.appendChild(_oldFilePath);
 
                 Element _oldFileChecksum = doc.createElement("checksum");
                 _oldFileChecksum.appendChild(doc.createTextNode(oldFileChecksum));
@@ -573,13 +561,9 @@ public class Patch {
             //</editor-fold>
 
             //<editor-fold defaultstate="collapsed" desc="new">
-            if (newFilePath != null) {
+            if (newFileChecksum != null) {
                 Element _new = doc.createElement("new-file");
                 _operation.appendChild(_new);
-
-                Element _newFilePath = doc.createElement("path");
-                _newFilePath.appendChild(doc.createTextNode(newFilePath));
-                _new.appendChild(_newFilePath);
 
                 Element _newFileChecksum = doc.createElement("checksum");
                 _newFileChecksum.appendChild(doc.createTextNode(newFileChecksum));

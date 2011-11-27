@@ -105,8 +105,8 @@ public class Patcher implements Pausable {
         if (listener == null) {
             throw new NullPointerException("argument 'listener' cannot be null");
         }
-        if (log == null) {
-            throw new NullPointerException("argument 'log' cannot be null");
+        if (logFile == null) {
+            throw new NullPointerException("argument 'logFile' cannot be null");
         }
         if (softwareDir == null) {
             throw new NullPointerException("argument 'softwareDir' cannot be null");
@@ -192,30 +192,30 @@ public class Patcher implements Pausable {
                     // folder will be created in 'replacement' stage
                     return;
                 }
-                listener.patchProgress((int) progress, String.format("Creating new file %1$s ...", operation.getNewFilePath()));
+                listener.patchProgress((int) progress, String.format("Creating new file %1$s ...", operation.getDestFilePath()));
                 break;
             case REPLACE:
             case PATCH:
                 // replace or patch
-                listener.patchProgress((int) progress, String.format("Patching %1$s ...", operation.getOldFilePath()));
+                listener.patchProgress((int) progress, String.format("Patching %1$s ...", operation.getDestFilePath()));
                 break;
         }
 
         // check old file checksum and length
         File oldFile = null;
-        if (operation.getOldFilePath() != null) {
-            oldFile = new File(softwareDir + operation.getOldFilePath());
+        if (operationType == OperationType.PATCH || operationType == OperationType.REPLACE) {
+            oldFile = new File(softwareDir + operation.getDestFilePath());
             if (!oldFile.exists()) {
-                throw new IOException(String.format("Old file not exist: %1$s%2$s", softwareDir, operation.getOldFilePath()));
+                throw new IOException(String.format("Old file not exist: %1$s%2$s", softwareDir, operation.getDestFilePath()));
             }
             String oldFileChecksum = CommonUtil.getSHA256String(oldFile);
             long oldFileLength = oldFile.length();
             if (!oldFileChecksum.equals(operation.getOldFileChecksum()) || oldFileLength != operation.getOldFileLength()) {
-                if (operation.getNewFilePath() != null && oldFileChecksum.equals(operation.getNewFileChecksum()) && oldFileLength == operation.getNewFileLength()) {
+                if (operation.getNewFileChecksum() != null && oldFileChecksum.equals(operation.getNewFileChecksum()) && oldFileLength == operation.getNewFileLength()) {
                     // done
                     return;
                 } else {
-                    throw new IOException(String.format("Checksum or length does not match (old file): %1$s", softwareDir + operation.getOldFilePath()));
+                    throw new IOException(String.format("Checksum or length does not match (old file): %1$s", softwareDir + operation.getDestFilePath()));
                 }
             }
         }
@@ -314,7 +314,7 @@ public class Patcher implements Pausable {
             String tempNewFileSHA256 = CommonUtil.getSHA256String(tempNewFile);
             if (!tempNewFileSHA256.equals(operation.getNewFileChecksum()) || tempNewFile.length() != operation.getNewFileLength()) {
                 throw new IOException(String.format("Checksum or length does not match (new file): %1$s, old file path: %2$s, expected checksum: %3$s, actual checksum: %4$s, expected length: %5$d, actual length: %6$d",
-                        tempNewFile.getAbsolutePath(), softwareDir + operation.getOldFilePath(), operation.getNewFileChecksum(), tempNewFileSHA256, operation.getNewFileLength(), tempNewFile.length()));
+                        tempNewFile.getAbsolutePath(), softwareDir + operation.getDestFilePath(), operation.getNewFileChecksum(), tempNewFileSHA256, operation.getNewFileLength(), tempNewFile.length()));
             }
         }
     }
@@ -358,9 +358,9 @@ public class Patcher implements Pausable {
 
             boolean replacementSucceed = false;
             if (operationType == OperationType.REMOVE) {
-                listener.patchProgress((int) progress, String.format("Removing %1$s ...", _operation.getOldFilePath()));
+                listener.patchProgress((int) progress, String.format("Removing %1$s ...", _operation.getDestFilePath()));
 
-                File destinationFile = new File(softwareDir + _operation.getOldFilePath());
+                File destinationFile = new File(softwareDir + _operation.getDestFilePath());
 
                 log.logPatch(PatchLogWriter.Action.START, i, operationType, backupFile.getAbsolutePath(), "", destinationFile.getAbsolutePath());
 
@@ -383,16 +383,16 @@ public class Patcher implements Pausable {
                     replacementFailedList.add(new Replacement(operationType, destinationFile.getAbsolutePath(), "", backupFile.getAbsolutePath()));
                 }
             } else if (operationType == OperationType.NEW || operationType == OperationType.FORCE) {
-                listener.patchProgress((int) progress, String.format("Copying new file to %1$s ...", _operation.getNewFilePath()));
+                listener.patchProgress((int) progress, String.format("Copying new file to %1$s ...", _operation.getDestFilePath()));
 
                 File newFile = new File(tempDir + File.separator + i);
-                File destinationFile = new File(softwareDir + _operation.getNewFilePath());
+                File destinationFile = new File(softwareDir + _operation.getDestFilePath());
 
                 if (_operation.getFileType().equals("folder")) {
                     log.logPatch(PatchLogWriter.Action.START, i, operationType, "", "", destinationFile.getAbsolutePath());
 
                     if (!destinationFile.isDirectory() && !destinationFile.mkdirs()) {
-                        throw new IOException(String.format("Create folder failed: %1$s", softwareDir + _operation.getNewFilePath()));
+                        throw new IOException(String.format("Create folder failed: %1$s", softwareDir + _operation.getDestFilePath()));
                     }
 
                     replacementSucceed = true;
@@ -415,10 +415,10 @@ public class Patcher implements Pausable {
                 }
             } else {
                 // patch or replace
-                listener.patchProgress((int) progress, String.format("Copying from %1$s to %2$s ...", tempDir + File.separator + i, _operation.getNewFilePath()));
+                listener.patchProgress((int) progress, String.format("Copying from %1$s to %2$s ...", tempDir + File.separator + i, _operation.getDestFilePath()));
 
                 File newFile = new File(tempDir + File.separator + i);
-                File destinationFile = new File(softwareDir + _operation.getOldFilePath());
+                File destinationFile = new File(softwareDir + _operation.getDestFilePath());
 
                 log.logPatch(PatchLogWriter.Action.START, i, operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), destinationFile.getAbsolutePath());
 

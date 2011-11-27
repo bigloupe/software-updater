@@ -32,7 +32,6 @@ import updater.crypto.KeyGenerator;
 import updater.crypto.RSAKey;
 import updater.patch.PatchCreator;
 import updater.patch.PatchExtractor;
-import updater.patch.PatchLogWriter;
 import updater.patch.PatchPacker;
 import updater.patch.Patcher;
 import updater.patch.PatcherListener;
@@ -444,7 +443,6 @@ public class SoftwarePatchBuilder {
             patchFile = decryptedPatchFile;
         }
 
-        PatchLogWriter logger = new PatchLogWriter(new File(tempDir.getAbsolutePath() + "/action.log"));
         Patcher patcher = new Patcher(new PatcherListener() {
 
             @Override
@@ -455,9 +453,8 @@ public class SoftwarePatchBuilder {
             @Override
             public void patchEnableCancel(boolean enable) {
             }
-        }, logger, new File(doArgs[0]), tempDir);
-        patcher.doPatch(patchFile, 0, 0, aesKey, decryptedPatchFile);
-        logger.close();
+        }, new File(tempDir.getAbsolutePath() + "/action.log"), new File(doArgs[0]), tempDir);
+        patcher.doPatch(patchFile, 0, aesKey, decryptedPatchFile);
 
         System.out.println("Patch completed.");
 
