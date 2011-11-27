@@ -17,8 +17,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
@@ -343,14 +341,15 @@ public class HTTPDownloader implements Pausable, Interruptible {
             if (fileSHA256 != null && digest != null && !CommonUtil.byteArrayToHexString(digest.digest()).equals(fileSHA256)) {
                 throw new RuntimeException(DownloadResult.CHECKSUM_FAILED.getValue());
             }
-        } catch (MalformedURLException ex) {
-            throw ex;
         } catch (IOException ex) {
             truncateResumeFileOnRetry = false;
             retryResult = DownloadResult.FAILED;
         } catch (RuntimeException ex) {
             truncateResumeFileOnRetry = true;
             retryResult = DownloadResult.getDownloadResult(ex.getMessage());
+            if (retryResult == null) {
+                retryResult = DownloadResult.FAILED;
+            }
         } finally {
             downloading = false;
             CommonUtil.closeQuietly(in);
@@ -380,10 +379,9 @@ public class HTTPDownloader implements Pausable, Interruptible {
         try {
             Thread.sleep(Math.max(0, retryDelay));
         } catch (InterruptedException ex) {
-            if (debug) {
-                Logger.getLogger(HTTPDownloader.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            Thread.currentThread().interrupt();
         }
+        check();
         if (truncateResumeFileOnRetry) {
             CommonUtil.truncateFile(resumeFile);
         }
@@ -399,6 +397,7 @@ public class HTTPDownloader implements Pausable, Interruptible {
                 try {
                     wait();
                 } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
                 }
             }
         }

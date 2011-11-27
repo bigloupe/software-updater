@@ -42,7 +42,7 @@ import updater.util.CommonUtil;
 import updater.util.XMLUtil;
 
 /**
- * Main class.
+ * Tool that contain general functions to build the patch.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class SoftwarePatchBuilder {
@@ -453,16 +453,13 @@ public class SoftwarePatchBuilder {
             }
 
             @Override
-            public void patchFinished() {
-                System.out.println("Patch completed.");
-            }
-
-            @Override
             public void patchEnableCancel(boolean enable) {
             }
         }, logger, new File(doArgs[0]), tempDir);
         patcher.doPatch(patchFile, 0, 0, aesKey, decryptedPatchFile);
         logger.close();
+
+        System.out.println("Patch completed.");
 
         // preserve the log
 //        Util.truncateFolder(tempDir);
@@ -515,7 +512,7 @@ public class SoftwarePatchBuilder {
         encryptedPatchFile.delete();
         encryptedPatchFile.deleteOnExit();
 
-        PatchCreator.createFullPatch(new File(fullArg), tempDir, new File(outputArg), -1, fromArg, fromSubsequentArg, toArg, aesKey, encryptedPatchFile);
+        PatchCreator.createFullPatch(new File(fullArg), new File(outputArg), -1, fromArg, fromSubsequentArg, toArg, aesKey, encryptedPatchFile);
 
         Util.truncateFolder(tempDir);
         tempDir.delete();

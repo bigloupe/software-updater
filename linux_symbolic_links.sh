@@ -31,6 +31,7 @@ linkFile src/updater/script/InvalidFormatException.java
 linkFile src/updater/script/Patch.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/patch"
 linkFile src/updater/patch/Compression.java
+linkFile src/updater/patch/OperationType.java
 linkFile src/updater/patch/PatchReadUtil.java
 linkFile src/updater/patch/PatchLogReader.java
 linkFile src/updater/patch/PatchLogWriter.java
@@ -65,6 +66,7 @@ linkFile src/updater/script/InvalidFormatException.java
 linkFile src/updater/script/Patch.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/patch"
 linkFile src/updater/patch/Compression.java
+linkFile src/updater/patch/OperationType.java
 linkFile src/updater/patch/PatchCreator.java
 linkFile src/updater/patch/PatchExtractor.java
 linkFile src/updater/patch/PatchReadUtil.java

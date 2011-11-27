@@ -84,7 +84,7 @@ public class PatchDownloaderTest {
         }
 
 
-        List<Patch> result = PatchDownloader.getSuitablePatches(catalog, "1.0.0");
+        List<Patch> result = PatchDownloader.getSuitablePatches(catalog, "1.0.0", false);
         assertEquals(4, result.size());
 
         int totalSize = 0;
@@ -109,7 +109,7 @@ public class PatchDownloaderTest {
         assertEquals(82 + 13 + 7 + 14, totalSize);
 
 
-        result = PatchDownloader.getSuitablePatches(catalog, "1.0.2");
+        result = PatchDownloader.getSuitablePatches(catalog, "1.0.2", false);
         assertEquals(3, result.size());
 
         totalSize = 0;

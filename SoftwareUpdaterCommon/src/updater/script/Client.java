@@ -30,6 +30,7 @@ public class Client {
     protected String catalogPublicKeyModulus;
     protected String catalogPublicKeyExponent;
     protected long catalogLastUpdated;
+    protected Boolean catalogFullPackOnly;
     //
     protected List<Patch> patches;
 
@@ -37,7 +38,7 @@ public class Client {
             String storagePath,
             Information information,
             String launchType, String launchAfterLaunch, List<String> launchCommands, String launchJarPath, String launchMainClass,
-            String catalogUrl, String catalogPublicKeyModulus, String catalogPublicKeyExponent, long catalogLastUpdated,
+            String catalogUrl, String catalogPublicKeyModulus, String catalogPublicKeyExponent, long catalogLastUpdated, Boolean catalogFullPackOnly,
             List<Patch> patches) {
         this.version = version;
 
@@ -55,6 +56,7 @@ public class Client {
         this.catalogLastUpdated = catalogLastUpdated;
         this.catalogPublicKeyModulus = catalogPublicKeyModulus;
         this.catalogPublicKeyExponent = catalogPublicKeyExponent;
+        this.catalogFullPackOnly = catalogFullPackOnly;
 
         this.patches = patches != null ? new ArrayList<Patch>(patches) : new ArrayList<Patch>();
     }
@@ -159,6 +161,14 @@ public class Client {
         this.catalogLastUpdated = catalogLastUpdated;
     }
 
+    public Boolean isCatalogFullPackOnly() {
+        return catalogFullPackOnly;
+    }
+
+    public void setCatalogFullPackOnly(Boolean catalogFullPackOnly) {
+        this.catalogFullPackOnly = catalogFullPackOnly;
+    }
+
     public List<Patch> getPatches() {
         return new ArrayList<Patch>(patches);
     }
@@ -224,6 +234,7 @@ public class Client {
         String _catalogPublicKeyModulus = null;
         String _catalogPublicKeyExponent = null;
         Long _catalogLastUpdated = -1L;
+        Boolean catalogFullPackOnly = null;
         Element _catalogNode = XMLUtil.getElement(_rootNode, "catalog", false);
         if (_catalogNode != null) {
             _catalogUrl = XMLUtil.getTextContent(_catalogNode, "url", true);
@@ -247,11 +258,15 @@ public class Client {
                 patches.add(Patch.read(_patchNode));
             }
         }
+        String _catalogFullPackOnlyString = XMLUtil.getTextContent(_catalogNode, "full-pack-only", false);
+        if (_catalogFullPackOnlyString != null) {
+            catalogFullPackOnly = _catalogFullPackOnlyString.equals("true");
+        }
 
         return new Client(_version,
                 _storagePath, _information,
                 _launchType, _launchAfterLaunch, _launchCommands, _launchJarPath, _launchMainClass,
-                _catalogUrl, _catalogPublicKeyModulus, _catalogPublicKeyExponent, _catalogLastUpdated,
+                _catalogUrl, _catalogPublicKeyModulus, _catalogPublicKeyExponent, _catalogLastUpdated, catalogFullPackOnly,
                 patches);
     }
 
@@ -331,6 +346,11 @@ public class Client {
                 Element catalogLastUpdatedElement = doc.createElement("last-updated");
                 catalogLastUpdatedElement.setTextContent(Long.toString(catalogLastUpdated));
                 catalogElement.appendChild(catalogLastUpdatedElement);
+            }
+            if (catalogFullPackOnly != null) {
+                Element catalogFullPackOnlyElement = doc.createElement("full-pack-only");
+                catalogFullPackOnlyElement.setTextContent(Boolean.toString(catalogFullPackOnly));
+                catalogElement.appendChild(catalogFullPackOnlyElement);
             }
         }
 

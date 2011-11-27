@@ -8,6 +8,7 @@ file: src/updater/script/Client.java
 file: src/updater/script/InvalidFormatException.java
 file: src/updater/script/Patch.java
 file: src/updater/patch/Compression.java
+file: src/updater/patch/OperationType.java
 file: src/updater/patch/PatchReadUtil.java
 file: src/updater/patch/PatchLogReader.java
 file: src/updater/patch/PatchLogWriter.java
@@ -33,6 +34,7 @@ file: src/updater/script/Client.java
 file: src/updater/script/InvalidFormatException.java
 file: src/updater/script/Patch.java
 file: src/updater/patch/Compression.java
+file: src/updater/patch/OperationType.java
 file: src/updater/patch/PatchCreator.java
 file: src/updater/patch/PatchExtractor.java
 file: src/updater/patch/PatchReadUtil.java

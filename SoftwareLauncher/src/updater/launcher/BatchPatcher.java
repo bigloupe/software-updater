@@ -10,19 +10,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import updater.crypto.AESKey;
-import updater.patch.PatchLogReader;
-import updater.patch.PatchLogReader.UnfinishedPatch;
-import updater.patch.PatchLogWriter;
 import updater.patch.Patcher;
 import updater.patch.Patcher.Replacement;
 import updater.patch.PatcherListener;
 import updater.script.Client;
 import updater.script.Patch;
+import updater.util.Pausable;
 
 /**
+ * Patcher that do apply patches sequentially.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
-public class BatchPatcher {
+public class BatchPatcher implements Pausable {
 
     /**
      * Indicate whether it is in debug mode or not.
@@ -33,35 +32,22 @@ public class BatchPatcher {
         String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
         debug = debugMode == null || !debugMode.equals("true") ? false : true;
     }
+    /**
+     * The reference to the current-using patcher, it may change to other patcher when apply current patch finished and proceed to apply next patch.
+     */
     protected Patcher patcher;
 
+    /**
+     * Constructor.
+     */
     public BatchPatcher() {
     }
 
     /**
-     * Get the starting file index of the <code>patch</code> from the <code>patchLogReader</code>.
-     * If last time the update failed (during doReplacement), the updater will start from that failed position and resume, that position is this 'patch start index'.
-     * @param patch the patch
-     * @param patchLogReader the log to read
-     * @return the index, start from 0
+     * Pause or resume the patching.
+     * @param pause true to pause, false to resume
      */
-    protected static int getPatchStartIndex(Patch patch, PatchLogReader patchLogReader) {
-        if (patch == null) {
-            throw new NullPointerException("argument 'patch' cannot be null");
-        }
-
-        if (patchLogReader == null) {
-            return 0;
-        }
-
-        UnfinishedPatch unfinishedPatch = patchLogReader.getUnfinishedPatch();
-        if (unfinishedPatch != null && unfinishedPatch.getPatchId() == patch.getId()) {
-            return unfinishedPatch.getFileIndex();
-        }
-
-        return 0;
-    }
-
+    @Override
     public void pause(boolean pause) {
         if (patcher != null) {
             patcher.pause(pause);
@@ -89,47 +75,11 @@ public class BatchPatcher {
             return new UpdateResult(true, new ArrayList<Replacement>());
         }
 
-        // action log
-        File logFile = new File(tempDir + "/action.log");
-
         // patch
         FileOutputStream lockFileOut = null;
         FileLock lock = null;
-        PatchLogWriter patchActionLogWriter = null;
         try {
-            PatchLogReader patchLogReader = null;
             Map<String, Replacement> replacementMap = new HashMap<String, Replacement>(); // use map to prevent duplication
-            //<editor-fold defaultstate="collapsed" desc="read log">
-            try {
-                patchLogReader = new PatchLogReader(logFile);
-            } catch (IOException ex) {
-                // ignore
-            }
-            if (patchLogReader != null) {
-                boolean rewriteClientXML = false;
-
-                List<Integer> finishedPatches = patchLogReader.getfinishedPatches();
-                for (Integer finishedPatch : finishedPatches) {
-                    Iterator<Patch> iterator = patches.iterator();
-                    while (iterator.hasNext()) {
-                        Patch _patch = iterator.next();
-                        if (_patch.getId() == finishedPatch) {
-                            rewriteClientXML = true;
-                            iterator.remove();
-                        }
-                    }
-                }
-
-                if (rewriteClientXML) {
-                    clientScript.setPatches(patches);
-                    Util.saveClientScript(clientScriptFile, clientScript);
-                }
-
-                if (patches.isEmpty()) {
-                    return new UpdateResult(true, new ArrayList<Replacement>());
-                }
-            }
-            //</editor-fold>
 
             listener.patchProgress(1, "Check to see if there is another updater running ...");
             // acquire lock
@@ -139,14 +89,9 @@ public class BatchPatcher {
                 throw new IOException("There is another updater running.");
             }
 
-            listener.patchProgress(2, "Clear log ...");
-            // truncate log file
-            Util.truncateFile(logFile);
-            // open log file
-            patchActionLogWriter = new PatchLogWriter(logFile);
-
             listener.patchProgress(3, "Starting ...");
             // iterate patches and do patch
+            boolean previousPatchingAllSucceed = true;
             final float stepSize = 97F / (float) patches.size();
             int count = -1;
             Iterator<Patch> iterator = patches.iterator();
@@ -204,19 +149,18 @@ public class BatchPatcher {
                     }
 
                     @Override
-                    public void patchFinished() {
-                    }
-
-                    @Override
                     public void patchEnableCancel(boolean enable) {
                         listener.patchEnableCancel(enable);
                     }
-                }, patchActionLogWriter, new File("." + File.separator), tempDirForPatch);
-                List<Replacement> replacementList = patcher.doPatch(patchFile, _update.getId(), getPatchStartIndex(_update, patchLogReader), aesKey, decryptedPatchFile);
+                }, new File(tempDirForPatch + File.separator + "action.log"), new File("." + File.separator), tempDirForPatch);
+                List<Replacement> replacementList = patcher.doPatch(patchFile, _update.getId(), aesKey, decryptedPatchFile);
+                decryptedPatchFile.delete();
                 for (Replacement _replacement : replacementList) {
                     replacementMap.put(_replacement.getDestination(), _replacement);
                 }
-                patcher = null;
+                if (!replacementList.isEmpty()) {
+                    previousPatchingAllSucceed = false;
+                }
 
                 // remove 'update' from updates list
                 iterator.remove();
@@ -229,6 +173,11 @@ public class BatchPatcher {
 //                Util.truncateFolder(tempDirForPatch);
 //                tempDirForPatch.delete();
 
+                if (previousPatchingAllSucceed) {
+                    patcher.clearBackup();
+                }
+
+                patcher = null;
                 patchFile.delete();
             }
 
@@ -241,20 +190,13 @@ public class BatchPatcher {
                 }
             }
             Util.closeQuietly(lockFileOut);
-            Util.closeQuietly(patchActionLogWriter);
-            if (returnResult.isUpdateSucceed()) {
-                // remove log
-                logFile.delete();
-            }
         }
-
-        listener.patchFinished();
 
         return returnResult;
     }
 
     /**
-     * The update result for {@link #update(java.io.File, updater.script.Client, java.io.File, java.lang.String, java.awt.Image, java.lang.String, java.awt.Image)}.
+     * The update result for {@link #update(java.io.File, updater.script.Client, java.io.File, updater.patch.PatcherListener)}..
      */
     public static class UpdateResult {
 

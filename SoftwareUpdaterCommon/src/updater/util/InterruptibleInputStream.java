@@ -196,6 +196,7 @@ public class InterruptibleInputStream extends FilterInputStream implements Pausa
                 try {
                     wait();
                 } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
                 }
             }
         }

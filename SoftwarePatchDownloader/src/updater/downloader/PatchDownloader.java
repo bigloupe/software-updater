@@ -251,7 +251,7 @@ public class PatchDownloader {
      * @return the get patch result
      * @throws MalformedURLException {@code url} is not a valid HTTP URL
      */
-    protected static DownloadResult getPatch(final DownloadProgressListener listener, String url, File saveToFile, String fileSHA256, int expectedLength, int retryTimes, int retryDelay) throws MalformedURLException {
+    public static DownloadResult getPatch(final DownloadProgressListener listener, String url, File saveToFile, String fileSHA256, int expectedLength, int retryTimes, int retryDelay) throws MalformedURLException {
         if (listener == null) {
             throw new NullPointerException("argument 'listener' cannot be null");
         }
@@ -309,10 +309,11 @@ public class PatchDownloader {
      * Determine the suitable patches to download to upgrade the current version of software to highest possible version with least download size.
      * @param catalog the patches catalog
      * @param currentVersion the current software version
+     * @param acceptOnlyFullPack true to accept only full pack patches, false to accept both patch (diff/partly) and full pack patches.
      * @return the list of suitable patches
      */
-    public static List<Patch> getSuitablePatches(Catalog catalog, String currentVersion) {
-        return getSuitablePatches(catalog.getPatchs(), currentVersion, false);
+    public static List<Patch> getSuitablePatches(Catalog catalog, String currentVersion, boolean acceptOnlyFullPack) {
+        return getSuitablePatches(catalog.getPatchs(), currentVersion, acceptOnlyFullPack);
     }
 
     /**
@@ -322,7 +323,7 @@ public class PatchDownloader {
      * @param acceptOnlyFullPack true to accept only full pack patches, false to accept both patch (diff/partly) and full pack patches.
      * @return the list of suitable patches
      */
-    protected static List<Patch> getSuitablePatches(List<Patch> allPatches, String fromVersion, boolean acceptOnlyFullPack) {
+    public static List<Patch> getSuitablePatches(List<Patch> allPatches, String fromVersion, boolean acceptOnlyFullPack) {
         if (allPatches == null) {
             throw new NullPointerException("argument 'allPatches' cannot be null");
         }
@@ -405,7 +406,7 @@ public class PatchDownloader {
      * @throws IOException RSA key invalid or error occurred when getting the catalog
      * @throws InvalidFormatException the format of the downloaded catalog is invalid
      */
-    protected static Catalog getUpdatedCatalog(Client client) throws IOException, InvalidFormatException {
+    public static Catalog getUpdatedCatalog(Client client) throws IOException, InvalidFormatException {
         if (client == null) {
             throw new NullPointerException("argument 'client' cannot be null");
         }
@@ -446,7 +447,7 @@ public class PatchDownloader {
      * @throws MalformedURLException {@code url} is not a valid HTTP URL
      * @throws IOException catalog content invalid
      */
-    protected static DownloadResult getCatalog(OutputStream out, String url, long lastUpdateDate, RSAPublicKey key, int keyLength) throws MalformedURLException, IOException {
+    public static DownloadResult getCatalog(OutputStream out, String url, long lastUpdateDate, RSAPublicKey key, int keyLength) throws MalformedURLException, IOException {
         if (out == null) {
             throw new NullPointerException("argument 'out' cannot be null");
         }

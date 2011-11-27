@@ -20,5 +20,6 @@
   <catalog>
     <url>http://localhost/SoftwareUpdaterTest/catalog_manipulated.xml</url>
     <last-updated>1000000000000</last-updated>
+    <full-pack-only>true</full-pack-only>
   </catalog>
 </root>

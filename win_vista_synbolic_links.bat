@@ -20,6 +20,7 @@ call:linkFile src\updater\script\InvalidFormatException.java
 call:linkFile src\updater\script\Patch.java
 mkdir "%softwareDirectory%\src\updater\patch"
 call:linkFile src\updater\patch\Compression.java
+call:linkFile src\updater\patch\OperationType.java
 call:linkFile src\updater\patch\PatchReadUtil.java
 call:linkFile src\updater\patch\PatchLogReader.java
 call:linkFile src\updater\patch\PatchLogWriter.java
@@ -54,6 +55,7 @@ call:linkFile src\updater\script\InvalidFormatException.java
 call:linkFile src\updater\script\Patch.java
 mkdir "%softwareDirectory%\src\updater\patch"
 call:linkFile src\updater\patch\Compression.java
+call:linkFile src\updater\patch\OperationType.java
 call:linkFile src\updater\patch\PatchCreator.java
 call:linkFile src\updater\patch\PatchExtractor.java
 call:linkFile src\updater\patch\PatchReadUtil.java

@@ -94,6 +94,7 @@ public class SeekableFile extends RandomAccessFileSeekableSource implements Paus
                 try {
                     wait();
                 } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
                 }
             }
         }

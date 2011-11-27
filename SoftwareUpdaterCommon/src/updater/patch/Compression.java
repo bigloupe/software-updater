@@ -7,6 +7,9 @@ package updater.patch;
 public enum Compression {
 
     GZIP(0), LZMA2(1);
+    /**
+     * The integer value representation of the compression.
+     */
     protected final int value;
 
     Compression(int value) {

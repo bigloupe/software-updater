@@ -186,7 +186,7 @@ public class SoftwarePatchDownloader {
             }
         } catch (InvalidFormatException ex) {
             Logger.getLogger(SoftwarePatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
-            JOptionPane.showMessageDialog(updaterFrame, "Patches catalog invalid.");
+            JOptionPane.showMessageDialog(updaterFrame, "Patches catalog format invalid.");
             disposeWindow(updaterFrame);
         } catch (IOException ex) {
             Logger.getLogger(SoftwarePatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
@@ -195,7 +195,8 @@ public class SoftwarePatchDownloader {
         }
 
         // determine suitable patches to download
-        List<Patch> updatePatches = PatchDownloader.getSuitablePatches(catalog, clientScript.getVersion());
+        boolean isCatalogFullPackOnly = clientScript.isCatalogFullPackOnly() == null ? false : clientScript.isCatalogFullPackOnly();
+        List<Patch> updatePatches = PatchDownloader.getSuitablePatches(catalog, clientScript.getVersion(), isCatalogFullPackOnly);
         if (updatePatches.isEmpty()) {
             // record the last updated time of patches catalog
             clientScript.setCatalogLastUpdated(System.currentTimeMillis());
@@ -223,7 +224,7 @@ public class SoftwarePatchDownloader {
                     disposeWindow(updaterFrame);
                     break;
                 case PATCHES_EXIST:
-                    JOptionPane.showMessageDialog(updaterFrame, "There are patches downloaded, you have to restart the application to install the update.");
+                    JOptionPane.showMessageDialog(updaterFrame, "There are patch(es) downloaded, you have to restart the application to install the update.");
                     disposeWindow(updaterFrame);
                     break;
                 case DOWNLOAD_INTERRUPTED:
@@ -231,11 +232,11 @@ public class SoftwarePatchDownloader {
                     disposeWindow(updaterFrame);
                     break;
                 case ERROR:
-                    JOptionPane.showMessageDialog(updaterFrame, "Error occurred when getting the update patch.");
+                    JOptionPane.showMessageDialog(updaterFrame, "Error occurred when getting the patch.");
                     disposeWindow(updaterFrame);
                     break;
                 case SAVE_TO_CLIENT_SCRIPT_FAIL:
-                    JOptionPane.showMessageDialog(updaterFrame, "Error occurred when getting the update patch (save to client script).");
+                    JOptionPane.showMessageDialog(updaterFrame, "Error occurred when getting the patch (save to client script).");
                     disposeWindow(updaterFrame);
                     break;
                 case COMPLETED:

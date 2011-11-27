@@ -14,20 +14,31 @@ import java.nio.channels.FileLock;
 import java.util.Arrays;
 import java.util.Properties;
 import javax.swing.JOptionPane;
+import javax.swing.UIManager;
 
 /**
- * This is a self updater for software launcher.
- * When the software launcher need to update itself but failed due to file locking on itself, this is used.
- * The launcher will launch this and exit (to release the file lock on the itself), then this self updater will replace the launcher with the updated one.
+ * This is a self updater used by software launcher.
+ * When the launcher encounter any files that it can't do a replacement due to file locking, then this will be used.
+ * The launcher will launch this and exit (to release the file lock on the itself), then this self updater will do the replacement 
+ * according to a list the launcher give it.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class SoftwareSelfUpdater {
 
     /**
+     * Indicate whether it is in test mode or not.
+     */
+    protected final static boolean test;
+
+    static {
+        String testMode = System.getProperty("SoftwareSelfUpdaterTestMode");
+        test = testMode == null || !testMode.equals("true") ? false : true;
+    }
+    /**
      * The maximum execution time allowed (in ms).
-     * When the updater first failed, it will not give up immediately, because the program may not exit so quickly after launching this.
+     * When the self updater failed, it will not give up immediately, because the launcher may not exit so quickly after launching this.
      * In this case, the program will keep trying until this maximum execution time is reached.
-     * This is configurable by placing '/config.xml' inside the jar, for more information, see the code below.
+     * This is configurable by replacing/editing '/config.xml' inside the jar, for more information, see the code below.
      */
     protected static long maxExecutionTime = 15000;
 
@@ -36,18 +47,30 @@ public class SoftwareSelfUpdater {
 
     /**
      * The format of the replacement file:
-     * One row for destination file path, one row for new file path.
+     * <p>
+     * One row for destination file path (0), one row for new file path (1), one row for the path to place/move the destination file (2).<br />
+     * Flow: 0->2, 1->0
+     * <p>
      * Example:
      * <p>
      * C:\software\dest.txt<br />
-     * C:\tmp\dest.tmp.txt<br />
+     * C:\tmp\1.tmp<br />
+     * C:\tmp\1.old<br />
      * C:\software\dest.jar<br />
-     * C:\tmp\dest.tmp.jar<br />
+     * C:\tmp\2.tmp<br />
+     * C:\tmp\2.old<br />
      * (a new line character here)
      * </p>
      * @param args 0: lock file path, 1: replacement file path, start from 2: command and arguments to launch the software.
      */
     public static void main(String[] args) {
+        // set look & feel
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ex) {
+            // leave it
+        }
+
         // check if the length of args meet the minimum requirement
         if (args.length < 3) {
             StringBuilder sb = new StringBuilder();
@@ -55,39 +78,25 @@ public class SoftwareSelfUpdater {
             sb.append(args.length);
             sb.append(", args: ");
             for (String arg : args) {
-                sb.append(arg);
+                sb.append("\"");
+                sb.append(arg.replace("\"", "\\\""));
+                sb.append("\"");
                 sb.append(' ');
             }
             JOptionPane.showMessageDialog(null, sb.toString()); // this error message normally would not be shown to user
             return;
         }
 
-        // the time for determine whether reach maxExecutionTime or not
-        long startTime = 0;
-        startTime = System.currentTimeMillis();
-
-
         // read the maximum execution time from /config.xml inside the jar if there is any
-        try {
-            ByteArrayInputStream in = new ByteArrayInputStream(readResourceFile("/config.xml"));
-            Properties config = new Properties();
-            config.loadFromXML(in);
-            maxExecutionTime = Integer.parseInt(config.getProperty("max_execution_time"));
-        } catch (Exception ex) {
-            // ignore
-        }
+        updateMaxExecutionTime();
 
+        // the time to use to determine whether reached maxExecutionTime or not
+        long startTime = System.currentTimeMillis();
 
-        // acquire lock on the lock file to make sure there is no other updater/downloader/self-updater running
+        // acquire lock on the lock file to make sure there is no other launcher/downloader/self-updater running
         FileOutputStream lockFileOut = null;
         FileLock lock = null;
         while (true) {
-            // check if maxExecutionTime reached
-            if (System.currentTimeMillis() - startTime > maxExecutionTime) {
-                JOptionPane.showMessageDialog(null, "There is another updater running.");
-                return;
-            }
-
             try {
                 lockFileOut = new FileOutputStream(args[0], true);
                 lock = lockFileOut.getChannel().tryLock();
@@ -99,14 +108,20 @@ public class SoftwareSelfUpdater {
                     throw new Exception();
                 }
             } catch (Exception ex) {
+                // check if maxExecutionTime reached
+                if (System.currentTimeMillis() - startTime > maxExecutionTime) {
+                    JOptionPane.showMessageDialog(null, "There is another update process running.");
+                    return;
+                }
+
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException ex1) {
-                    // should not catch any
+                    // currently don't allow cancel so this should not be interrupted
                 }
+
                 releaseQuietly(lock);
                 closeQuietly(lockFileOut);
-                continue;
             }
         }
 
@@ -120,28 +135,40 @@ public class SoftwareSelfUpdater {
             while (true) {
                 String destinationFilePath = reader.readLine();
                 String newFilePath = reader.readLine();
+                String destinationMoveToPath = reader.readLine();
 
-                if (destinationFilePath != null && newFilePath != null) {
+                if (destinationFilePath != null && newFilePath != null && destinationMoveToPath != null) {
                     File destinationFile = new File(destinationFilePath);
                     File newFile = new File(newFilePath);
+                    File destinationMoveToFile = new File(destinationMoveToPath);
 
-                    destinationFile.delete();
+                    destinationFile.renameTo(destinationMoveToFile);
                     while (!newFile.renameTo(destinationFile)) {
                         if (System.currentTimeMillis() - startTime > maxExecutionTime) {
-                            JOptionPane.showMessageDialog(null, "Failed to move file from " + newFilePath + " to " + destinationFilePath);
-                            return;
+                            JOptionPane.showMessageDialog(null, String.format("Failed to move file from %1$s to %2$s", newFilePath, destinationFilePath));
+                            Object[] options = {"Recover", "Exit & Restart manually"};
+                            int result = JOptionPane.showOptionDialog(null, "Recover back to original version or exit & restart manually?", "Update Failed", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+                            if (result == 0) {
+                                // launch the launcher to do recoverery
+                                break;
+                            } else {
+                                return;
+                            }
                         } else {
                             // retry the move
                             try {
                                 Thread.sleep(1000);
                             } catch (InterruptedException ex) {
+                                // currently don't allow cancel so this should not be interrupted
                             }
                         }
-                        // since we didn't check if the deletion on destinationFile succeed or not, so we delete it here again (in case the previous deletion was failed due to the program not terminated yet)
-                        destinationFile.delete();
+                        // since we didn't check if the movement on destinationFile succeed or not, so we move it here again (in case the previous movement was failed due to the program not terminated yet)
+                        if (!destinationMoveToFile.exists()) {
+                            destinationFile.renameTo(destinationMoveToFile);
+                        }
                     }
                 } else {
-                    // if not two lines was read, finish the process
+                    // if not three lines was read, finish the process
                     break;
                 }
             }
@@ -165,7 +192,23 @@ public class SoftwareSelfUpdater {
             JOptionPane.showMessageDialog(null, "Failed to launch the software, you can try to launch it again after a while.");
             return;
         }
-        System.exit(0);
+        if (!test) {
+            System.exit(0);
+        }
+    }
+
+    /**
+     * Get and update the maximum execution time from /config.xml inside the jar if there is any.
+     */
+    protected static void updateMaxExecutionTime() {
+        try {
+            ByteArrayInputStream in = new ByteArrayInputStream(readResourceFile("/config.xml"));
+            Properties config = new Properties();
+            config.loadFromXML(in);
+            maxExecutionTime = Integer.parseInt(config.getProperty("max_execution_time"));
+        } catch (Exception ex) {
+            // ignore
+        }
     }
 
     /**

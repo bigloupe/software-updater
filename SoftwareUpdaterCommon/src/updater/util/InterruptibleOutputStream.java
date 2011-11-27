@@ -111,6 +111,7 @@ public class InterruptibleOutputStream extends FilterOutputStream implements Pau
                 try {
                     wait();
                 } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
                 }
             }
         }

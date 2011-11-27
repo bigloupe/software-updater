@@ -79,7 +79,6 @@ public class PatchTest {
         // copy 'old' folder to new directory
         TestCommon.copyFolder(oldFolder, tempDirForPatch);
         // apply the patch on 'old' folder
-        PatchLogWriter log = new PatchLogWriter(logFile);
         Patcher patcher = new Patcher(new PatcherListener() {
 
             @Override
@@ -87,15 +86,10 @@ public class PatchTest {
             }
 
             @Override
-            public void patchFinished() {
-            }
-
-            @Override
             public void patchEnableCancel(boolean enable) {
             }
-        }, log, tempDirForPatch, tempDirForApplyPatch);
-        patcher.doPatch(patch, 1, 0, aesKey, tempFileForPatchDecryption);
-        log.close();
+        }, logFile, tempDirForPatch, tempDirForApplyPatch);
+        patcher.doPatch(patch, 1, aesKey, tempFileForPatchDecryption);
         // compare the new 'old' folder and the 'new' folder
         assertTrue(TestCommon.compareFolder(tempDirForPatch, newFolder));
 
@@ -112,12 +106,11 @@ public class PatchTest {
         tempDirForApplyFullPatch.mkdirs();
 
         // create patch of new from old (full patch)
-        PatchCreator.createFullPatch(newFolder, tempDirForCreateFullPatch, fullPatch, -1, "1.0.0", null, "1.0.1", aesKey, tempFileForFullPatchEncryption);
+        PatchCreator.createFullPatch(newFolder, fullPatch, -1, "1.0.0", null, "1.0.1", aesKey, tempFileForFullPatchEncryption);
         // copy 'old' folder to new directory
         assertTrue(CommonUtil.truncateFolder(tempDirForFullPatch));
         TestCommon.copyFolder(oldFolder, tempDirForFullPatch);
         // apply the patch on 'old' folder
-        log = new PatchLogWriter(logFileForFullPatch);
         patcher = new Patcher(new PatcherListener() {
 
             @Override
@@ -125,15 +118,10 @@ public class PatchTest {
             }
 
             @Override
-            public void patchFinished() {
-            }
-
-            @Override
             public void patchEnableCancel(boolean enable) {
             }
-        }, log, tempDirForFullPatch, tempDirForApplyFullPatch);
-        patcher.doPatch(fullPatch, 1, 0, aesKey, tempFileForFullPatchDecryption);
-        log.close();
+        }, logFileForFullPatch, tempDirForFullPatch, tempDirForApplyFullPatch);
+        patcher.doPatch(fullPatch, 1, aesKey, tempFileForFullPatchDecryption);
         // compare the new 'old' folder and the 'new_over_old' folder
         assertTrue(TestCommon.compareFolder(tempDirForFullPatch, newOverOldFolder));
 

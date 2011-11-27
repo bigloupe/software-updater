@@ -292,6 +292,7 @@ public class AESForFile extends WatneAES_Implementer {
                 try {
                     wait();
                 } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
                 }
             }
         }

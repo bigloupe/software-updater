@@ -31,6 +31,7 @@ import updater.script.InvalidFormatException;
 import updater.util.CommonUtil.GetClientScriptResult;
 
 /**
+ * The software launcher main class.
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class SoftwareLauncher {
@@ -151,10 +152,6 @@ public class SoftwareLauncher {
                     }
 
                     @Override
-                    public void patchFinished() {
-                    }
-
-                    @Override
                     public void patchEnableCancel(boolean enable) {
                         updaterGUI.setCancelEnabled(enable);
                     }
@@ -203,26 +200,6 @@ public class SoftwareLauncher {
                     System.exit(0);
                 }
             }
-        }
-    }
-
-    /**
-     * Write the replacement list into the file. (destination, then new file path, line by line)
-     * @param file the file to write into
-     * @param replacementList the replacement list
-     * @throws IOException error occurred when writing to the file
-     */
-    protected static void writeReplacement(File file, List<Replacement> replacementList) throws IOException {
-        PrintWriter writer = null;
-        try {
-            writer = new PrintWriter(new FileOutputStream(file));
-
-            for (Replacement _replacement : replacementList) {
-                writer.println(_replacement.getDestination());
-                writer.println(_replacement.getNewFilePath());
-            }
-        } finally {
-            Util.closeQuietly(writer);
         }
     }
 
@@ -282,6 +259,26 @@ public class SoftwareLauncher {
     }
 
     /**
+     * Write the replacement list into the file. (destination, then new file path, line by line)
+     * @param file the file to write into
+     * @param replacementList the replacement list
+     * @throws IOException error occurred when writing to the file
+     */
+    protected static void writeReplacement(File file, List<Replacement> replacementList) throws IOException {
+        PrintWriter writer = null;
+        try {
+            writer = new PrintWriter(new FileOutputStream(file));
+
+            for (Replacement _replacement : replacementList) {
+                writer.println(_replacement.getDestination());
+                writer.println(_replacement.getNewFilePath());
+            }
+        } finally {
+            Util.closeQuietly(writer);
+        }
+    }
+
+    /**
      * Load the jar and execute the main method.
      * @param jarPath the path of the jar file
      * @param mainClass the class that contain the main method
@@ -327,7 +324,7 @@ public class SoftwareLauncher {
             SoftwareLauncher.start(new File(result.getClientScriptPath()), result.getClientScript(), args);
         } catch (IOException ex) {
             Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
-            JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software-icon or root->information->updater-icon.");
+            JOptionPane.showMessageDialog(null, "Fail to read images stated in the config file: root->information->software->icon or root->information->launcher->icon.");
             return;
         } catch (LaunchFailedException ex) {
             Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
