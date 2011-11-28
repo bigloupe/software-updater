@@ -8,13 +8,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import updater.crypto.AESKey;
 import updater.patch.PatchLogReader.PatchRecord;
 import updater.script.InvalidFormatException;
@@ -81,7 +79,7 @@ public class Patcher implements Pausable {
     /**
      * The output stream of 'temporary storage when patching old file to new file'.
      */
-    protected InterruptibleOutputStream tempNewFileOut;
+    protected InterruptibleOutputStream newFileOut;
     /**
      * The input stream of the patch.
      */
@@ -133,7 +131,7 @@ public class Patcher implements Pausable {
         buf = new byte[32768];
         progress = 0;
 
-        tempNewFileOut = null;
+        newFileOut = null;
         interruptiblePatchIn = null;
         seekableRandomAccessOldFile = null;
         aesCryptor = null;
@@ -146,8 +144,8 @@ public class Patcher implements Pausable {
     @Override
     public void pause(boolean pause) {
         synchronized (this) {
-            if (tempNewFileOut != null) {
-                tempNewFileOut.pause(pause);
+            if (newFileOut != null) {
+                newFileOut.pause(pause);
             }
             if (interruptiblePatchIn != null) {
                 interruptiblePatchIn.pause(pause);
@@ -162,16 +160,134 @@ public class Patcher implements Pausable {
     }
 
     /**
+     * Prepare the new file according to the {@code operation}.
+     * @param operation the operation to get the information from
+     * @param patchIn the patch input stream
+     * @param newFile the new file
+     * @param destFile the destination file
+     * @throws IOException error occurred when creating the new file
+     */
+    protected void prepareNewFile(Operation operation, InterruptibleInputStream patchIn, File newFile, File destFile) throws IOException {
+        if (operation == null) {
+            throw new NullPointerException("argument 'operation' cannot be null");
+        }
+        if (patchIn == null) {
+            throw new NullPointerException("argument 'patchIn' cannot be null");
+        }
+        if (newFile == null) {
+            throw new NullPointerException("argument 'newFile' cannot be null");
+        }
+        if (destFile == null) {
+            throw new NullPointerException("argument 'destFile' cannot be null");
+        }
+
+        interruptiblePatchIn = patchIn;
+
+        OperationType operationType = OperationType.get(operation.getType());
+        if (operationType == null) {
+            return;
+        }
+
+        // check if the new file is already patched and waiting for do replacement already
+        if (newFile.exists()) {
+            if (newFile.length() == operation.getNewFileLength() && CommonUtil.getSHA256String(newFile).equals(operation.getNewFileChecksum())) {
+                long byteSkipped = interruptiblePatchIn.skip(operation.getPatchLength());
+                if (byteSkipped != operation.getPatchLength()) {
+                    throw new IOException("Failed to skip remaining bytes in 'patchIn'.");
+                }
+                return;
+            } else {
+                if (!newFile.delete()) {
+                    throw new IOException(String.format("Failed to delete new file: %1$s", newFile.getAbsolutePath()));
+                }
+            }
+        }
+
+        // do operation
+        newFileOut = null;
+        RandomAccessFile randomAccessOldFile = null;
+        seekableRandomAccessOldFile = null;
+        try {
+            newFileOut = new InterruptibleOutputStream(new BufferedOutputStream(new FileOutputStream(newFile)));
+
+            switch (operationType) {
+                case FORCE:
+                case NEW:
+                case REPLACE:
+                    //<editor-fold defaultstate="collapsed" desc="add interrupted tasks">
+                    Runnable _interruptedTask = new Runnable() {
+
+                        @Override
+                        public void run() {
+                            CommonUtil.closeQuietly(newFileOut);
+                            CommonUtil.closeQuietly(interruptiblePatchIn);
+                        }
+                    };
+                    newFileOut.addInterruptedTask(_interruptedTask);
+                    interruptiblePatchIn.addInterruptedTask(_interruptedTask);
+                    //</editor-fold>
+
+                    int byteRead,
+                     remaining = operation.getPatchLength();
+                    while (true) {
+                        if (remaining <= 0) {
+                            break;
+                        }
+
+                        int lengthToRead = buf.length > remaining ? remaining : buf.length;
+                        byteRead = interruptiblePatchIn.read(buf, 0, lengthToRead);
+                        if (byteRead == -1) {
+                            break;
+                        }
+                        newFileOut.write(buf, 0, byteRead);
+                        remaining -= byteRead;
+                    }
+                    break;
+                case PATCH:
+                    GDiffPatcher diffPatcher = new GDiffPatcher();
+                    randomAccessOldFile = new RandomAccessFile(destFile, "r");
+                    seekableRandomAccessOldFile = new SeekableFile(randomAccessOldFile);
+
+                    //<editor-fold defaultstate="collapsed" desc="add interrupted tasks">
+                    final RandomAccessFile _randomAccessOldFile = randomAccessOldFile;
+                    Runnable __interruptedTask = new Runnable() {
+
+                        @Override
+                        public void run() {
+                            CommonUtil.closeQuietly(newFileOut);
+                            CommonUtil.closeQuietly(interruptiblePatchIn);
+                            CommonUtil.closeQuietly(_randomAccessOldFile);
+                        }
+                    };
+                    newFileOut.addInterruptedTask(__interruptedTask);
+                    interruptiblePatchIn.addInterruptedTask(__interruptedTask);
+                    seekableRandomAccessOldFile.addInterruptedTask(__interruptedTask);
+                    //</editor-fold>
+
+                    diffPatcher.patch(seekableRandomAccessOldFile, interruptiblePatchIn, newFileOut);
+                    break;
+            }
+        } finally {
+            CommonUtil.closeQuietly(randomAccessOldFile);
+            CommonUtil.closeQuietly(newFileOut);
+            newFileOut = null;
+            interruptiblePatchIn = null;
+            seekableRandomAccessOldFile = null;
+        }
+    }
+
+    /**
      * Do the operation. 'remove', 'new' (folder only) and 'force' have no action to do here.
      * @param operation the operation to do
      * @param patchIn the stream to read in
      * @param tempNewFile the place to store the temporary generated in this operation
+     * @return null if all succeed, a {@link Replacement} if replacement of files failed
      * @throws IOException error occurred when doing operation
      */
-    protected void doOperation(Operation operation, InputStream patchIn, File tempNewFile) throws IOException {
-        // scheduled to change to this logic
+    protected Replacement doOperation(Operation operation, InterruptibleInputStream patchIn) throws IOException {
+        //<editor-fold defaultstate="collapsed" desc="logic behind this function">
 //remove:
-//  type folder:
+//  type folder: (dest, backup)
 //    dest exist:
 //      dest is folder:
 //        dest folder empty:
@@ -182,16 +298,17 @@ public class Patcher implements Pausable {
 //        ** {error}
 //    dest not exist:
 //      ** {ok}
-//  type file:
+//  type file: (dest, backup)
 //    dest exist:
 //      dest is folder:
 //        ** {error}
 //      dest is file:
 //        ** dest->backup
 //    dest not exist:
-//      ** backup exist -> {ok}; backup not exist -> {error}
+//      ** backup exist -> {ok};
+//         backup not exist -> {error}
 //new:
-//  type folder:
+//  type folder: (dest)
 //    dest exist:
 //      dest is folder:
 //        ** {ok}
@@ -199,16 +316,17 @@ public class Patcher implements Pausable {
 //        ** {error}
 //    dest not exist:
 //      ** create dest folder
-//  type file:
+//  type file: (new, dest)
 //    dest exist:
-//      dest is foler:
+//      dest is folder:
 //        ** {error}
 //      dest is file:
-//        ** length & checksum of dest match new -> {ok}; else -> {error}
+//        ** length & checksum of dest match new -> {ok};
+//           else -> {error}
 //    dest not exist:
 //      ** output patch -> new, new->dest
 //force:
-//  type folder:
+//  type folder: (dest)
 //    dest exist:
 //      dest is folder:
 //        ** {ok}
@@ -216,307 +334,211 @@ public class Patcher implements Pausable {
 //        ** {error}
 //    dest not exist:
 //      ** create dest folder
-//  type file:
+//  type file: (new, dest, backup)
 //    dest exist:
 //      dest is folder:
 //        ** {error}
 //      dest is file:
-//        ** output patch -> new, dest->backup, new->dest
+//        ** backup not exist & checksum of dest not match new: output patch -> new, dest->backup, new->dest;
+//           checksum of dest match new: {ok};
+//           else: {error}
 //    dest not exist:
-//      ** output patch -> new, new->dest (backup may exist)
+//      ** output patch -> new, new->dest
 //patch:
-//  type file:
+//  type file: (new, dest, backup)
 //    dest exist:
-//      dest is foler:
+//      dest is folder:
 //        ** {error}
 //      dest is file:
-//        ** length & checksum of dest match old: patch dest -> new, dest->backup, new->dest; 
-//           length & checksum of dest match new & backup exist: {ok}
+//        ** backup exist: {ok};
+//           length & checksum of dest match old: patch dest -> new, dest->backup, new->dest;
+//           else -> {error}
 //    dest not exist:
-//      ** backup exist & new exist -> new->dest; else -> {error}
+//      ** backup exist & new exist -> new->dest;
+//         else -> {error}
 //replace:
-//  type file:
+//  type file: (new, dest, backup)
 //    dest exist:
-//      dest is foler:
+//      dest is folder:
 //        ** {error}
 //      dest is file:
-//        ** output patch -> new, dest->backup, new->dest
+//        ** backup exist: {ok};
+//           length & checksum of dest match old: output patch -> new, dest->backup, new->dest;
+//           else -> {error}
 //    dest not exist:
-//      ** backup exist & new exist -> new->dest; else -> {error}
+//      ** backup exist & new exist -> new->dest;
+//         else -> {error}
+        //</editor-fold>
+
         if (operation == null) {
             throw new NullPointerException("argument 'operation' cannot be null");
         }
         if (patchIn == null) {
             throw new NullPointerException("argument 'patchIn' cannot be null");
         }
-        if (tempNewFile == null) {
-            throw new NullPointerException("argument 'tempNewFile' cannot be null");
-        }
+
+        Replacement returnValue = null;
 
         OperationType operationType = OperationType.get(operation.getType());
         if (operationType == null) {
-            return;
+            return returnValue;
         }
 
+        File newFile = new File(tempDir + File.separator + operation.getId());
+        File destFile = new File(softwareDir + operation.getDestFilePath());
+        File backupFile = new File(tempDir + File.separator + "old_" + operation.getId());
         switch (operationType) {
             case REMOVE:
-                // doOperation will not change/remove all existing 'old files'
-                return;
-            case NEW:
-            case FORCE:
+                log.logPatch(PatchLogWriter.Action.START, operation.getId(), operationType, backupFile.getAbsolutePath(), "", destFile.getAbsolutePath());
                 if (operation.getFileType().equals("folder")) {
-                    // folder will be created in 'replacement' stage
-                    return;
-                }
-                listener.patchProgress((int) progress, String.format("Creating new file %1$s ...", operation.getDestFilePath()));
-                break;
-            case REPLACE:
-            case PATCH:
-                // replace or patch
-                listener.patchProgress((int) progress, String.format("Patching %1$s ...", operation.getDestFilePath()));
-                break;
-        }
-
-        // check old file checksum and length
-        File oldFile = null;
-        if (operationType == OperationType.PATCH || operationType == OperationType.REPLACE) {
-            oldFile = new File(softwareDir + operation.getDestFilePath());
-            if (!oldFile.exists()) {
-                throw new IOException(String.format("Old file not exist: %1$s%2$s", softwareDir, operation.getDestFilePath()));
-            }
-            String oldFileChecksum = CommonUtil.getSHA256String(oldFile);
-            long oldFileLength = oldFile.length();
-            if (!oldFileChecksum.equals(operation.getOldFileChecksum()) || oldFileLength != operation.getOldFileLength()) {
-                if (operation.getNewFileChecksum() != null && oldFileChecksum.equals(operation.getNewFileChecksum()) && oldFileLength == operation.getNewFileLength()) {
-                    // done
-                    return;
-                } else {
-                    throw new IOException(String.format("Checksum or length does not match (old file): %1$s", softwareDir + operation.getDestFilePath()));
-                }
-            }
-        }
-
-        // check if it is patched and waiting for move already
-        if (tempNewFile.exists() && CommonUtil.getSHA256String(tempNewFile).equals(operation.getNewFileChecksum()) && tempNewFile.length() == operation.getNewFileLength()) {
-            long byteSkipped = patchIn.skip(operation.getPatchLength());
-            if (byteSkipped != operation.getPatchLength()) {
-                throw new IOException("Failed to skip remaining bytes in 'patchIn'.");
-            }
-            return;
-        }
-
-        // do operation
-        tempNewFileOut = null;
-        interruptiblePatchIn = null;
-        RandomAccessFile randomAccessOldFile = null;
-        seekableRandomAccessOldFile = null;
-        try {
-            tempNewFileOut = new InterruptibleOutputStream(new BufferedOutputStream(new FileOutputStream(tempNewFile)));
-            interruptiblePatchIn = new InterruptibleInputStream(patchIn, operation.getPatchLength());
-
-            if (operationType == OperationType.PATCH) {
-                GDiffPatcher diffPatcher = new GDiffPatcher();
-                randomAccessOldFile = new RandomAccessFile(oldFile, "r");
-                seekableRandomAccessOldFile = new SeekableFile(randomAccessOldFile);
-
-                //<editor-fold defaultstate="collapsed" desc="add interrupted tasks">
-                final OutputStream _tempNewFileOut = tempNewFileOut;
-                final InterruptibleInputStream _interruptiblePatchIn = interruptiblePatchIn;
-                final RandomAccessFile _randomAccessOldFile = randomAccessOldFile;
-                Runnable interruptedTask = new Runnable() {
-
-                    @Override
-                    public void run() {
-                        CommonUtil.closeQuietly(_tempNewFileOut);
-                        CommonUtil.closeQuietly(_interruptiblePatchIn);
-                        CommonUtil.closeQuietly(_randomAccessOldFile);
-                    }
-                };
-                tempNewFileOut.addInterruptedTask(interruptedTask);
-                interruptiblePatchIn.addInterruptedTask(interruptedTask);
-                seekableRandomAccessOldFile.addInterruptedTask(interruptedTask);
-                //</editor-fold>
-
-                diffPatcher.patch(seekableRandomAccessOldFile, interruptiblePatchIn, tempNewFileOut);
-            } else {
-                //<editor-fold defaultstate="collapsed" desc="add interrupted tasks">
-                final OutputStream _tempNewFileOut = tempNewFileOut;
-                final InterruptibleInputStream _interruptiblePatchIn = interruptiblePatchIn;
-                Runnable interruptedTask = new Runnable() {
-
-                    @Override
-                    public void run() {
-                        CommonUtil.closeQuietly(_tempNewFileOut);
-                        CommonUtil.closeQuietly(_interruptiblePatchIn);
-                    }
-                };
-                tempNewFileOut.addInterruptedTask(interruptedTask);
-                interruptiblePatchIn.addInterruptedTask(interruptedTask);
-                //</editor-fold>
-
-                // replace, new or force
-                int byteRead,
-                        remaining = operation.getPatchLength();
-                while (true) {
-                    if (remaining <= 0) {
-                        break;
-                    }
-
-                    int lengthToRead = buf.length > remaining ? remaining : buf.length;
-                    byteRead = interruptiblePatchIn.read(buf, 0, lengthToRead);
-                    if (byteRead == -1) {
-                        break;
-                    }
-                    tempNewFileOut.write(buf, 0, byteRead);
-                    remaining -= byteRead;
-                }
-            }
-        } finally {
-            CommonUtil.closeQuietly(randomAccessOldFile);
-            if (interruptiblePatchIn != null) {
-                long byteSkipped = patchIn.skip(interruptiblePatchIn.remaining());
-                if (byteSkipped != interruptiblePatchIn.remaining()) {
-                    throw new IOException("Failed to skip remaining bytes in 'interruptiblePatchIn'.");
-                }
-            }
-            CommonUtil.closeQuietly(tempNewFileOut);
-            tempNewFileOut = null;
-            interruptiblePatchIn = null;
-            seekableRandomAccessOldFile = null;
-        }
-
-        // check new file checksum and length
-        if (operationType != OperationType.NEW) {
-            String tempNewFileSHA256 = CommonUtil.getSHA256String(tempNewFile);
-            if (!tempNewFileSHA256.equals(operation.getNewFileChecksum()) || tempNewFile.length() != operation.getNewFileLength()) {
-                throw new IOException(String.format("Checksum or length does not match (new file): %1$s, old file path: %2$s, expected checksum: %3$s, actual checksum: %4$s, expected length: %5$d, actual length: %6$d",
-                        tempNewFile.getAbsolutePath(), softwareDir + operation.getDestFilePath(), operation.getNewFileChecksum(), tempNewFileSHA256, operation.getNewFileLength(), tempNewFile.length()));
-            }
-        }
-    }
-
-    /**
-     * Do file replacement of all {@code operations} start from {@code startFromFileIndex}.
-     * @param operations the list of {@link operations} to do the replacement
-     * @param startFromFileIndex the starting index to the {@code operations}, count from 0
-     * @param progressOccupied the maximum progress can be occupied by this replacement action (from 0 to 100)
-     * @return a list containing those failed replacement
-     * @throws IOException error occurred when doing replacement
-     */
-    protected List<Replacement> doReplacement(List<Operation> operations, int startFromFileIndex, float progressOccupied) throws IOException {
-        if (operations == null) {
-            throw new NullPointerException("argument 'operations' cannot be null");
-        }
-        if (startFromFileIndex < 0) {
-            throw new IllegalArgumentException("argument 'startFromFileIndex' should >= 0");
-        }
-        if (progressOccupied < 0) {
-            throw new IllegalArgumentException("argument 'progressOccupied' should >= 0");
-        }
-        if (progressOccupied > 100) {
-            throw new IllegalArgumentException("argument 'progressOccupied' should <= 100");
-        }
-
-        List<Replacement> replacementFailedList = new ArrayList<Replacement>();
-
-        float progressStep = progressOccupied / (float) operations.size();
-        progress += startFromFileIndex * progressStep;
-
-        for (int i = startFromFileIndex, iEnd = operations.size(); i < iEnd; i++) {
-            Operation _operation = operations.get(i);
-
-            OperationType operationType = OperationType.get(_operation.getType());
-            if (operationType == null) {
-                continue;
-            }
-
-            File backupFile = new File(tempDir + File.separator + "old_" + i);
-
-            boolean replacementSucceed = false;
-            if (operationType == OperationType.REMOVE) {
-                listener.patchProgress((int) progress, String.format("Removing %1$s ...", _operation.getDestFilePath()));
-
-                File destinationFile = new File(softwareDir + _operation.getDestFilePath());
-
-                log.logPatch(PatchLogWriter.Action.START, i, operationType, backupFile.getAbsolutePath(), "", destinationFile.getAbsolutePath());
-
-                if (destinationFile.exists()) {
-                    if (destinationFile.isDirectory()) {
-                        if (destinationFile.listFiles().length == 0) {
-                            replacementSucceed = destinationFile.renameTo(backupFile);
+                    listener.patchProgress((int) progress, String.format("Removing folder %1$s ...", operation.getDestFilePath()));
+                    if (destFile.exists()) {
+                        if (destFile.isDirectory()) {
+                            if (destFile.list().length == 0) {
+                                if (!destFile.renameTo(backupFile)) {
+                                    returnValue = new Replacement(operationType, destFile.getAbsolutePath(), "", backupFile.getAbsolutePath());
+                                }
+                            } else {
+                                // succeed
+                            }
                         } else {
-                            // folder not empty, no action
-                            replacementSucceed = true;
+                            throw new IOException(String.format("Remove folder: destFile %1$s expected folder but is a file", destFile.getAbsolutePath()));
                         }
                     } else {
-                        replacementSucceed = destinationFile.renameTo(backupFile);
+                        // succeed
                     }
                 } else {
-                    replacementSucceed = true;
-                }
-
-                if (!replacementSucceed) {
-                    replacementFailedList.add(new Replacement(operationType, destinationFile.getAbsolutePath(), "", backupFile.getAbsolutePath()));
-                }
-            } else if (operationType == OperationType.NEW || operationType == OperationType.FORCE) {
-                listener.patchProgress((int) progress, String.format("Copying new file to %1$s ...", _operation.getDestFilePath()));
-
-                File newFile = new File(tempDir + File.separator + i);
-                File destinationFile = new File(softwareDir + _operation.getDestFilePath());
-
-                if (_operation.getFileType().equals("folder")) {
-                    log.logPatch(PatchLogWriter.Action.START, i, operationType, "", "", destinationFile.getAbsolutePath());
-
-                    if (!destinationFile.isDirectory() && !destinationFile.mkdirs()) {
-                        throw new IOException(String.format("Create folder failed: %1$s", softwareDir + _operation.getDestFilePath()));
-                    }
-
-                    replacementSucceed = true;
-                } else {
-                    log.logPatch(PatchLogWriter.Action.START, i, operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), destinationFile.getAbsolutePath());
-
-                    File newFileFolder = new File(CommonUtil.getFileDirectory(destinationFile));
-                    if (!newFileFolder.exists() && !newFileFolder.mkdirs()) {
-                        throw new IOException(String.format("Failed to create folder %1$s for placing %2$s", newFileFolder.getAbsolutePath(), destinationFile.getAbsolutePath()));
-                    }
-
-                    if (destinationFile.exists() && destinationFile.length() == _operation.getNewFileLength() && CommonUtil.getSHA256String(destinationFile).equals(_operation.getNewFileChecksum())) {
-                        // done
-                    } else if ((destinationFile.exists() && !destinationFile.renameTo(backupFile)) || !newFile.renameTo(destinationFile)) {
-                        replacementFailedList.add(new Replacement(operationType, destinationFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath()));
-                        replacementSucceed = false;
+                    listener.patchProgress((int) progress, String.format("Removing file %1$s ...", operation.getDestFilePath()));
+                    if (destFile.exists()) {
+                        if (destFile.isDirectory()) {
+                            throw new IOException(String.format("Remove file: destFile %1$s expecting file but is a folder", destFile.getAbsolutePath()));
+                        } else {
+                            if (!destFile.renameTo(backupFile)) {
+                                returnValue = new Replacement(operationType, destFile.getAbsolutePath(), "", backupFile.getAbsolutePath());
+                            }
+                        }
                     } else {
-                        replacementSucceed = true;
+                        if (backupFile.exists()) {
+                            // succeed
+                        } else {
+                            throw new IOException(String.format("Remove file: destFile %1$s not found and backupFile %2$s not exist", destFile.getAbsolutePath(), backupFile.getAbsolutePath()));
+                        }
                     }
                 }
-            } else {
-                // patch or replace
-                listener.patchProgress((int) progress, String.format("Copying from %1$s to %2$s ...", tempDir + File.separator + i, _operation.getDestFilePath()));
-
-                File newFile = new File(tempDir + File.separator + i);
-                File destinationFile = new File(softwareDir + _operation.getDestFilePath());
-
-                log.logPatch(PatchLogWriter.Action.START, i, operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), destinationFile.getAbsolutePath());
-
-                if (destinationFile.exists() && destinationFile.length() == _operation.getNewFileLength() && CommonUtil.getSHA256String(destinationFile).equals(_operation.getNewFileChecksum())) {
-                    // done
-                } else {
-                    if ((!backupFile.exists() && !destinationFile.renameTo(backupFile)) || (newFile.exists() && !newFile.renameTo(destinationFile))) {
-                        // if patchedFile not exist, that means the checksum of oldFile not match with those in _operation.getOldFileChecksum() & _operation.getOldFileLength()
-                        // but match _operation.getNewFileChecksum() & _operation.getNewFileLength()
-                        replacementFailedList.add(new Replacement(operationType, destinationFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath()));
-                        replacementSucceed = false;
+                break;
+            case NEW:
+                if (operation.getFileType().equals("folder")) {
+                    log.logPatch(PatchLogWriter.Action.START, operation.getId(), operationType, "", "", destFile.getAbsolutePath());
+                    listener.patchProgress((int) progress, String.format("Creating new folder %1$s ...", operation.getDestFilePath()));
+                    if (destFile.exists()) {
+                        if (destFile.isDirectory()) {
+                            // succeed
+                        } else {
+                            throw new IOException(String.format("Add new folder: destFile %1$s expecting a folder but is a file", destFile.getAbsolutePath()));
+                        }
                     } else {
-                        replacementSucceed = true;
+                        if (!destFile.mkdirs()) {
+                            throw new IOException(String.format("Failed to create folder: %1$s", destFile.getAbsolutePath()));
+                        }
+                    }
+                } else {
+                    log.logPatch(PatchLogWriter.Action.START, operation.getId(), operationType, "", newFile.getAbsolutePath(), destFile.getAbsolutePath());
+                    listener.patchProgress((int) progress, String.format("Adding new file %1$s ...", operation.getDestFilePath()));
+                    if (destFile.exists()) {
+                        if (destFile.isDirectory()) {
+                            throw new IOException(String.format("Add new file: destFile %1$s expecting a file but is a folder", destFile.getAbsolutePath()));
+                        } else {
+                            if (operation.getNewFileLength() == destFile.length() && operation.getNewFileChecksum().equals(CommonUtil.getSHA256String(destFile))) {
+                                // succeed
+                            } else {
+                                throw new IOException(String.format("Add new file: destFile %1$s exist and not match with the length & checksum of the new file", destFile.getAbsolutePath()));
+                            }
+                        }
+                    } else {
+                        prepareNewFile(operation, patchIn, newFile, destFile);
+                        if (!newFile.renameTo(destFile)) {
+                            returnValue = new Replacement(operationType, "", newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+                        }
                     }
                 }
-            }
-            log.logPatch(replacementSucceed ? PatchLogWriter.Action.FINISH : PatchLogWriter.Action.FAILED, i, operationType);
-
-            progress += progressStep;
+                break;
+            case FORCE:
+                if (operation.getFileType().equals("folder")) {
+                    log.logPatch(PatchLogWriter.Action.START, operation.getId(), operationType, "", "", destFile.getAbsolutePath());
+                    listener.patchProgress((int) progress, String.format("Creating folder %1$s ...", operation.getDestFilePath()));
+                    if (destFile.exists()) {
+                        if (destFile.isDirectory()) {
+                            // succeed
+                        } else {
+                            throw new IOException(String.format("Force folder: destFile %1$s expecting folder but is a file", destFile.getAbsolutePath()));
+                        }
+                    } else {
+                        if (!destFile.mkdirs()) {
+                            throw new IOException(String.format("Failed to create folder: %1$s", destFile.getAbsolutePath()));
+                        }
+                    }
+                } else {
+                    log.logPatch(PatchLogWriter.Action.START, operation.getId(), operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), destFile.getAbsolutePath());
+                    listener.patchProgress((int) progress, String.format("Adding file %1$s ...", operation.getDestFilePath()));
+                    if (destFile.exists()) {
+                        if (destFile.isDirectory()) {
+                            throw new IOException(String.format("Force file: destFile %1$s expecting file but is a folder", destFile.getAbsolutePath()));
+                        } else {
+                            long destFileLength = destFile.length();
+                            String destFileChecksum = CommonUtil.getSHA256String(destFile);
+                            if (!backupFile.exists() && (operation.getNewFileLength() != destFileLength || !operation.getNewFileChecksum().equals(destFileChecksum))) {
+                                prepareNewFile(operation, patchIn, newFile, destFile);
+                                if (!destFile.renameTo(backupFile) || !newFile.renameTo(destFile)) {
+                                    returnValue = new Replacement(operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+                                }
+                            } else if (operation.getNewFileLength() == destFileLength && operation.getNewFileChecksum().equals(destFileChecksum)) {
+                                // succeed
+                            } else {
+                                throw new IOException(String.format("Force file: error occurred when doing file %1$s", destFile.getAbsolutePath()));
+                            }
+                        }
+                    } else {
+                        prepareNewFile(operation, patchIn, newFile, destFile);
+                        if (!newFile.renameTo(destFile)) {
+                            returnValue = new Replacement(operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+                        }
+                    }
+                }
+                break;
+            case PATCH:
+            case REPLACE:
+                log.logPatch(PatchLogWriter.Action.START, operation.getId(), operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), destFile.getAbsolutePath());
+                listener.patchProgress((int) progress, String.format("Patching %1$s ...", operation.getDestFilePath()));
+                if (destFile.exists()) {
+                    if (destFile.isDirectory()) {
+                        throw new IOException(String.format("Replace/Patch file: destFile %1$s expecting file but is a directory", destFile.getAbsolutePath()));
+                    } else {
+                        if (backupFile.exists()) {
+                            // succeed
+                        } else if (operation.getOldFileLength() == destFile.length() && operation.getOldFileChecksum().equals(CommonUtil.getSHA256String(destFile))) {
+                            prepareNewFile(operation, patchIn, newFile, destFile);
+                            if (!destFile.renameTo(backupFile) || !newFile.renameTo(destFile)) {
+                                returnValue = new Replacement(operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+                            }
+                        } else {
+                            throw new IOException(String.format("Replace/Patch file: error occurred when doing file %1$s", destFile.getAbsolutePath()));
+                        }
+                    }
+                } else {
+                    if (backupFile.exists() && newFile.exists()) {
+                        if (!newFile.renameTo(destFile)) {
+                            returnValue = new Replacement(operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+                        }
+                    } else {
+                        throw new IOException(String.format("Replace/Patch file: error occurred when doing file, destFile %1$s not found", destFile.getAbsolutePath()));
+                    }
+                }
+                break;
         }
 
-        return replacementFailedList;
+        log.logPatch(returnValue == null ? PatchLogWriter.Action.FINISH : PatchLogWriter.Action.FAILED, operation.getId(), operationType);
+
+        return returnValue;
     }
 
     /**
@@ -541,25 +563,41 @@ public class Patcher implements Pausable {
             throw new IOException("patch file not exist or not a file");
         }
 
-        List<Replacement> replacementFailedList = null;
-
+        File _patchFile = patchFile;
+        List<Replacement> replacementFailedList = new ArrayList<Replacement>();
         int startFromFileIndex = 0;
+        Map<Integer, Object> extraFileIndexes = new HashMap<Integer, Object>();
+        boolean patchingStarted = false;
+
+        //<editor-fold defaultstate="collapsed" desc="startFromFileIndex, extraFileIndexes & patchingStarted">
         if (logFile.exists()) {
             PatchLogReader logReader = new PatchLogReader(logFile);
-            if (logReader.getStartFileIndex() == -1) {
-                if (logReader.isLogEnded()) {
-                    return replacementFailedList;
-                }
-            } else {
-                startFromFileIndex = logReader.getStartFileIndex();
+
+            if (logReader.isLogEnded()) {
+                return replacementFailedList;
             }
+
+            startFromFileIndex = logReader.getStartFileIndex();
+            List<PatchRecord> failList = logReader.getFailList();
+            for (PatchRecord patchRecord : failList) {
+                extraFileIndexes.put(patchRecord.getFileIndex(), new Object());
+            }
+            List<PatchRecord> revertList = logReader.getRevertList();
+            for (PatchRecord patchRecord : revertList) {
+                extraFileIndexes.put(patchRecord.getFileIndex(), new Object());
+            }
+            PatchRecord unfinishedReplacement = logReader.getUnfinishedReplacement();
+            if (unfinishedReplacement != null) {
+                extraFileIndexes.put(unfinishedReplacement.getFileIndex(), new Object());
+            }
+            patchingStarted = logReader.isLogStarted();
         }
+        //</editor-fold>
+
 
         float decryptProgress = 0;
         float prepareProgress = 5;
-        float updateProgress = 60;
-        float checkAccessibilityProgress = 0;
-        float replaceFilesProgress = 5;
+        float updateProgress = 65;
         float validateFilesProgress = 30;
 
 
@@ -567,11 +605,10 @@ public class Patcher implements Pausable {
         progress = stageMinimumProgress;
 
 
-        // decrypt the patch
-        File _patchFile = patchFile;
+        //<editor-fold defaultstate="collapsed" desc="decrypt the patch">
         if (aesKey != null) {
             decryptProgress = 25;
-            updateProgress = 45;
+            updateProgress = 50;
             validateFilesProgress = 20;
 
             final float _decryptProgress = decryptProgress;
@@ -592,7 +629,7 @@ public class Patcher implements Pausable {
                 aesCryptor.setKeySize(KeySize.BITS256);
                 aesCryptor.setKey(aesKey.getKey());
                 aesCryptor.setInitializationVector(aesKey.getIV());
-                aesCryptor.decryptFile(patchFile, tempFileForDecryption);
+                aesCryptor.decryptFile(_patchFile, tempFileForDecryption);
             } catch (Exception ex) {
                 throw new IOException(ex);
             } finally {
@@ -601,6 +638,7 @@ public class Patcher implements Pausable {
 
             _patchFile = tempFileForDecryption;
         }
+        //</editor-fold>
 
 
         stageMinimumProgress += decryptProgress;
@@ -622,9 +660,6 @@ public class Patcher implements Pausable {
             try {
                 patch = PatchReadUtil.readXML(decompressedPatchIn);
             } catch (InvalidFormatException ex) {
-                if (debug) {
-                    Logger.getLogger(Patcher.class.getName()).log(Level.SEVERE, null, ex);
-                }
                 throw new IOException(ex);
             }
 
@@ -638,7 +673,7 @@ public class Patcher implements Pausable {
             }
 
             // start log
-            if (startFromFileIndex == 0) {
+            if (!patchingStarted) {
                 log.logStart(patchId, patch.getVersionFrom(), patch.getVersionTo());
             } else {
                 log.logResume();
@@ -653,10 +688,29 @@ public class Patcher implements Pausable {
             listener.patchEnableCancel(true);
             // start patch - patch files and store to temporary directory first
             float progressStep = updateProgress / (float) operations.size();
-            progress += startFromFileIndex * progressStep;
-            for (int i = startFromFileIndex, iEnd = operations.size(); i < iEnd; i++) {
+            for (int i = 0, iEnd = operations.size(); i < iEnd; i++) {
                 Operation _operation = operations.get(i);
-                doOperation(_operation, decompressedPatchIn, new File(tempDir + File.separator + i));
+
+                if (!(i >= startFromFileIndex || extraFileIndexes.get(i) != null)) {
+                    long byteSkipped = decompressedPatchIn.skip(_operation.getPatchLength());
+                    if (byteSkipped != _operation.getPatchLength()) {
+                        throw new IOException("Failed to skip remaining bytes in 'interruptiblePatchIn'.");
+                    }
+                    continue;
+                }
+
+                InterruptibleInputStream operationIn = new InterruptibleInputStream(decompressedPatchIn, _operation.getPatchLength());
+                Replacement failedReplacement = doOperation(_operation, operationIn);
+                if (operationIn.remaining() != 0) {
+                    long byteSkipped = decompressedPatchIn.skip(operationIn.remaining());
+                    if (byteSkipped != operationIn.remaining()) {
+                        throw new IOException("Failed to skip remaining bytes in 'interruptiblePatchIn'.");
+                    }
+                }
+                if (failedReplacement != null) {
+                    replacementFailedList.add(failedReplacement);
+                }
+
                 progress += progressStep;
             }
 
@@ -665,64 +719,35 @@ public class Patcher implements Pausable {
             progress = stageMinimumProgress;
 
 
-            listener.patchProgress((int) progress, "Checking the accessibility of all files ...");
-            // try acquire locks on all files
-//            List<Operation> acquireLockFailedList = tryAcquireExclusiveLocks(operations, startFromFileIndex);
+            if (replacementFailedList.isEmpty()) {
+                listener.patchProgress((int) progress, "Validating files ...");
+                listener.patchEnableCancel(false);
+                // validate files
+                progressStep = validateFilesProgress / (float) validations.size();
+                for (ValidationFile _validationFile : validations) {
+                    listener.patchProgress((int) progress, String.format("Validating file: %1$s", _validationFile.getFilePath()));
 
+                    File _file = new File(softwareDir + _validationFile.getFilePath());
 
-            stageMinimumProgress += checkAccessibilityProgress;
-            progress = stageMinimumProgress;
-
-
-            listener.patchProgress((int) progress, "Replacing old files with new files ...");
-            listener.patchEnableCancel(false);
-            // all files has patched to temporary directory, replace old files with the new one
-            replacementFailedList = doReplacement(operations, startFromFileIndex, replaceFilesProgress);
-
-
-            stageMinimumProgress += replaceFilesProgress;
-            progress = stageMinimumProgress;
-
-
-            listener.patchProgress((int) progress, "Validating files ...");
-            // validate files
-            progressStep = validateFilesProgress / (float) validations.size();
-            for (ValidationFile _validationFile : validations) {
-                listener.patchProgress((int) progress, String.format("Validating file: %1$s", _validationFile.getFilePath()));
-
-                File _file = new File(softwareDir + _validationFile.getFilePath());
-
-                // the checksum and length is checked on the new file when doOperation
-                boolean fileNotReplaced = false;
-                String _validationFileAbsPath = _file.getAbsolutePath();
-                for (Replacement _replacement : replacementFailedList) {
-                    if (new File(_replacement.getDestination()).getAbsolutePath().equals(_validationFileAbsPath)) {
-                        fileNotReplaced = true;
-                        break;
+                    if (_validationFile.getFileLength() == -1) {
+                        if (!_file.isDirectory()) {
+                            throw new IOException(String.format("Folder missed: %1$s", _file.getAbsolutePath()));
+                        }
+                    } else {
+                        if (!_file.exists()) {
+                            throw new IOException(String.format("File missed: %1$s", _file.getAbsolutePath()));
+                        }
+                        if (_file.length() != _validationFile.getFileLength()) {
+                            throw new IOException(String.format("File length not matched, file: %1$s, expected: %2$d, found: %3$d",
+                                    _file.getAbsolutePath(), _validationFile.getFileLength(), _file.length()));
+                        }
+                        if (!CommonUtil.getSHA256String(_file).equals(_validationFile.getFileChecksum())) {
+                            throw new IOException(String.format("File checksum incorrect: %1$s", _file.getAbsolutePath()));
+                        }
                     }
+
+                    progress += progressStep;
                 }
-                if (fileNotReplaced) {
-                    continue;
-                }
-
-                if (_validationFile.getFileLength() == -1) {
-                    if (!_file.isDirectory()) {
-                        throw new IOException(String.format("Folder missed: %1$s", _file.getAbsolutePath()));
-                    }
-                } else {
-                    if (!_file.exists()) {
-                        throw new IOException(String.format("File missed: %1$s", _file.getAbsolutePath()));
-                    }
-                    if (_file.length() != _validationFile.getFileLength()) {
-                        throw new IOException(String.format("File length not matched, file: %1$s, expected: %2$d, found: %3$d",
-                                _file.getAbsolutePath(), _validationFile.getFileLength(), _file.length()));
-                    }
-                    if (!CommonUtil.getSHA256String(_file).equals(_validationFile.getFileChecksum())) {
-                        throw new IOException(String.format("File checksum incorrect: %1$s", _file.getAbsolutePath()));
-                    }
-                }
-
-                progress += progressStep;
             }
 
 
@@ -731,7 +756,9 @@ public class Patcher implements Pausable {
 
 
             listener.patchProgress(100, "Finished.");
-            log.logEnd();
+            if (replacementFailedList.isEmpty()) {
+                log.logEnd();
+            }
         } finally {
             CommonUtil.closeQuietly(log);
             log = null;
@@ -751,6 +778,11 @@ public class Patcher implements Pausable {
 
             PatchRecord unfinishedReplacement = logReader.getUnfinishedReplacement();
             revertFile(unfinishedReplacement);
+
+            List<PatchRecord> failList = logReader.getFailList();
+            for (PatchRecord patchRecord : failList) {
+                revertFile(patchRecord);
+            }
 
             List<PatchRecord> revertList = logReader.getRevertList();
             for (PatchRecord patchRecord : revertList) {
