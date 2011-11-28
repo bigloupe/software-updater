@@ -35,6 +35,9 @@ import updater.util.CommonUtil;
  * (1 3 2)   1.0.0->1.0.1, replacement end, fileIndex: 2<br />
  * (1 2 3 433a5c7570 646174655c6c6f676f2 e706e67)   1.0.0->1.0.1, replacement start, fileIndex: 3, action: replace, back up: C:\\update\\old_logo.png, C:\\update\\logo.png->C:\\logo.png<br />
  * (1 4 3)   1.0.0->1.0.1, replacement failed, fileIndex: 3<br />
+ * (1 5 3)  1.0.0->1.0.1, fileIndex: 3<br />
+ * (1 2 3 433a5c7570 646174655c6c6f676f2 e706e67)   1.0.0->1.0.1, replacement start, fileIndex: 3, action: replace, back up: C:\\update\\old_logo.png, C:\\update\\logo.png->C:\\logo.png<br />
+ * (1 4 3)   1.0.0->1.0.1, replacement failed, fileIndex: 3<br />
  * (1 1)   1.0.0->1.0.1, finish
  * </p>
  * 
@@ -61,10 +64,6 @@ public class PatchLogReader {
      */
     protected List<PatchRecord> failList;
     /**
-     * Unfinished replacement, possibly the replacement really didn't finish or log unfinished only. null means not any.
-     */
-    protected PatchRecord unfinishedReplacement;
-    /**
      * Indicate when to start to patch the unfinished patching. -1 means patch finished.
      */
     protected int startFileIndex;
@@ -83,13 +82,12 @@ public class PatchLogReader {
         logEnded = false;
         revertList = new ArrayList<PatchRecord>();
         failList = new ArrayList<PatchRecord>();
-        unfinishedReplacement = null;
         startFileIndex = 0;
 
         TreeMap<Integer, PatchRecord> _revertMap = new TreeMap<Integer, PatchRecord>();
         Map<Integer, PatchRecord> _failMap = new HashMap<Integer, PatchRecord>();
 
-        Pattern logPattern = Pattern.compile("^\\(([0-9]+)\\s(?:(0|1)|(2)\\s([0-9]+)\\s([a-z0-9]+)\\s([a-z0-9]+)\\s([a-z0-9]+)|(3|4)\\s([0-9]+))\\)\t.+?$");
+        Pattern logPattern = Pattern.compile("^\\(([0-9]+)\\s(?:(0|1)|(2)\\s([0-9]+)\\s([a-z0-9]+)\\s([a-z0-9]+)\\s([a-z0-9]+)|(3|4|5)\\s([0-9]+))\\)\t.+?$");
 
         // not very strict check, assume the log is correct and in sequence
         BufferedReader in = null;
@@ -171,6 +169,13 @@ public class PatchLogReader {
                         }
                         currentFileIndex = -1;
                         break;
+                    case 5:
+                        int revertFileIndex = Integer.parseInt(matcher.group(9));
+                        PatchRecord revertRecord = _revertMap.remove(revertFileIndex);
+                        if (revertRecord != null) {
+                            _failMap.put(revertFileIndex, revertRecord);
+                        }
+                        break;
                 }
             }
 
@@ -184,7 +189,7 @@ public class PatchLogReader {
             }
 
             if (currentBackupPath != null) {
-                unfinishedReplacement = new PatchRecord(startFileIndex, currentBackupPath, currentfromPath, currentToPath);
+                failList.add(new PatchRecord(startFileIndex, currentBackupPath, currentfromPath, currentToPath));
             }
         } finally {
             CommonUtil.closeQuietly(in);
@@ -221,14 +226,6 @@ public class PatchLogReader {
      */
     public List<PatchRecord> getFailList() {
         return new ArrayList<PatchRecord>(failList);
-    }
-
-    /**
-     * Get unfinished replacement, possibly the replacement really didn't finish or log unfinished only.
-     * @return the record, null means not any.
-     */
-    public PatchRecord getUnfinishedReplacement() {
-        return unfinishedReplacement;
     }
 
     /**
@@ -322,7 +319,10 @@ public class PatchLogReader {
             }
             PatchRecord _object = (PatchRecord) compareTo;
 
-            return _object.getFileIndex() == fileIndex && _object.getNewFilePath().equals(getNewFilePath());
+            return _object.getFileIndex() == fileIndex
+                    && _object.getBackupFilePath().equals(getBackupFilePath())
+                    && _object.getNewFilePath().equals(getNewFilePath())
+                    && _object.getDestinationFilePath().equals(getDestinationFilePath());
         }
     }
 }

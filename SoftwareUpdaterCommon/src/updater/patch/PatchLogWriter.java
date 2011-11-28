@@ -28,6 +28,9 @@ import updater.util.CommonUtil;
  * (1 3 2)   1.0.0->1.0.1, replacement end, fileIndex: 2<br />
  * (1 2 3 433a5c7570 646174655c6c6f676f2 e706e67)   1.0.0->1.0.1, replacement start, fileIndex: 3, action: replace, back up: C:\\update\\old_logo.png, C:\\update\\logo.png->C:\\logo.png<br />
  * (1 4 3)   1.0.0->1.0.1, replacement failed, fileIndex: 3<br />
+ * (1 5 3)  1.0.0->1.0.1, fileIndex: 3<br />
+ * (1 2 3 433a5c7570 646174655c6c6f676f2 e706e67)   1.0.0->1.0.1, replacement start, fileIndex: 3, action: replace, back up: C:\\update\\old_logo.png, C:\\update\\logo.png->C:\\logo.png<br />
+ * (1 4 3)   1.0.0->1.0.1, replacement failed, fileIndex: 3<br />
  * (1 1)   1.0.0->1.0.1, finish
  * </p>
  * 
@@ -137,9 +140,7 @@ public class PatchLogWriter implements Closeable {
 
         sb.append('(');
         sb.append(currentPatchId);
-        sb.append(' ');
-        sb.append('0');
-        sb.append(')');
+        sb.append(" 0)");
 
         sb.append('\t');
 
@@ -177,9 +178,7 @@ public class PatchLogWriter implements Closeable {
 
         sb.append('(');
         sb.append(currentPatchId);
-        sb.append(' ');
-        sb.append('1');
-        sb.append(')');
+        sb.append(" 1)");
 
         sb.append('\t');
 
@@ -221,6 +220,9 @@ public class PatchLogWriter implements Closeable {
         }
         if (operationType == null) {
             throw new NullPointerException("argument 'operationType' cannot be null");
+        }
+        if (backupFilePath == null) {
+            throw new NullPointerException("argument 'backupFilePath' cannot be null");
         }
         if (newFilePath == null) {
             throw new NullPointerException("argument 'newFilePath' cannot be null");
@@ -285,11 +287,42 @@ public class PatchLogWriter implements Closeable {
 
             sb.append(", back up: ");
             sb.append(backupFilePath);
-            sb.append(", ");
+            sb.append(", new: ");
             sb.append(newFilePath);
-            sb.append(" -> ");
+            sb.append(", dest: ");
             sb.append(destinationFilePath);
         }
+
+        sb.append("\n");
+
+        out.write(sb.toString().getBytes());
+        out.flush();
+    }
+
+    /**
+     * Log the revert action.
+     * @param fileIndex the file index of the revertion
+     * @throws IOException error occurred when writing to log
+     */
+    public void logRevert(int fileIndex) throws IOException {
+        String fileIndexString = Integer.toString(fileIndex);
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append('(');
+        sb.append(currentPatchId);
+        sb.append(" 5 ");
+        sb.append(fileIndex);
+        sb.append(')');
+
+        sb.append('\t');
+
+        sb.append(currentPatchVersionFrom);
+        sb.append("->");
+        sb.append(currentPatchVersionTo);
+
+        sb.append(", fileIndex: ");
+        sb.append(fileIndexString);
 
         sb.append("\n");
 

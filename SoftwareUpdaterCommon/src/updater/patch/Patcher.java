@@ -586,10 +586,6 @@ public class Patcher implements Pausable {
             for (PatchRecord patchRecord : revertList) {
                 extraFileIndexes.put(patchRecord.getFileIndex(), new Object());
             }
-            PatchRecord unfinishedReplacement = logReader.getUnfinishedReplacement();
-            if (unfinishedReplacement != null) {
-                extraFileIndexes.put(unfinishedReplacement.getFileIndex(), new Object());
-            }
             patchingStarted = logReader.isLogStarted();
         }
         //</editor-fold>
@@ -776,20 +772,24 @@ public class Patcher implements Pausable {
         if (logFile.exists()) {
             PatchLogReader logReader = new PatchLogReader(logFile);
 
-            PatchRecord unfinishedReplacement = logReader.getUnfinishedReplacement();
-            revertFile(unfinishedReplacement);
+            try {
+                log = new PatchLogWriter(logFile);
 
-            List<PatchRecord> failList = logReader.getFailList();
-            for (PatchRecord patchRecord : failList) {
-                revertFile(patchRecord);
+                List<PatchRecord> failList = logReader.getFailList();
+                for (PatchRecord patchRecord : failList) {
+                    log.logRevert(patchRecord.getFileIndex());
+                    revertFile(patchRecord);
+                }
+
+                List<PatchRecord> revertList = logReader.getRevertList();
+                for (PatchRecord patchRecord : revertList) {
+                    log.logRevert(patchRecord.getFileIndex());
+                    revertFile(patchRecord);
+                }
+            } finally {
+                CommonUtil.closeQuietly(log);
+                log = null;
             }
-
-            List<PatchRecord> revertList = logReader.getRevertList();
-            for (PatchRecord patchRecord : revertList) {
-                revertFile(patchRecord);
-            }
-
-            CommonUtil.truncateFile(logFile);
         }
     }
 

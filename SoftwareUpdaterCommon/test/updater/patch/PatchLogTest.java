@@ -153,14 +153,12 @@ public class PatchLogTest {
             List<PatchRecord> failList = reader1.getFailList();
             List<PatchRecord> revertList = reader1.getRevertList();
             int startFileIndex = reader1.getStartFileIndex();
-            PatchRecord unfinishedReplacement = reader1.getUnfinishedReplacement();
 
             assertTrue(logStarted);
             assertTrue(logEnded);
             assertArrayEquals(new PatchRecord[]{new PatchRecord(2, "backup3", "from3", "to3"), new PatchRecord(4, "backup5", "from5", "to5"), new PatchRecord(5, "backup6", "from6", "to6")}, failList.toArray(new PatchRecord[failList.size()]));
             assertArrayEquals(new PatchRecord[]{new PatchRecord(6, "backup7", "from7", "to7"), new PatchRecord(3, "backup4", "from4", "to4"), new PatchRecord(1, "backup2", "from2", "to2"), new PatchRecord(0, "backup1", "from1", "to1")}, revertList.toArray(new PatchRecord[revertList.size()]));
             assertEquals(7, startFileIndex);
-            assertNull(unfinishedReplacement);
 
 
             logStarted = reader2.isLogStarted();
@@ -168,14 +166,12 @@ public class PatchLogTest {
             failList = reader2.getFailList();
             revertList = reader2.getRevertList();
             startFileIndex = reader2.getStartFileIndex();
-            unfinishedReplacement = reader2.getUnfinishedReplacement();
 
             assertTrue(logStarted);
             assertFalse(logEnded);
-            assertArrayEquals(new PatchRecord[]{new PatchRecord(2, "backup3", "from3", "to3")}, failList.toArray(new PatchRecord[failList.size()]));
+            assertArrayEquals(new PatchRecord[]{new PatchRecord(2, "backup3", "from3", "to3"), new PatchRecord(3, "backup4", "from4", "to4")}, failList.toArray(new PatchRecord[failList.size()]));
             assertArrayEquals(new PatchRecord[]{new PatchRecord(1, "backup2", "from2", "to2"), new PatchRecord(0, "backup1", "from1", "to1")}, revertList.toArray(new PatchRecord[revertList.size()]));
             assertEquals(3, startFileIndex);
-            assertEquals(new PatchRecord(3, "backup4", "from4", "to4"), unfinishedReplacement);
 
 
             logStarted = reader3.isLogStarted();
@@ -183,14 +179,12 @@ public class PatchLogTest {
             failList = reader3.getFailList();
             revertList = reader3.getRevertList();
             startFileIndex = reader3.getStartFileIndex();
-            unfinishedReplacement = reader3.getUnfinishedReplacement();
 
             assertTrue(logStarted);
             assertFalse(logEnded);
             assertArrayEquals(new PatchRecord[]{new PatchRecord(0, "backup1", "from1", "to1"), new PatchRecord(2, "backup3", "from3", "to3")}, failList.toArray(new PatchRecord[failList.size()]));
             assertArrayEquals(new PatchRecord[]{new PatchRecord(1, "backup2", "from2", "to2")}, revertList.toArray(new PatchRecord[revertList.size()]));
             assertEquals(3, startFileIndex);
-            assertNull(unfinishedReplacement);
 
 
             logStarted = reader4.isLogStarted();
@@ -198,14 +192,12 @@ public class PatchLogTest {
             failList = reader4.getFailList();
             revertList = reader4.getRevertList();
             startFileIndex = reader4.getStartFileIndex();
-            unfinishedReplacement = reader4.getUnfinishedReplacement();
 
             assertTrue(logStarted);
             assertFalse(logEnded);
             assertArrayEquals(new PatchRecord[]{new PatchRecord(0, "backup1", "from1", "to1"), new PatchRecord(1, "backup2", "from2", "to2")}, failList.toArray(new PatchRecord[failList.size()]));
             assertArrayEquals(new PatchRecord[]{}, revertList.toArray(new PatchRecord[revertList.size()]));
             assertEquals(2, startFileIndex);
-            assertNull(unfinishedReplacement);
 
 
             logStarted = reader5.isLogStarted();
@@ -213,14 +205,12 @@ public class PatchLogTest {
             failList = reader5.getFailList();
             revertList = reader5.getRevertList();
             startFileIndex = reader5.getStartFileIndex();
-            unfinishedReplacement = reader5.getUnfinishedReplacement();
 
             assertTrue(logStarted);
             assertFalse(logEnded);
             assertArrayEquals(new PatchRecord[]{}, failList.toArray(new PatchRecord[failList.size()]));
             assertArrayEquals(new PatchRecord[]{new PatchRecord(1, "backup2", "from2", "to2"), new PatchRecord(0, "backup1", "from1", "to1")}, revertList.toArray(new PatchRecord[revertList.size()]));
             assertEquals(2, startFileIndex);
-            assertNull(unfinishedReplacement);
         } catch (IOException ex) {
             fail("! Read log failed.");
             Logger.getLogger(PatchLogTest.class.getName()).log(Level.SEVERE, null, ex);
