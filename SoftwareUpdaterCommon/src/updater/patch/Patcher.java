@@ -169,6 +169,80 @@ public class Patcher implements Pausable {
      * @throws IOException error occurred when doing operation
      */
     protected void doOperation(Operation operation, InputStream patchIn, File tempNewFile) throws IOException {
+        // scheduled to change to this logic
+//remove:
+//  type folder:
+//    dest exist:
+//      dest is folder:
+//        dest folder empty:
+//          ** dest->backup
+//        dest folder not empty:
+//          ** {ok}
+//      dest is file:
+//        ** {error}
+//    dest not exist:
+//      ** {ok}
+//  type file:
+//    dest exist:
+//      dest is folder:
+//        ** {error}
+//      dest is file:
+//        ** dest->backup
+//    dest not exist:
+//      ** backup exist -> {ok}; backup not exist -> {error}
+//new:
+//  type folder:
+//    dest exist:
+//      dest is folder:
+//        ** {ok}
+//      dest is file:
+//        ** {error}
+//    dest not exist:
+//      ** create dest folder
+//  type file:
+//    dest exist:
+//      dest is foler:
+//        ** {error}
+//      dest is file:
+//        ** length & checksum of dest match new -> {ok}; else -> {error}
+//    dest not exist:
+//      ** output patch -> new, new->dest
+//force:
+//  type folder:
+//    dest exist:
+//      dest is folder:
+//        ** {ok}
+//      dest is file:
+//        ** {error}
+//    dest not exist:
+//      ** create dest folder
+//  type file:
+//    dest exist:
+//      dest is folder:
+//        ** {error}
+//      dest is file:
+//        ** output patch -> new, dest->backup, new->dest
+//    dest not exist:
+//      ** output patch -> new, new->dest (backup may exist)
+//patch:
+//  type file:
+//    dest exist:
+//      dest is foler:
+//        ** {error}
+//      dest is file:
+//        ** length & checksum of dest match old: patch dest -> new, dest->backup, new->dest; 
+//           length & checksum of dest match new & backup exist: {ok}
+//    dest not exist:
+//      ** backup exist & new exist -> new->dest; else -> {error}
+//replace:
+//  type file:
+//    dest exist:
+//      dest is foler:
+//        ** {error}
+//      dest is file:
+//        ** output patch -> new, dest->backup, new->dest
+//    dest not exist:
+//      ** backup exist & new exist -> new->dest; else -> {error}
         if (operation == null) {
             throw new NullPointerException("argument 'operation' cannot be null");
         }
@@ -682,6 +756,8 @@ public class Patcher implements Pausable {
             for (PatchRecord patchRecord : revertList) {
                 revertFile(patchRecord);
             }
+
+            CommonUtil.truncateFile(logFile);
         }
     }
 
@@ -695,8 +771,14 @@ public class Patcher implements Pausable {
         File destFile = new File(patchRecord.getDestinationFilePath());
         File backupFile = new File(patchRecord.getBackupFilePath());
         if (!newFile.exists() && destFile.exists()) {
-            if (!destFile.renameTo(newFile)) {
-                throw new IOException(String.format("Failed to move %1$s to %2$s (dest->new)", patchRecord.getDestinationFilePath(), patchRecord.getBackupFilePath()));
+            if (patchRecord.getNewFilePath().isEmpty()) {
+                if (!destFile.delete()) {
+                    throw new IOException(String.format("Failed to delete %1$s (dest)", patchRecord.getDestinationFilePath()));
+                }
+            } else {
+                if (!destFile.renameTo(newFile)) {
+                    throw new IOException(String.format("Failed to move %1$s to %2$s (dest->new)", patchRecord.getDestinationFilePath(), patchRecord.getBackupFilePath()));
+                }
             }
         }
         if (!destFile.exists() && backupFile.exists()) {

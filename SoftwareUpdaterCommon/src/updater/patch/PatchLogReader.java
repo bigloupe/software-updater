@@ -84,7 +84,7 @@ public class PatchLogReader {
         revertList = new ArrayList<PatchRecord>();
         failList = new ArrayList<PatchRecord>();
         unfinishedReplacement = null;
-        startFileIndex = -1;
+        startFileIndex = 0;
 
         TreeMap<Integer, PatchRecord> _revertMap = new TreeMap<Integer, PatchRecord>();
         Map<Integer, PatchRecord> _failMap = new HashMap<Integer, PatchRecord>();
@@ -123,7 +123,7 @@ public class PatchLogReader {
                 switch (actionId) {
                     case 0:
                         currentPatchId = Integer.parseInt(matcher.group(1));
-                        currentFileIndex = 0;
+                        currentFileIndex = -1;
                         logStarted = true;
                         break;
                     case 1:
@@ -151,8 +151,11 @@ public class PatchLogReader {
                             throw new IOException("Log format invalid.");
                         }
                         _revertMap.put(currentFileIndex, new PatchRecord(currentFileIndex, currentBackupPath, currentfromPath, currentToPath));
-                        currentFileIndex++;
                         currentBackupPath = null;
+                        if (currentFileIndex >= startFileIndex) {
+                            startFileIndex = currentFileIndex + 1;
+                        }
+                        currentFileIndex = -1;
                         break;
                     case 4:
                         if (currentPatchId != Integer.parseInt(matcher.group(1))) {
@@ -162,8 +165,11 @@ public class PatchLogReader {
                             throw new IOException("Log format invalid.");
                         }
                         _failMap.put(currentFileIndex, new PatchRecord(currentFileIndex, currentBackupPath, currentfromPath, currentToPath));
-                        currentFileIndex++;
                         currentBackupPath = null;
+                        if (currentFileIndex >= startFileIndex) {
+                            startFileIndex = currentFileIndex + 1;
+                        }
+                        currentFileIndex = -1;
                         break;
                 }
             }
@@ -172,14 +178,13 @@ public class PatchLogReader {
                 revertList.add(_revertMap.get(key));
             }
             for (Integer key : _failMap.keySet()) {
-                failList.add(_failMap.get(key));
+                if (!_revertMap.containsKey(key)) {
+                    failList.add(_failMap.get(key));
+                }
             }
 
-            if (currentFileIndex != -1) {
-                startFileIndex = currentFileIndex;
-                if (currentBackupPath != null) {
-                    unfinishedReplacement = new PatchRecord(startFileIndex, currentBackupPath, currentfromPath, currentToPath);
-                }
+            if (currentBackupPath != null) {
+                unfinishedReplacement = new PatchRecord(startFileIndex, currentBackupPath, currentfromPath, currentToPath);
             }
         } finally {
             CommonUtil.closeQuietly(in);
@@ -227,7 +232,7 @@ public class PatchLogReader {
     }
 
     /**
-     * Get the file index that indicate when to start to patch the unfinished patching. -1 means patch not started yet or finished.
+     * Get the file index that indicate when to start to patch the unfinished patching.
      * @return the file index
      */
     public int getStartFileIndex() {

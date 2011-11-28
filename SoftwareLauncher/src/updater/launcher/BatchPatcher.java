@@ -153,7 +153,7 @@ public class BatchPatcher implements Pausable {
                         listener.patchEnableCancel(enable);
                     }
                 }, new File(tempDirForPatch + File.separator + "action.log"), new File("." + File.separator), tempDirForPatch);
-                List<Replacement> replacementList = patcher.doPatch(patchFile, _update.getId(), aesKey, decryptedPatchFile);
+                List<Replacement> replacementList = patcher.doPatch(patchFile, _update.getId(), aesKey, decryptedPatchFile, new HashMap<String, String>());
                 decryptedPatchFile.delete();
                 for (Replacement _replacement : replacementList) {
                     replacementMap.put(_replacement.getDestination(), _replacement);

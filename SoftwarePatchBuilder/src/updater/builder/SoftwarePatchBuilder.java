@@ -12,6 +12,7 @@ import java.io.FileOutputStream;
 import java.math.BigInteger;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.HashMap;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import org.apache.commons.cli.CommandLine;
@@ -454,7 +455,7 @@ public class SoftwarePatchBuilder {
             public void patchEnableCancel(boolean enable) {
             }
         }, new File(tempDir.getAbsolutePath() + "/action.log"), new File(doArgs[0]), tempDir);
-        patcher.doPatch(patchFile, 0, aesKey, decryptedPatchFile);
+        patcher.doPatch(patchFile, 0, aesKey, decryptedPatchFile, new HashMap<String, String>());
 
         System.out.println("Patch completed.");
 

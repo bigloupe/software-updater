@@ -159,7 +159,7 @@ public class PatchLogTest {
             assertTrue(logEnded);
             assertArrayEquals(new PatchRecord[]{new PatchRecord(2, "backup3", "from3", "to3"), new PatchRecord(4, "backup5", "from5", "to5"), new PatchRecord(5, "backup6", "from6", "to6")}, failList.toArray(new PatchRecord[failList.size()]));
             assertArrayEquals(new PatchRecord[]{new PatchRecord(6, "backup7", "from7", "to7"), new PatchRecord(3, "backup4", "from4", "to4"), new PatchRecord(1, "backup2", "from2", "to2"), new PatchRecord(0, "backup1", "from1", "to1")}, revertList.toArray(new PatchRecord[revertList.size()]));
-            assertEquals(-1, startFileIndex);
+            assertEquals(7, startFileIndex);
             assertNull(unfinishedReplacement);
 
 
