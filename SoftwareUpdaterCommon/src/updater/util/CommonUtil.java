@@ -784,21 +784,13 @@ public class CommonUtil {
             fout = new FileOutputStream(file, true);
             lock = fout.getChannel().tryLock();
             return lock != null;
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             // if any IOException caught, consider it as failure and no exception is thrown
             if (debug) {
                 Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
             }
         } finally {
-            if (lock != null) {
-                try {
-                    lock.release();
-                } catch (IOException ex) {
-                    if (debug) {
-                        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-            }
+            releaseLockQuietly(lock);
             closeQuietly(fout);
         }
 
@@ -945,13 +937,29 @@ public class CommonUtil {
     }
 
     /**
-     * Close the stream quietly without any IO exception thrown.
+     * Close the stream quietly without throwing any IO exception.
      * @param closeable the stream to close, accept null
      */
     public static void closeQuietly(Closeable closeable) {
         if (closeable != null) {
             try {
                 closeable.close();
+            } catch (IOException ex) {
+                if (debug) {
+                    Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+    }
+
+    /**
+     * Release the file lock quietly without throwing any IO exception.
+     * @param fileLock the file lock
+     */
+    public static void releaseLockQuietly(FileLock fileLock) {
+        if (fileLock != null) {
+            try {
+                fileLock.release();
             } catch (IOException ex) {
                 if (debug) {
                     Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);

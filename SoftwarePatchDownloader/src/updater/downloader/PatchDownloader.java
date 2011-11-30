@@ -8,15 +8,12 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.channels.FileLock;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.crypto.BadPaddingException;
 import updater.script.Catalog;
 import updater.script.Client;
@@ -78,14 +75,24 @@ public class PatchDownloader {
      * @throws MalformedURLException any one URL of patches is invalid
      */
     public static DownloadPatchesResult downloadPatches(final DownloadPatchesListener listener, File clientScriptFile, Client clientScript, List<Patch> patches, int retryTimes, int retryDelay) throws MalformedURLException {
+        return downloadPatches(listener, patches, clientScript.getStoragePath(), retryTimes, retryDelay);
+    }
+
+    /**
+     * Download specified patches and update the client script.
+     * @param listener the download patch listener listen to progress and result
+     * @param storagePath the path for storage temporary files
+     * @param patches the patches to download
+     * @param retryTimes total number of times to retry
+     * @param retryDelay the time to delay before each retry
+     * @throws MalformedURLException any one URL of patches is invalid
+     */
+    public static DownloadPatchesResult downloadPatches(final DownloadPatchesListener listener, List<Patch> patches, String storagePath, int retryTimes, int retryDelay) throws MalformedURLException {
         if (listener == null) {
             throw new NullPointerException("argument 'listener' cannot be null");
         }
-        if (clientScriptFile == null) {
-            throw new NullPointerException("argument 'clientScriptFile' cannot be null");
-        }
-        if (clientScript == null) {
-            throw new NullPointerException("argument 'clientScript' cannot be null");
+        if (storagePath == null) {
+            throw new NullPointerException("argument 'storagePath' cannot be null");
         }
         if (patches == null) {
             throw new NullPointerException("argument 'patches' cannot be null");
@@ -95,147 +102,100 @@ public class PatchDownloader {
             return DownloadPatchesResult.COMPLETED;
         }
 
-        // check if there are patches downloaded and not be installed yet
-        if (!clientScript.getPatches().isEmpty()) {
-            // You have to restart the application to to install the update.
-            return DownloadPatchesResult.PATCHES_EXIST;
-        }
+        listener.downloadPatchesProgress(0);
+        listener.downloadPatchesMessage("Getting patches catalog ...");
 
-        // acquire lock
-        FileOutputStream lockFileOut = null;
-        FileLock lock = null;
-        try {
-            lockFileOut = new FileOutputStream(clientScript.getStoragePath() + File.separator + "update.lck");
-            lock = lockFileOut.getChannel().tryLock();
-            if (lock == null) {
-                throw new IOException("Acquire exclusive lock failed");
-            }
-        } catch (IOException ex) {
-            if (debug) {
-                Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            if (lock != null) {
-                try {
-                    lock.release();
-                } catch (IOException ex1) {
+        final AtomicInteger retryTimesRemaining = new AtomicInteger(retryTimes);
+
+        final AtomicLong lastRefreshTime = new AtomicLong(0L);
+        final AtomicInteger downloadedSizeSinceLastRefresh = new AtomicInteger(0);
+
+        final long totalDownloadSize = calculateTotalLength(patches);
+        final AtomicInteger downloadedSize = new AtomicInteger(0);
+
+        final DownloadProgressUtil downloadProgress = new DownloadProgressUtil();
+        downloadProgress.setTotalSize(totalDownloadSize);
+
+        // download
+        for (Patch update : patches) {
+            final AtomicInteger patchDownloadedSize = new AtomicInteger(0);
+            DownloadProgressListener getPatchListener = new DownloadProgressListener() {
+
+                private String totalDownloadSizeString = Util.humanReadableByteCount(totalDownloadSize, false);
+                private float totalDownloadSizeFloat = (float) totalDownloadSize;
+
+                @Override
+                public void byteStart(long pos) {
+                    patchDownloadedSize.set((int) pos);
+                    downloadProgress.setDownloadedSize(downloadedSize.get() + patchDownloadedSize.get());
+                    listener.downloadPatchesProgress((int) ((float) (downloadedSize.get() + patchDownloadedSize.get()) * 100F / (float) totalDownloadSize));
                 }
-            }
-            Util.closeQuietly(lockFileOut);
-            return DownloadPatchesResult.MULTIPLE_UPDATER_RUNNING;
-        }
 
-        try {
-            listener.downloadPatchesProgress(0);
-            listener.downloadPatchesMessage("Getting patches catalog ...");
+                @Override
+                public void byteDownloaded(int numberOfBytes) {
+                    downloadedSizeSinceLastRefresh.set(downloadedSizeSinceLastRefresh.get() + numberOfBytes);
 
-            final AtomicInteger retryTimesRemaining = new AtomicInteger(retryTimes);
+                    long currentTime = System.currentTimeMillis();
+                    if (currentTime - lastRefreshTime.get() > 200) {
+                        lastRefreshTime.set(currentTime);
 
-            final AtomicLong lastRefreshTime = new AtomicLong(0L);
-            final AtomicInteger downloadedSizeSinceLastRefresh = new AtomicInteger(0);
+                        patchDownloadedSize.set(patchDownloadedSize.get() + downloadedSizeSinceLastRefresh.get());
 
-            final long totalDownloadSize = calculateTotalLength(patches);
-            final AtomicInteger downloadedSize = new AtomicInteger(0);
-
-            final DownloadProgressUtil downloadProgress = new DownloadProgressUtil();
-            downloadProgress.setTotalSize(totalDownloadSize);
-
-            List<Patch> existingUpdates = clientScript.getPatches(); // should be empty
-
-            // download
-            for (Patch update : patches) {
-                final AtomicInteger patchDownloadedSize = new AtomicInteger(0);
-                DownloadProgressListener getPatchListener = new DownloadProgressListener() {
-
-                    private String totalDownloadSizeString = Util.humanReadableByteCount(totalDownloadSize, false);
-                    private float totalDownloadSizeFloat = (float) totalDownloadSize;
-
-                    @Override
-                    public void byteStart(long pos) {
-                        patchDownloadedSize.set((int) pos);
-                        downloadProgress.setDownloadedSize(downloadedSize.get() + patchDownloadedSize.get());
-                        listener.downloadPatchesProgress((int) ((float) (downloadedSize.get() + patchDownloadedSize.get()) * 100F / (float) totalDownloadSize));
-                    }
-
-                    @Override
-                    public void byteDownloaded(int numberOfBytes) {
-                        downloadedSizeSinceLastRefresh.set(downloadedSizeSinceLastRefresh.get() + numberOfBytes);
-
-                        long currentTime = System.currentTimeMillis();
-                        if (currentTime - lastRefreshTime.get() > 200) {
-                            lastRefreshTime.set(currentTime);
-
-                            patchDownloadedSize.set(patchDownloadedSize.get() + downloadedSizeSinceLastRefresh.get());
-
-                            downloadProgress.feed(downloadedSizeSinceLastRefresh.get());
-                            downloadedSizeSinceLastRefresh.set(0);
-
-                            listener.downloadPatchesProgress((int) ((float) (downloadedSize.get() + patchDownloadedSize.get()) * 100F / totalDownloadSizeFloat));
-                            // Downloading: 1.6 MiB / 240 MiB, 2.6 MiB/s, 1m 32s remaining
-                            listener.downloadPatchesMessage("Downloading: "
-                                    + Util.humanReadableByteCount((downloadedSize.get() + patchDownloadedSize.get()), false) + " / " + totalDownloadSizeString + ", "
-                                    + Util.humanReadableByteCount(downloadProgress.getSpeed(), false) + "/s" + ", "
-                                    + Util.humanReadableTimeCount(downloadProgress.getTimeRemaining(), 3) + " remaining");
-                        }
-                    }
-
-                    @Override
-                    public void byteTotal(long total) {
-                    }
-
-                    @Override
-                    public void downloadRetry(DownloadResult result) {
-                        retryTimesRemaining.decrementAndGet();
-
-                        lastRefreshTime.set(System.currentTimeMillis());
                         downloadProgress.feed(downloadedSizeSinceLastRefresh.get());
                         downloadedSizeSinceLastRefresh.set(0);
 
-                        byteStart(0);
+                        listener.downloadPatchesProgress((int) ((float) (downloadedSize.get() + patchDownloadedSize.get()) * 100F / totalDownloadSizeFloat));
+                        // Downloading: 1.6 MiB / 240 MiB, 2.6 MiB/s, 1m 32s remaining
+                        listener.downloadPatchesMessage("Downloading: "
+                                + Util.humanReadableByteCount((downloadedSize.get() + patchDownloadedSize.get()), false) + " / " + totalDownloadSizeString + ", "
+                                + Util.humanReadableByteCount(downloadProgress.getSpeed(), false) + "/s" + ", "
+                                + Util.humanReadableTimeCount(downloadProgress.getTimeRemaining(), 3) + " remaining");
                     }
-                };
-
-                File saveToFile = new File(clientScript.getStoragePath() + File.separator + update.getId() + ".patch");
-
-                DownloadResult updateResult = getPatch(getPatchListener, update.getDownloadUrl(), saveToFile, update.getDownloadChecksum(), update.getDownloadLength(), retryTimesRemaining.get(), retryDelay);
-                if (updateResult == DownloadResult.INTERRUPTED) {
-                    return DownloadPatchesResult.DOWNLOAD_INTERRUPTED;
-                }
-                if (updateResult != DownloadResult.SUCCEED) {
-                    return DownloadPatchesResult.ERROR;
                 }
 
-                downloadedSize.set(downloadedSize.get() + update.getDownloadLength());
+                @Override
+                public void byteTotal(long total) {
+                }
 
+                @Override
+                public void downloadRetry(DownloadResult result) {
+                    retryTimesRemaining.decrementAndGet();
+
+                    lastRefreshTime.set(System.currentTimeMillis());
+                    downloadProgress.feed(downloadedSizeSinceLastRefresh.get());
+                    downloadedSizeSinceLastRefresh.set(0);
+
+                    byteStart(0);
+                }
+            };
+
+            File saveToFile = new File(storagePath + File.separator + update.getId() + ".patch");
+
+            DownloadResult updateResult = getPatch(getPatchListener, update.getDownloadUrl(), saveToFile, update.getDownloadChecksum(), update.getDownloadLength(), retryTimesRemaining.get(), retryDelay);
+            if (updateResult == DownloadResult.INTERRUPTED) {
+                return DownloadPatchesResult.DOWNLOAD_INTERRUPTED;
+            }
+            if (updateResult != DownloadResult.SUCCEED) {
+                return DownloadPatchesResult.ERROR;
+            }
+
+            downloadedSize.set(downloadedSize.get() + update.getDownloadLength());
+            try {
                 // update client script
-                existingUpdates.add(new Patch(update.getId(),
+                listener.downloadPatchesPatchDownloaded(new Patch(update.getId(),
                         update.getType(), update.getVersionFrom(), update.getVersionFromSubsequent(), update.getVersionTo(),
                         null, null, -1,
                         update.getDownloadEncryptionType(), update.getDownloadEncryptionKey(), update.getDownloadEncryptionIV(),
                         new ArrayList<Operation>(), new ArrayList<ValidationFile>()));
-                clientScript.setPatches(existingUpdates);
-                try {
-                    Util.saveClientScript(clientScriptFile, clientScript);
-                } catch (Exception ex) {
-                    if (debug) {
-                        Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                    return DownloadPatchesResult.SAVE_TO_CLIENT_SCRIPT_FAIL;
-                }
+            } catch (IOException ex) {
+                return DownloadPatchesResult.SAVE_TO_CLIENT_SCRIPT_FAIL;
             }
-
-            listener.downloadPatchesProgress(100);
-            listener.downloadPatchesMessage("Finished");
-
-            return DownloadPatchesResult.COMPLETED;
-        } finally {
-            if (lock != null) {
-                try {
-                    lock.release();
-                } catch (IOException ex) {
-                }
-            }
-            Util.closeQuietly(lockFileOut);
         }
+
+        listener.downloadPatchesProgress(100);
+        listener.downloadPatchesMessage("Finished");
+
+        return DownloadPatchesResult.COMPLETED;
     }
 
     /**
@@ -283,26 +243,7 @@ public class PatchDownloader {
      */
     public static enum DownloadPatchesResult {
 
-        ACQUIRE_LOCK_FAILED, MULTIPLE_UPDATER_RUNNING, PATCHES_EXIST, SAVE_TO_CLIENT_SCRIPT_FAIL, DOWNLOAD_INTERRUPTED, ERROR, COMPLETED
-    }
-
-    /**
-     * The download patch listener for {@link #downloadPatches(updater.downloader.PatchDownloader.DownloadPatchesListener, java.lang.String, java.util.List)} and {@link #downloadPatches(updater.downloader.PatchDownloader.DownloadPatchesListener, java.io.File, updater.script.Client, java.util.List)}.
-     * This is used to listen to download patch progress and result notification.
-     */
-    public static interface DownloadPatchesListener {
-
-        /**
-         * Notify the download progress.
-         * @param progress the progress range from 0 to 100
-         */
-        void downloadPatchesProgress(int progress);
-
-        /**
-         * Notify the change in description of current taking action.
-         * @param message the message/description
-         */
-        void downloadPatchesMessage(String message);
+        SAVE_TO_CLIENT_SCRIPT_FAIL, DOWNLOAD_INTERRUPTED, ERROR, COMPLETED
     }
 
     /**

@@ -61,7 +61,7 @@ public class SoftwareSelfUpdater {
      * C:\tmp\2.old<br />
      * (a new line character here)
      * </p>
-     * @param args 0: lock file path, 1: replacement file path, start from 2: command and arguments to launch the software.
+     * @param args 0: lock folder path, 1: replacement file path, start from 2: command and arguments to launch the software.
      */
     public static void main(String[] args) {
         // set look & feel
@@ -94,42 +94,23 @@ public class SoftwareSelfUpdater {
         long startTime = System.currentTimeMillis();
 
         // acquire lock on the lock file to make sure there is no other launcher/downloader/self-updater running
-        FileOutputStream lockFileOut = null;
-        FileLock lock = null;
-        while (true) {
-            try {
-                lockFileOut = new FileOutputStream(args[0], true);
-                lock = lockFileOut.getChannel().tryLock();
-                if (lock != null) {
-                    // acquire lock succeed
-                    break;
-                } else {
-                    // acquire lock failed, retry
-                    throw new Exception();
-                }
-            } catch (Exception ex) {
-                // check if maxExecutionTime reached
-                if (System.currentTimeMillis() - startTime > maxExecutionTime) {
-                    JOptionPane.showMessageDialog(null, "There is another update process running.");
-                    return;
-                }
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ex1) {
-                    // currently don't allow cancel so this should not be interrupted
-                }
-
-                releaseQuietly(lock);
-                closeQuietly(lockFileOut);
-            }
+        ConcurrentLock globalLock = acquireLock(new File(args[0] + File.separator + "global_lock"), (int) (maxExecutionTime - (System.currentTimeMillis() - startTime)), 1000);
+        if (globalLock == null) {
+            JOptionPane.showMessageDialog(null, "There is another update process running.");
+            return;
         }
-
 
         // read the replacement file and delete & move file
         File replacementFile = new File(args[1]);
         BufferedReader reader = null;
         try {
+            ConcurrentLock updaterLock = acquireLock(new File(args[0] + File.separator + "updater_lock"), (int) (maxExecutionTime - (System.currentTimeMillis() - startTime)), 1000);
+            if (updaterLock == null) {
+                JOptionPane.showMessageDialog(null, "There is another update process running.");
+                return;
+            }
+            updaterLock.release();
+
             reader = new BufferedReader(new InputStreamReader(new FileInputStream(replacementFile)));
 
             while (true) {
@@ -177,8 +158,7 @@ public class SoftwareSelfUpdater {
             return;
         } finally {
             closeQuietly(reader);
-            releaseQuietly(lock);
-            closeQuietly(lockFileOut);
+            globalLock.release();
         }
         replacementFile.delete();
 
@@ -209,6 +189,44 @@ public class SoftwareSelfUpdater {
         } catch (Exception ex) {
             // ignore
         }
+    }
+
+    /**
+     * Acquire a exclusive lock on the file with retry.
+     * @param fileToLock the file to lock
+     * @param timeout the retry timeout
+     * @param retryDelay the time to sleep between retries
+     * @return the lock if acquired successfully, null if failed
+     */
+    public static ConcurrentLock acquireLock(File fileToLock, int timeout, int retryDelay) {
+        ConcurrentLock returnLock = null;
+        long acquireLockStart = System.currentTimeMillis();
+
+        FileOutputStream lockFileOut = null;
+        FileLock fileLock = null;
+        while (true) {
+            try {
+                lockFileOut = new FileOutputStream(fileToLock);
+                fileLock = lockFileOut.getChannel().tryLock();
+                if (fileLock == null) {
+                    throw new IOException("retry");
+                }
+                returnLock = new ConcurrentLock(lockFileOut, fileLock);
+                break;
+            } catch (Exception ex) {
+                if (acquireLockStart - System.currentTimeMillis() >= timeout) {
+                    break;
+                }
+                try {
+                    Thread.sleep(retryDelay);
+                } catch (InterruptedException ex1) {
+                    break;
+                }
+                continue;
+            }
+        }
+
+        return returnLock;
     }
 
     /**

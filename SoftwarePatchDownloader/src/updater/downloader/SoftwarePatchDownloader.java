@@ -15,7 +15,9 @@ import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import updater.downloader.PatchDownloader.DownloadPatchesListener;
+import updater.concurrent.ConcurrentLock;
+import updater.concurrent.LockUtil;
+import updater.concurrent.LockUtil.LockType;
 import updater.downloader.PatchDownloader.DownloadPatchesResult;
 import updater.gui.UpdaterWindow;
 import updater.script.Catalog;
@@ -92,6 +94,13 @@ public class SoftwarePatchDownloader {
         final File clientScriptFile = new File(result.getClientScriptPath());
         Information clientInfo = clientScript.getInformation();
 
+        // check if there are patches downloaded and not be installed yet
+        if (!clientScript.getPatches().isEmpty()) {
+            // You have to restart the application to to install the update.
+            JOptionPane.showMessageDialog(null, "There are patch(es) downloaded, you have to restart the application to install the update.");
+            return;
+        }
+
         // get the icon for GUI (if any specified)
         Image softwareIcon = null;
         Image updaterIcon = null;
@@ -164,6 +173,18 @@ public class SoftwarePatchDownloader {
         DownloadPatchesListener downloadPatchesListener = new DownloadPatchesListener() {
 
             @Override
+            public void downloadPatchesPatchDownloaded(Patch patch) throws IOException {
+                List<Patch> existingPatches = clientScript.getPatches();
+                existingPatches.add(patch);
+                clientScript.setPatches(existingPatches);
+                try {
+                    Util.saveClientScript(clientScriptFile, clientScript);
+                } catch (Exception ex) {
+                    throw new IOException(ex);
+                }
+            }
+
+            @Override
             public void downloadPatchesProgress(int progress) {
                 updaterGUI.setProgress(progress);
             }
@@ -214,19 +235,23 @@ public class SoftwarePatchDownloader {
         }
 
         try {
+            // acquire lock
+            ConcurrentLock lock = LockUtil.acquireLock(LockType.DOWNLOADER, new File(clientScript.getStoragePath()), 1000, 50);
+            if (lock == null) {
+                JOptionPane.showMessageDialog(updaterFrame, "There is another updater running.");
+                disposeWindow(updaterFrame);
+                return;
+            }
+
             // download patches
-            DownloadPatchesResult downloadResult = PatchDownloader.downloadPatches(downloadPatchesListener, clientScriptFile, clientScript, updatePatches, 10, 1000);
+            DownloadPatchesResult downloadResult = null;
+            try {
+                downloadResult = PatchDownloader.downloadPatches(downloadPatchesListener, clientScriptFile, clientScript, updatePatches, 10, 1000);
+            } finally {
+                lock.release();
+            }
 
             switch (downloadResult) {
-                case ACQUIRE_LOCK_FAILED:
-                case MULTIPLE_UPDATER_RUNNING:
-                    JOptionPane.showMessageDialog(updaterFrame, "There is another updater running.");
-                    disposeWindow(updaterFrame);
-                    break;
-                case PATCHES_EXIST:
-                    JOptionPane.showMessageDialog(updaterFrame, "There are patch(es) downloaded, you have to restart the application to install the update.");
-                    disposeWindow(updaterFrame);
-                    break;
                 case DOWNLOAD_INTERRUPTED:
                     // user cancel
                     disposeWindow(updaterFrame);

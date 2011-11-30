@@ -1,6 +1,8 @@
 =SoftwareLauncher=
 dir: src/org/apache/commons/codec/
 dir: src/watne/
+file: src/updater/concurrent/ConcurrentLock.java
+file: src/updater/concurrent/LockUtil.java
 file: src/updater/crypto/AESKey.java
 file: src/updater/gui/JTitledPanel.java
 file: src/updater/gui/UpdaterWindow.java
@@ -54,6 +56,8 @@ file: src/updater/util/XMLUtil.java
 file: test/updater/TestCommon.java
 
 =SoftwarePatchDownloader=
+file: src/updater/concurrent/ConcurrentLock.java
+file: src/updater/concurrent/LockUtil.java
 file: src/updater/gui/JTitledPanel.java
 file: src/updater/gui/UpdaterWindow.java
 file: src/updater/script/Catalog.java

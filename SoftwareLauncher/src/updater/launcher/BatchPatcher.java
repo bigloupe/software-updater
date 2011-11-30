@@ -1,19 +1,15 @@
 package updater.launcher;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import updater.crypto.AESKey;
 import updater.patch.Patcher;
 import updater.patch.Patcher.Replacement;
 import updater.patch.PatcherListener;
-import updater.script.Client;
 import updater.script.Patch;
 import updater.util.Pausable;
 
@@ -54,185 +50,133 @@ public class BatchPatcher implements Pausable {
         }
     }
 
-    public UpdateResult update(File clientScriptFile, Client clientScript, File tempDir, final PatcherListener listener) throws Exception {
-        if (clientScriptFile == null) {
-            throw new NullPointerException("argument 'clientScriptFile' cannot be null");
+    /**
+     * Apply patches to {@code applyToFolder}. 
+     * @param listener the listener
+     * @param applyToFolder the root directory of the software
+     * @param tempDir temporary folder to store temporary generated files while patching
+     * @param fromVersion the current version of the software
+     * @param patches the patches to apply, must be in sequence
+     * @return 
+     * @throws IOException 
+     */
+    public List<Replacement> doPatch(final BatchPatchListener listener, File applyToFolder, File tempDir, String fromVersion, List<Patch> patches) throws IOException {
+        if (listener == null) {
+            throw new NullPointerException("argument 'listener' cannot be null");
         }
-        if (clientScript == null) {
-            throw new NullPointerException("argument 'clientScript' cannot be null");
+        if (applyToFolder == null) {
+            throw new NullPointerException("argument 'applyToFolder' cannot be null");
         }
         if (tempDir == null) {
             throw new NullPointerException("argument 'tempDir' cannot be null");
         }
-        if (listener == null) {
-            throw new NullPointerException("argument 'listener' cannot be null");
+        if (fromVersion == null) {
+            throw new NullPointerException("argument 'fromVersion' cannot be null");
+        }
+        if (patches == null) {
+            throw new NullPointerException("argument 'patches' cannot be null");
+        }
+        if (!applyToFolder.isDirectory()) {
+            throw new IOException("argument 'applyToFolder' is not a valid folder");
+        }
+        if (!tempDir.isDirectory()) {
+            throw new IOException("argument 'tempDir' is not a valid folder");
+        }
+        List<Patch> _patches = new ArrayList<Patch>(patches);
+
+        List<Replacement> returnList = new ArrayList<Replacement>();
+
+        if (_patches.isEmpty()) {
+            return returnList;
         }
 
-        UpdateResult returnResult = new UpdateResult(false, new ArrayList<Replacement>());
+        listener.patchProgress(1, "Starting ...");
+        // iterate patches and do patch
+        final float stepSize = 100F / (float) _patches.size();
 
-        List<Patch> patches = clientScript.getPatches();
-        if (patches.isEmpty()) {
-            return new UpdateResult(true, new ArrayList<Replacement>());
-        }
+        int count = -1;
+        boolean previousPatchingAllSucceed = true;
+        String currentVersion = fromVersion;
+        Map<String, String> destinationReplacement = new HashMap<String, String>();
 
-        // patch
-        FileOutputStream lockFileOut = null;
-        FileLock lock = null;
-        try {
-            Map<String, Replacement> replacementMap = new HashMap<String, Replacement>(); // use map to prevent duplication
+        for (Patch _patch : _patches) {
+            count++;
 
-            listener.patchProgress(1, "Check to see if there is another updater running ...");
-            // acquire lock
-            lockFileOut = new FileOutputStream(tempDir + "/update.lck");
-            lock = lockFileOut.getChannel().tryLock();
-            if (lock == null) {
-                throw new IOException("There is another updater running.");
+            // check if the update if not suitable
+            if (!currentVersion.equals(_patch.getVersionFrom())) {
+                // normally should not reach here
+                listener.patchInvalid(_patch);
+                continue;
             }
 
-            listener.patchProgress(3, "Starting ...");
-            // iterate patches and do patch
-            boolean previousPatchingAllSucceed = true;
-            final float stepSize = 97F / (float) patches.size();
-            int count = -1;
-            Iterator<Patch> iterator = patches.iterator();
-            while (iterator.hasNext()) {
-                count++;
-                Patch _update = iterator.next();
+            // temporary storage folder for this patch
+            File tempDirForPatch = new File(tempDir.getAbsolutePath() + "/" + _patch.getId());
+            if (!tempDirForPatch.isDirectory() && !tempDirForPatch.mkdirs()) {
+                throw new IOException("Failed to create folder for patches.");
+            }
 
-                // check if the update if not suitable
-                if (Util.compareVersion(clientScript.getVersion(), _update.getVersionFrom()) > 0) {
-                    // normally should not reach here
-                    iterator.remove();
-                    // save the client scirpt
-                    clientScript.setPatches(patches);
-                    Util.saveClientScript(clientScriptFile, clientScript);
-                    continue;
-                }
-                if (!_update.getVersionFrom().equals(clientScript.getVersion())) {
-                    // the 'version from' of this update dun match with current version
-                    // normally should not happen
-                    continue;
-                }
+            AESKey aesKey = null;
+            if (_patch.getDownloadEncryptionKey() != null) {
+                aesKey = new AESKey(Util.hexStringToByteArray(_patch.getDownloadEncryptionKey()), Util.hexStringToByteArray(_patch.getDownloadEncryptionIV()));
+            }
 
-                // temporary storage folder for this patch
-                File tempDirForPatch = new File(tempDir.getAbsolutePath() + "/" + _update.getId());
-                if (!tempDirForPatch.isDirectory() && !tempDirForPatch.mkdirs()) {
-                    throw new IOException("Failed to create folder for patches.");
-                }
+            File patchFile = new File(tempDir.getAbsolutePath() + File.separator + _patch.getId() + ".patch");
+            File decryptedPatchFile = new File(tempDir.getAbsolutePath() + File.separator + _patch.getId() + ".patch.decrypted");
+            decryptedPatchFile.deleteOnExit();
+            if (!patchFile.exists()) {
+                listener.patchInvalid(_patch);
+                throw new IOException("Patch file not found: " + patchFile.getAbsolutePath());
+            }
 
-                File patchFile = new File(tempDir.getAbsolutePath() + File.separator + _update.getId() + ".patch");
-                File decryptedPatchFile = new File(tempDir.getAbsolutePath() + File.separator + _update.getId() + ".patch.decrypted");
-                decryptedPatchFile.deleteOnExit();
-                if (!patchFile.exists()) {
-                    // if the patch not exist, remove all patches
-                    // save the client scirpt
-                    clientScript.setPatches(new ArrayList<Patch>());
-                    Util.saveClientScript(clientScriptFile, clientScript);
-                    throw new IOException("Patch file not found: " + patchFile.getAbsolutePath());
+            // initialize patcher
+            final int _count = count;
+            patcher = new Patcher(new PatcherListener() {
+
+                @Override
+                public void patchProgress(int percentage, String message) {
+                    float base = stepSize * (float) _count;
+                    float addition = ((float) percentage / 100F) * stepSize;
+                    listener.patchProgress((int) (base + addition), message);
                 }
 
-                // patch
-                AESKey aesKey = null;
-                if (_update.getDownloadEncryptionKey() != null) {
-                    aesKey = new AESKey(Util.hexStringToByteArray(_update.getDownloadEncryptionKey()), Util.hexStringToByteArray(_update.getDownloadEncryptionIV()));
+                @Override
+                public void patchEnableCancel(boolean enable) {
+                    listener.patchEnableCancel(enable);
                 }
-
-                // initialize patcher
-                final int _count = count;
-                patcher = new Patcher(new PatcherListener() {
-
-                    @Override
-                    public void patchProgress(int percentage, String message) {
-                        float base = 3F + (stepSize * (float) _count);
-                        float addition = ((float) percentage / 100F) * stepSize;
-                        listener.patchProgress((int) (base + addition), message);
-                    }
-
-                    @Override
-                    public void patchEnableCancel(boolean enable) {
-                        listener.patchEnableCancel(enable);
-                    }
-                }, new File(tempDirForPatch + File.separator + "action.log"), new File("." + File.separator), tempDirForPatch);
-                List<Replacement> replacementList = patcher.doPatch(patchFile, _update.getId(), aesKey, decryptedPatchFile, new HashMap<String, String>());
-                decryptedPatchFile.delete();
-                for (Replacement _replacement : replacementList) {
-                    replacementMap.put(_replacement.getDestination(), _replacement);
+            }, new File(tempDirForPatch + File.separator + "action.log"), applyToFolder, tempDirForPatch);
+            List<Replacement> replacementList = patcher.doPatch(patchFile, _patch.getId(), aesKey, decryptedPatchFile, destinationReplacement);
+            for (Replacement _replacement : replacementList) {
+                switch (_replacement.getOperationType()) {
+                    case REMOVE:
+                        destinationReplacement.put(_replacement.getDestination(), _replacement.getBackupFilePath());
+                        break;
+                    case REPLACE:
+                    case PATCH:
+                    case FORCE:
+                        destinationReplacement.put(_replacement.getDestination(), _replacement.getNewFilePath());
+                        break;
+                    case NEW:
+                        if (!_replacement.getNewFilePath().isEmpty() && !_replacement.getDestination().isEmpty()) {
+                            destinationReplacement.put(_replacement.getDestination(), _replacement.getNewFilePath());
+                        }
+                        break;
                 }
-                if (!replacementList.isEmpty()) {
-                    previousPatchingAllSucceed = false;
-                }
+            }
+            if (!replacementList.isEmpty()) {
+                previousPatchingAllSucceed = false;
+            }
 
-                // remove 'update' from updates list
-                iterator.remove();
+            currentVersion = _patch.getVersionTo();
 
-                // save the client scirpt
-                clientScript.setVersion(_update.getVersionTo());
-                clientScript.setPatches(patches);
-                Util.saveClientScript(clientScriptFile, clientScript);
-
-//                Util.truncateFolder(tempDirForPatch);
-//                tempDirForPatch.delete();
-
-                if (previousPatchingAllSucceed) {
-                    patcher.clearBackup();
-                }
-
-                patcher = null;
+            if (previousPatchingAllSucceed) {
+                listener.patchFinished(_patch);
+                patcher.clearBackup();
                 patchFile.delete();
             }
 
-            returnResult = new UpdateResult(true, new ArrayList<Replacement>(replacementMap.values()));
-        } finally {
-            if (lock != null) {
-                try {
-                    lock.release();
-                } catch (IOException ex) {
-                }
-            }
-            Util.closeQuietly(lockFileOut);
+            patcher = null;
         }
 
-        return returnResult;
-    }
-
-    /**
-     * The update result for {@link #update(java.io.File, updater.script.Client, java.io.File, updater.patch.PatcherListener)}..
-     */
-    public static class UpdateResult {
-
-        /**
-         * Indicate if the update succeed or not.
-         */
-        protected boolean updateSucceed;
-        /**
-         * The list of file that failed do the replace operation due to possibly file locking.
-         */
-        protected List<Replacement> replacementList;
-
-        /**
-         * Constructor.
-         * @param updateSucceed true if the update succeed, false if not
-         * @param replacementList the list of file that failed do the replace operation due to possibly file locking
-         */
-        public UpdateResult(boolean updateSucceed, List<Replacement> replacementList) {
-            this.updateSucceed = updateSucceed;
-            this.replacementList = replacementList == null ? new ArrayList<Replacement>() : new ArrayList<Replacement>(replacementList);
-        }
-
-        /**
-         * Check if the update succeed or not.
-         * @return true if the update succeed, false if not
-         */
-        public boolean isUpdateSucceed() {
-            return updateSucceed;
-        }
-
-        /**
-         * Get the list of file that failed do the replace operation due to possibly file locking.
-         * @return the list
-         */
-        public List<Replacement> getReplacementList() {
-            return new ArrayList<Replacement>(replacementList);
-        }
+        return returnList;
     }
 }

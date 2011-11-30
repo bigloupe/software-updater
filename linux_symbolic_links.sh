@@ -20,6 +20,9 @@ mkdir -p "$SOFTWARE_DIRECTORY/src/org/apache/commons"
 linkDir src/org/apache/commons/codec
 mkdir -p "$SOFTWARE_DIRECTORY/src"
 linkDir src/watne
+mkdir -p "$SOFTWARE_DIRECTORY/src/updater/concurrent"
+linkFile src/updater/concurrent/ConcurrentLock.java
+linkFile src/updater/concurrent/LockUtil.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/crypto"
 linkFile src/updater/crypto/AESKey.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/gui"
@@ -90,6 +93,9 @@ linkFile test/updater/TestCommon.java
 
 SOFTWARE_DIRECTORY="SoftwarePatchDownloader"
 
+mkdir -p "$SOFTWARE_DIRECTORY/src/updater/concurrent"
+linkFile src/updater/concurrent/ConcurrentLock.java
+linkFile src/updater/concurrent/LockUtil.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/gui"
 linkFile src/updater/gui/JTitledPanel.java
 linkFile src/updater/gui/UpdaterWindow.java

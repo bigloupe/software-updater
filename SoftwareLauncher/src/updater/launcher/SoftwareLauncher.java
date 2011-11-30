@@ -21,13 +21,17 @@ import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import javax.xml.transform.TransformerException;
+import updater.concurrent.ConcurrentLock;
+import updater.concurrent.LockUtil;
+import updater.concurrent.LockUtil.LockType;
 import updater.gui.UpdaterWindow;
-import updater.launcher.BatchPatcher.UpdateResult;
 import updater.patch.Patcher.Replacement;
-import updater.patch.PatcherListener;
 import updater.script.Client;
 import updater.script.Client.Information;
 import updater.script.InvalidFormatException;
+import updater.script.Patch;
+import updater.util.CommonUtil;
 import updater.util.CommonUtil.GetClientScriptResult;
 
 /**
@@ -68,9 +72,9 @@ public class SoftwareLauncher {
      * @throws IOException possible failure: failed to copy self-updater to desire destination, failed to write to replacement file or failed to execute the command
      * @throws LaunchFailedException launch failed, possible jar not found, class not found or main method not found
      */
-    public static void start(File clientScriptFile, Client client, String[] args) throws IOException, LaunchFailedException {
+    public static void start(final File clientScriptFile, final Client client, String[] args) throws IOException, LaunchFailedException {
         boolean launchSoftware = false;
-        UpdateResult updateResult = null;
+        List<Replacement> replacementFailList = new ArrayList<Replacement>();
         if (!client.getPatches().isEmpty()) {
             String storagePath = client.getStoragePath();
             Information clientInfo = client.getInformation();
@@ -142,8 +146,11 @@ public class SoftwareLauncher {
             updaterFrame.setVisible(true);
 
             // update
+            ConcurrentLock lock = null;
             try {
-                updateResult = batchPatcher.update(clientScriptFile, client, new File(storagePath), new PatcherListener() {
+                lock = LockUtil.acquireLock(LockType.UPDATER, new File(storagePath), 1000, 50);
+
+                replacementFailList = batchPatcher.doPatch(new BatchPatchListener() {
 
                     @Override
                     public void patchProgress(int percentage, String message) {
@@ -155,10 +162,35 @@ public class SoftwareLauncher {
                     public void patchEnableCancel(boolean enable) {
                         updaterGUI.setCancelEnabled(enable);
                     }
-                });
+
+                    @Override
+                    public void patchInvalid(Patch patch) throws IOException {
+                        List<Patch> patches = client.getPatches();
+                        patches.remove(patch);
+                        client.setPatches(patches);
+                        try {
+                            CommonUtil.saveClientScript(clientScriptFile, client);
+                        } catch (TransformerException ex) {
+                            throw new IOException(ex);
+                        }
+                    }
+
+                    @Override
+                    public void patchFinished(Patch patch) throws IOException {
+                        List<Patch> patches = client.getPatches();
+                        patches.remove(patch);
+                        client.setPatches(patches);
+                        client.setVersion(patch.getVersionTo());
+                        try {
+                            CommonUtil.saveClientScript(clientScriptFile, client);
+                        } catch (TransformerException ex) {
+                            throw new IOException(ex);
+                        }
+                    }
+                }, new File(storagePath), new File("." + File.separator), client.getVersion(), client.getPatches());
 
                 // check if there is any replacement failed and do the replacement with the self updater
-                handleReplacement(client, updateResult.getReplacementList(), args);
+                handleReplacement(client, replacementFailList, args);
             } catch (Exception ex) {
                 Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
 
@@ -176,11 +208,12 @@ public class SoftwareLauncher {
             } finally {
                 updaterFrame.setVisible(false);
                 updaterFrame.dispose();
+                lock.release();
             }
         }
 
         // launch/start the software
-        if (updateResult == null || (updateResult.isUpdateSucceed() || launchSoftware)) {
+        if (replacementFailList.isEmpty() || launchSoftware) {
             String launchType = client.getLaunchType();
             String afterLaunchOperation = client.getLaunchAfterLaunch();
             String jarPath = client.getLaunchJarPath();
@@ -238,7 +271,7 @@ public class SoftwareLauncher {
         commands.add(javaBinary);
         commands.add("-jar");
         commands.add(clientScript.getStoragePath() + File.separator + "SoftwareSelfUpdater.jar");
-        commands.add(clientScript.getStoragePath() + File.separator + "update.lck");
+        commands.add(clientScript.getStoragePath());
         commands.add(replacementFile.getAbsolutePath());
 
         if (clientScript.getLaunchType().equals("jar")) {
@@ -272,6 +305,7 @@ public class SoftwareLauncher {
             for (Replacement _replacement : replacementList) {
                 writer.println(_replacement.getDestination());
                 writer.println(_replacement.getNewFilePath());
+                writer.println(_replacement.getBackupFilePath());
             }
         } finally {
             Util.closeQuietly(writer);

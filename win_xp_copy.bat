@@ -9,6 +9,9 @@ mkdir "%softwareDirectory%\src\org\apache\commons"
 call:copyDir src\org\apache\commons\codec
 mkdir "%softwareDirectory%\src"
 call:copyDir src\watne
+mkdir "%softwareDirectory%\src\updater\concurrent"
+call:copyFile src\updater\concurrent\ConcurrentLock.java
+call:copyFile src\updater\concurrent\LockUtil.java
 mkdir "%softwareDirectory%\src\updater\crypto"
 call:copyFile src\updater\crypto\AESKey.java
 mkdir "%softwareDirectory%\src\updater\gui"
@@ -79,6 +82,9 @@ call:copyFile test\updater\TestCommon.java
 
 set softwareDirectory=SoftwarePatchDownloader
 
+mkdir "%softwareDirectory%\src\updater\concurrent"
+call:copyFile src\updater\concurrent\ConcurrentLock.java
+call:copyFile src\updater\concurrent\LockUtil.java
 mkdir "%softwareDirectory%\src\updater\gui"
 call:copyFile src\updater\gui\JTitledPanel.java
 call:copyFile src\updater\gui\UpdaterWindow.java

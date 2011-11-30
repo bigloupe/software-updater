@@ -74,7 +74,7 @@ public class SoftwareSelfUpdaterTest {
             testFile.delete();
             assertFalse(testFile.exists());
 
-            SoftwareSelfUpdater.main(new String[]{"test folder/file lock.lck", "test folder/replacement list.txt", "java", "-jar", "test folder/LaunchTest.jar", testFile.getAbsolutePath()});
+            SoftwareSelfUpdater.main(new String[]{"test folder/", "test folder/replacement list.txt", "java", "-jar", "test folder/LaunchTest.jar", testFile.getAbsolutePath()});
 
             assertEquals(new String(readFile(new File("test folder/0.txt"))), "1");
             assertEquals(new String(readFile(new File("test folder/2.txt"))), "0");
@@ -118,7 +118,7 @@ public class SoftwareSelfUpdaterTest {
             FileChannel channel = null;
             FileLock lock = null;
             try {
-                fout = new FileOutputStream(new File("test folder/file lock.lck"));
+                fout = new FileOutputStream(new File("test folder/global_lock"));
                 channel = fout.getChannel();
                 lock = channel.tryLock();
             } finally {
@@ -134,7 +134,7 @@ public class SoftwareSelfUpdaterTest {
 
                 @Override
                 public void run() {
-                    SoftwareSelfUpdater.main(new String[]{"test folder/file lock.lck", "test folder/replacement list.txt", "java", "-jar", "test folder/LaunchTest.jar", testFile.getAbsolutePath()});
+                    SoftwareSelfUpdater.main(new String[]{"test folder/", "test folder/replacement list.txt", "java", "-jar", "test folder/LaunchTest.jar", testFile.getAbsolutePath()});
                     runFinished.set(true);
                     runFinishedTime.set(System.currentTimeMillis());
                 }
@@ -219,7 +219,7 @@ public class SoftwareSelfUpdaterTest {
 
                 @Override
                 public void run() {
-                    SoftwareSelfUpdater.main(new String[]{"test folder/file lock.lck", "test folder/replacement list.txt", "java", "-jar", "test folder/LaunchTest.jar", testFile.getAbsolutePath()});
+                    SoftwareSelfUpdater.main(new String[]{"test folder/", "test folder/replacement list.txt", "java", "-jar", "test folder/LaunchTest.jar", testFile.getAbsolutePath()});
                     runFinished.set(true);
                     runFinishedTime.set(System.currentTimeMillis());
                 }
