@@ -13,7 +13,6 @@ public interface BatchPatchListener extends PatcherListener {
     /**
      * Notify the invalid patch.
      * @param patch the patch
-     * @return the patch
      * @throws IOException error occurred when recording
      */
     void patchInvalid(Patch patch) throws IOException;
@@ -21,7 +20,6 @@ public interface BatchPatchListener extends PatcherListener {
     /**
      * Notify the patch has been applied successfully.
      * @param patch the patch
-     * @return the patch
      * @throws IOException error occurred when recording
      */
     void patchFinished(Patch patch) throws IOException;

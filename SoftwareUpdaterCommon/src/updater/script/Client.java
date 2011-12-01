@@ -110,7 +110,7 @@ public class Client {
             this.launchCommands = new ArrayList<String>();
             return;
         }
-        this.launchCommands = launchCommands;
+        this.launchCommands = new ArrayList<String>(launchCommands);
     }
 
     public String getLaunchJarPath() {

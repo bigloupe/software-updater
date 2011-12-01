@@ -59,7 +59,7 @@ public class HTTPDownloader implements Pausable, Interruptible {
     /**
      * Indicate if currently is downloading a file.
      */
-    protected boolean downloading = false;
+    protected boolean downloading;
 
     /**
      * Constructor.
@@ -68,6 +68,7 @@ public class HTTPDownloader implements Pausable, Interruptible {
         resumeFile = null;
         outputTo = null;
         ifModifiedSince = -1;
+        downloading = false;
 
         interruptedTasks = Collections.synchronizedList(new ArrayList<Runnable>());
         pause = false;
@@ -150,13 +151,14 @@ public class HTTPDownloader implements Pausable, Interruptible {
 
     /**
      * Download.
-     * @param listener the listener to listen to download progress
+     * @param listener the listener to listen to download progress, can be null
      * @param url the URL to download from
      * @param fileSHA256 the expected SHA-256 checksum of the final downloaded file, null means not specified
      * @param expectedLength expected file size in bytes to download, -1 means no specified
+     * @param retryTimes the maximum allowed retry times
+     * @param retryDelay the time to sleep between retries, should >= 0 (in milli seconds)
      * @return the result
      * @throws MalformedURLException URL is invalid
-     * @throws IOException error occurred when reading
      */
     public DownloadResult download(DownloadProgressListener listener, URL url, String fileSHA256, int expectedLength, int retryTimes, int retryDelay) throws MalformedURLException {
         if (url == null) {
@@ -306,7 +308,8 @@ public class HTTPDownloader implements Pausable, Interruptible {
             OutputStream outputToOut = null;
             if (resumeFile != null) {
                 resumeFileOut = new BufferedOutputStream(new FileOutputStream(resumeFile, startRange != 0), 32768);
-            } else if (outputTo != null) {
+            }
+            if (outputTo != null) {
                 outputToOut = outputTo;
             }
             int byteRead, cumulateByteRead = 0;
@@ -370,6 +373,14 @@ public class HTTPDownloader implements Pausable, Interruptible {
      * Retry the download.
      * @param result the reason to retry
      * @param truncateResumeFileOnRetry whether truncate the {@code resumeFile} on retry or not
+     * @param listener see {@link #download(updater.util.DownloadProgressListener, java.net.URL, java.lang.String, int, int, int)}
+     * @param url see {@link #download(updater.util.DownloadProgressListener, java.net.URL, java.lang.String, int, int, int)}
+     * @param fileSHA256 see {@link #download(updater.util.DownloadProgressListener, java.net.URL, java.lang.String, int, int, int)}
+     * @param expectedLength see {@link #download(updater.util.DownloadProgressListener, java.net.URL, java.lang.String, int, int, int)}
+     * @param retryTimes see {@link #download(updater.util.DownloadProgressListener, java.net.URL, java.lang.String, int, int, int)}
+     * @param retryDelay see {@link #download(updater.util.DownloadProgressListener, java.net.URL, java.lang.String, int, int, int)}
+     * @return the retry result
+     * @throws MalformedURLException 
      */
     protected DownloadResult retry(DownloadResult result, boolean truncateResumeFileOnRetry, DownloadProgressListener listener, URL url, String fileSHA256, int expectedLength, int retryTimes, int retryDelay) throws MalformedURLException {
         if (retryTimes <= 0) {
@@ -427,12 +438,18 @@ public class HTTPDownloader implements Pausable, Interruptible {
         RANGE_LENGTH_NOT_MATCH_CONTENT_LENGTH("RANGE_LENGTH_NOT_MATCH_CONTENT_LENGTH");
         protected final String value;
 
+        /**
+         * Constructor.
+         * 
+         * @param value 
+         */
         DownloadResult(String value) {
             this.value = value;
         }
 
         /**
-         * Get the unique integer representation for this type of compression..
+         * Get the unique integer representation for this type of compression.
+         * 
          * @return the integer value
          */
         public String getValue() {
@@ -441,7 +458,9 @@ public class HTTPDownloader implements Pausable, Interruptible {
 
         /**
          * Get the {@link updater.util.HTTPDownloader.DownloadResult} by the downloadResults' string value.
+         * 
          * @param value the string value
+         * 
          * @return the {@link updater.util.HTTPDownloader.DownloadResult} or null if not correspondent found
          */
         public static DownloadResult getDownloadResult(String value) {
@@ -456,9 +475,11 @@ public class HTTPDownloader implements Pausable, Interruptible {
     }
 
     /**
-     * Read the content in the <code>file</code> and put into the <code>digest</code>.
+     * Read the content in the {@code file} and put into the {@code digest}.
+     * 
      * @param digest the digest object
      * @param file the file to read the content from
+     * 
      * @throws IOException error occurred when reading file
      */
     protected static void digest(MessageDigest digest, File file) throws IOException {

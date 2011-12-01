@@ -8,6 +8,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+    updater.concurrent.LockUtilTest.class,
     updater.crypto.AESKeyTest.class,
     updater.crypto.KeyGeneratorTest.class,
     updater.crypto.RSAKeyTest.class,
@@ -15,7 +16,8 @@ import org.junit.runners.Suite;
     updater.patch.PatchTest.class,
     updater.script.ScriptTest.class,
     updater.util.CommonUtilTest.class,
-    updater.util.DownloadProgressUtilTest.class
+    updater.util.DownloadProgressUtilTest.class,
+    updater.util.HTTPDownloaderTest.class
 })
 public class TestSuite {
 }

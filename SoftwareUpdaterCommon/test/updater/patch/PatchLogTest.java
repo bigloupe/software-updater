@@ -88,6 +88,8 @@ public class PatchLogTest {
             writer1.logPatch(Action.FAILED, 5, OperationType.REMOVE, "", "", "");
             writer1.logPatch(Action.START, 6, OperationType.PATCH, "backup7", "from7", "to7");
             writer1.logPatch(Action.FINISH, 6, OperationType.PATCH, "", "", "");
+            writer1.logPatch(Action.START, 2, OperationType.REMOVE, "backup3", "from3", "to3");
+            writer1.logPatch(Action.FINISH, 2, OperationType.REMOVE, "", "", "");
             writer1.logEnd();
 
             writer2.logStart(2, "1.0.1", "1.0.3");
@@ -98,6 +100,7 @@ public class PatchLogTest {
             writer2.logPatch(Action.FINISH, 1, OperationType.NEW, "", "", "");
             writer2.logPatch(Action.START, 2, OperationType.REMOVE, "backup3", "from3", "to3");
             writer2.logPatch(Action.FAILED, 2, OperationType.REMOVE, "", "", "");
+            writer2.logRevert(0);
             writer2.logPatch(Action.START, 3, OperationType.PATCH, "backup4", "from4", "to4");
 
             writer3.logStart(3, "1.0.3", "1.0.5");
@@ -156,8 +159,8 @@ public class PatchLogTest {
 
             assertTrue(logStarted);
             assertTrue(logEnded);
-            assertArrayEquals(new PatchRecord[]{new PatchRecord(2, "backup3", "from3", "to3"), new PatchRecord(4, "backup5", "from5", "to5"), new PatchRecord(5, "backup6", "from6", "to6")}, failList.toArray(new PatchRecord[failList.size()]));
-            assertArrayEquals(new PatchRecord[]{new PatchRecord(6, "backup7", "from7", "to7"), new PatchRecord(3, "backup4", "from4", "to4"), new PatchRecord(1, "backup2", "from2", "to2"), new PatchRecord(0, "backup1", "from1", "to1")}, revertList.toArray(new PatchRecord[revertList.size()]));
+            assertArrayEquals(new PatchRecord[]{new PatchRecord(4, "backup5", "from5", "to5"), new PatchRecord(5, "backup6", "from6", "to6")}, failList.toArray(new PatchRecord[failList.size()]));
+            assertArrayEquals(new PatchRecord[]{new PatchRecord(6, "backup7", "from7", "to7"), new PatchRecord(3, "backup4", "from4", "to4"), new PatchRecord(2, "backup3", "from3", "to3"), new PatchRecord(1, "backup2", "from2", "to2"), new PatchRecord(0, "backup1", "from1", "to1")}, revertList.toArray(new PatchRecord[revertList.size()]));
             assertEquals(7, startFileIndex);
 
 
@@ -169,8 +172,8 @@ public class PatchLogTest {
 
             assertTrue(logStarted);
             assertFalse(logEnded);
-            assertArrayEquals(new PatchRecord[]{new PatchRecord(2, "backup3", "from3", "to3"), new PatchRecord(3, "backup4", "from4", "to4")}, failList.toArray(new PatchRecord[failList.size()]));
-            assertArrayEquals(new PatchRecord[]{new PatchRecord(1, "backup2", "from2", "to2"), new PatchRecord(0, "backup1", "from1", "to1")}, revertList.toArray(new PatchRecord[revertList.size()]));
+            assertArrayEquals(new PatchRecord[]{new PatchRecord(0, "backup1", "from1", "to1"), new PatchRecord(2, "backup3", "from3", "to3"), new PatchRecord(3, "backup4", "from4", "to4")}, failList.toArray(new PatchRecord[failList.size()]));
+            assertArrayEquals(new PatchRecord[]{new PatchRecord(1, "backup2", "from2", "to2")}, revertList.toArray(new PatchRecord[revertList.size()]));
             assertEquals(3, startFileIndex);
 
 

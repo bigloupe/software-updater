@@ -93,6 +93,9 @@ public class TestCommon {
         toFolder.mkdirs();
 
         File[] files = fromFolder.listFiles();
+        if (files == null) {
+            throw new IOException("Error occurred when listing the files in folder: " + fromFolder.getAbsolutePath());
+        }
         for (File file : files) {
             if (file.isDirectory()) {
                 copyFolder(file, new File(toFolder.getAbsolutePath() + File.separator + file.getName()));

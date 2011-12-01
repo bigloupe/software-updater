@@ -150,7 +150,7 @@ public class PatchDownloaderTest {
         assertTrue(originalFileString != null);
 
         //<editor-fold defaultstate="collapsed" desc="test normal request">
-        System.out.println("- test normal request");
+        System.out.println("+ test normal request");
 
         String url = TestCommon.urlRoot + manipulatedXmlFileName;
         long lastUpdateDate = 0L;
@@ -252,8 +252,8 @@ public class PatchDownloaderTest {
         DownloadResult result = PatchDownloader.getPatch(listener, url, saveToFile, fileSHA1, expectedLength, 0, 0);
 
         assertTrue(result == DownloadResult.SUCCEED);
-        assertEquals(0, (long) startingPosition.get());
-        assertEquals(originalFile.length(), (int) cumulativeByteDownloaded.get());
+        assertEquals(0, startingPosition.get());
+        assertEquals(originalFile.length(), cumulativeByteDownloaded.get());
         assertEquals(originalFile.length(), saveToFile.length());
         assertEquals(Util.getSHA256String(originalFile), Util.getSHA256String(saveToFile));
         //</editor-fold>
@@ -338,8 +338,8 @@ public class PatchDownloaderTest {
         TestCommon.restoreErrorOutput();
 
         assertFalse(result == DownloadResult.SUCCEED);
-        assertEquals(initFileSize, (long) startingPosition.get());
-        assertEquals(originalFile.length() - initFileSize, (int) cumulativeByteDownloaded.get());
+        assertEquals(initFileSize, startingPosition.get());
+        assertEquals(originalFile.length() - initFileSize, cumulativeByteDownloaded.get());
         assertEquals(originalFile.length(), saveToFile.length());
         assertFalse(Util.getSHA256String(originalFile).equals(Util.getSHA256String(saveToFile)));
         //</editor-fold>
@@ -380,8 +380,8 @@ public class PatchDownloaderTest {
         result = PatchDownloader.getPatch(listener, url, saveToFile, fileSHA1, expectedLength, 0, 0);
 
         assertTrue(result == DownloadResult.SUCCEED);
-        assertEquals(7007, (long) startingPosition.get());
-        assertEquals(originalFile.length() - initFileSize, (int) cumulativeByteDownloaded.get());
+        assertEquals(7007, startingPosition.get());
+        assertEquals(originalFile.length() - initFileSize, cumulativeByteDownloaded.get());
         assertEquals(originalFile.length(), saveToFile.length());
         assertEquals(Util.getSHA256String(originalFile), Util.getSHA256String(saveToFile));
         //</editor-fold>
@@ -421,8 +421,8 @@ public class PatchDownloaderTest {
         result = PatchDownloader.getPatch(listener, url, saveToFile, fileSHA1, expectedLength, 0, 0);
 
         assertTrue(result == DownloadResult.SUCCEED);
-        assertEquals(0, (long) startingPosition.get());
-        assertEquals(originalFile.length(), (int) cumulativeByteDownloaded.get());
+        assertEquals(0, startingPosition.get());
+        assertEquals(originalFile.length(), cumulativeByteDownloaded.get());
         assertEquals(originalFile.length(), saveToFile.length());
         assertEquals(Util.getSHA256String(originalFile), Util.getSHA256String(saveToFile));
         //</editor-fold>
@@ -462,8 +462,8 @@ public class PatchDownloaderTest {
         result = PatchDownloader.getPatch(listener, url, saveToFile, fileSHA1, expectedLength, 0, 0);
 
         assertTrue(result == DownloadResult.SUCCEED);
-        assertEquals(0, (long) startingPosition.get());
-        assertEquals(originalFile.length(), (int) cumulativeByteDownloaded.get());
+        assertEquals(0, startingPosition.get());
+        assertEquals(originalFile.length(), cumulativeByteDownloaded.get());
         assertEquals(originalFile.length(), saveToFile.length());
         assertEquals(Util.getSHA256String(originalFile), Util.getSHA256String(saveToFile));
         //</editor-fold>

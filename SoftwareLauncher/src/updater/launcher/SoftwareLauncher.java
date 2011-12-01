@@ -26,6 +26,7 @@ import updater.concurrent.ConcurrentLock;
 import updater.concurrent.LockUtil;
 import updater.concurrent.LockUtil.LockType;
 import updater.gui.UpdaterWindow;
+import updater.patch.Patcher;
 import updater.patch.Patcher.Replacement;
 import updater.script.Client;
 import updater.script.Client.Information;
@@ -187,22 +188,26 @@ public class SoftwareLauncher {
                             throw new IOException(ex);
                         }
                     }
-                }, new File(storagePath), new File("." + File.separator), client.getVersion(), client.getPatches());
+                }, new File("." + File.separator), new File(storagePath), client.getVersion(), client.getPatches());
 
                 // check if there is any replacement failed and do the replacement with the self updater
-                handleReplacement(client, replacementFailList, args);
+                if (replacementFailList.isEmpty()) {
+                    launchSoftware = true;
+                } else {
+                    handleReplacement(client, replacementFailList, args);
+                }
             } catch (Exception ex) {
                 Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex);
 
                 JOptionPane.showMessageDialog(updaterFrame, "Error occurred when updating the software.");
 
                 if (updaterGUI.isCancelEnabled()) {
-                    Object[] options = {"Launch", "Exit"};
-                    int result = JOptionPane.showOptionDialog(updaterFrame, "Continue to launch the software?", "Continue Action", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+                    Object[] options = {"Recover", "Exit & Restart manually"};
+                    int result = JOptionPane.showOptionDialog(null, "Recover back to original version or exit & restart your computer manually?", "Update Failed", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
                     if (result == 0) {
-                        launchSoftware = true;
+                        doRevert(client.getPatches(), new File(storagePath));
                     } else {
-                        JOptionPane.showMessageDialog(updaterFrame, "You can restart the software to try to update software again.");
+                        return;
                     }
                 }
             } finally {
@@ -210,15 +215,19 @@ public class SoftwareLauncher {
                 updaterFrame.dispose();
                 lock.release();
             }
+        } else {
+            launchSoftware = true;
         }
 
         // launch/start the software
-        if (replacementFailList.isEmpty() || launchSoftware) {
+        if (launchSoftware) {
             String launchType = client.getLaunchType();
             String afterLaunchOperation = client.getLaunchAfterLaunch();
             String jarPath = client.getLaunchJarPath();
             String mainClass = client.getLaunchMainClass();
             List<String> launchCommands = client.getLaunchCommands();
+
+            LockUtil.acquireLock(LockType.INSTANCE, new File(client.getStoragePath()), 1000, 50);
 
             if (launchType.equals("jar")) {
                 startSoftware(jarPath, mainClass, args);
@@ -233,6 +242,20 @@ public class SoftwareLauncher {
                     System.exit(0);
                 }
             }
+        }
+    }
+
+    /**
+     * Revert all the patching action of {@code patches}.
+     * @param patches the patches to revert, must be in sequence
+     * @param tempDir temporary folder to store temporary generated files while patching
+     * @throws IOException error occurred when doing revert
+     */
+    public static void doRevert(List<Patch> patches, File tempDir) throws IOException {
+        for (int i = patches.size() - 1; i >= 0; i--) {
+            Patch patch = patches.get(i);
+            Patcher patcher = new Patcher(new File(tempDir + File.separator + patch.getId() + File.separator + "action.log"));
+            patcher.revert();
         }
     }
 

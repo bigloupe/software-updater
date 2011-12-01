@@ -123,29 +123,27 @@ public class SoftwareSelfUpdater {
                     File newFile = new File(newFilePath);
                     File destinationMoveToFile = new File(destinationMoveToPath);
 
-                    destinationFile.renameTo(destinationMoveToFile);
-                    while (!newFile.renameTo(destinationFile)) {
-                        if (System.currentTimeMillis() - startTime > maxExecutionTime) {
-                            JOptionPane.showMessageDialog(null, String.format("Failed to move file from %1$s to %2$s", newFilePath, destinationFilePath));
-                            Object[] options = {"Recover", "Exit & Restart manually"};
-                            int result = JOptionPane.showOptionDialog(null, "Recover back to original version or exit & restart manually?", "Update Failed", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
-                            if (result == 0) {
-                                // launch the launcher to do recoverery
-                                break;
-                            } else {
-                                return;
-                            }
-                        } else {
-                            // retry the move
-                            try {
-                                Thread.sleep(1000);
-                            } catch (InterruptedException ex) {
-                                // currently don't allow cancel so this should not be interrupted
-                            }
+                    try {
+                        if (!destinationMoveToPath.isEmpty()
+                                && destinationFile.exists() && !destinationMoveToFile.exists()
+                                && !renameFile(destinationFile, destinationMoveToFile, (int) (maxExecutionTime - (System.currentTimeMillis() - startTime)), 50)) {
+                            JOptionPane.showMessageDialog(null, String.format("Failed to move file from %1$s to %2$s", destinationFilePath, destinationMoveToPath));
+                            throw new Exception();
                         }
-                        // since we didn't check if the movement on destinationFile succeed or not, so we move it here again (in case the previous movement was failed due to the program not terminated yet)
-                        if (!destinationMoveToFile.exists()) {
-                            destinationFile.renameTo(destinationMoveToFile);
+                        if (!newFilePath.isEmpty()
+                                && newFile.exists() && !destinationFile.exists()
+                                && !renameFile(newFile, destinationFile, (int) (maxExecutionTime - (System.currentTimeMillis() - startTime)), 50)) {
+                            JOptionPane.showMessageDialog(null, String.format("Failed to move file from %1$s to %2$s", newFilePath, destinationFilePath));
+                            throw new Exception();
+                        }
+                    } catch (Exception ex) {
+                        Object[] options = {"Recover", "Exit & Restart manually"};
+                        int result = JOptionPane.showOptionDialog(null, "Recover back to original version or exit & restart your computer manually?", "Update Failed", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+                        if (result == 0) {
+                            // launch the launcher to do recoverery
+                            break;
+                        } else {
+                            return;
                         }
                     }
                 } else {
@@ -175,6 +173,29 @@ public class SoftwareSelfUpdater {
         if (!test) {
             System.exit(0);
         }
+    }
+
+    /**
+     * Rename the file {@code from} to {@code to} within {@code timeout} milli seconds.
+     * @param from the position to move from
+     * @param to the position to move to
+     * @param timeout the maximum execution time in milli second
+     * @param retryDelay the time delay in milli second between each retry
+     * @return true if rename succeed, false if rename failed
+     */
+    public static boolean renameFile(File from, File to, int timeout, int retryDelay) {
+        long startTime = System.currentTimeMillis();
+        while (!from.renameTo(to)) {
+            if (System.currentTimeMillis() - startTime > timeout) {
+                return false;
+            }
+            try {
+                Thread.sleep(retryDelay);
+            } catch (InterruptedException ex) {
+                // currently don't allow cancel so this should not be interrupted
+            }
+        }
+        return true;
     }
 
     /**

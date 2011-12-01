@@ -80,7 +80,8 @@ public class PatchTest {
         // copy 'old' folder to new directory
         TestCommon.copyFolder(oldFolder, tempDirForPatch);
         // apply the patch on 'old' folder
-        Patcher patcher = new Patcher(new PatcherListener() {
+        Patcher patcher = new Patcher(logFile);
+        patcher.doPatch(new PatcherListener() {
 
             @Override
             public void patchProgress(int percentage, String message) {
@@ -89,8 +90,7 @@ public class PatchTest {
             @Override
             public void patchEnableCancel(boolean enable) {
             }
-        }, logFile, tempDirForPatch, tempDirForApplyPatch);
-        patcher.doPatch(patch, 1, aesKey, tempFileForPatchDecryption, new HashMap<String, String>());
+        }, patch, 1, aesKey, tempDirForPatch, tempDirForApplyPatch, new HashMap<String, String>());
         // compare the new 'old' folder and the 'new' folder
         assertTrue(TestCommon.compareFolder(tempDirForPatch, newFolder));
 
@@ -112,7 +112,8 @@ public class PatchTest {
         assertTrue(CommonUtil.truncateFolder(tempDirForFullPatch));
         TestCommon.copyFolder(oldFolder, tempDirForFullPatch);
         // apply the patch on 'old' folder
-        patcher = new Patcher(new PatcherListener() {
+        patcher = new Patcher(logFileForFullPatch);
+        patcher.doPatch(new PatcherListener() {
 
             @Override
             public void patchProgress(int percentage, String message) {
@@ -121,8 +122,7 @@ public class PatchTest {
             @Override
             public void patchEnableCancel(boolean enable) {
             }
-        }, logFileForFullPatch, tempDirForFullPatch, tempDirForApplyFullPatch);
-        patcher.doPatch(fullPatch, 1, aesKey, tempFileForFullPatchDecryption, new HashMap<String, String>());
+        }, fullPatch, 1, aesKey, tempDirForFullPatch, tempDirForApplyFullPatch, new HashMap<String, String>());
         // compare the new 'old' folder and the 'new_over_old' folder
         assertTrue(TestCommon.compareFolder(tempDirForFullPatch, newOverOldFolder));
 

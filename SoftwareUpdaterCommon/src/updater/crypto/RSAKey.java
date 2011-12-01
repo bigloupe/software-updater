@@ -31,6 +31,7 @@ public class RSAKey {
 
     /**
      * Constructor.
+     * 
      * @param modulus the modulus
      * @param publicExponent the public exponent
      * @param privateExponent the private exponent
@@ -43,6 +44,7 @@ public class RSAKey {
 
     /**
      * Get the modulus.
+     * 
      * @return the modulus
      */
     public byte[] getModulus() {
@@ -53,6 +55,7 @@ public class RSAKey {
 
     /**
      * Set the modulus.
+     * 
      * @param modulus the modulus
      */
     public void setModulus(byte[] modulus) {
@@ -65,6 +68,7 @@ public class RSAKey {
 
     /**
      * Get the public exponent.
+     * 
      * @return the public exponent
      */
     public byte[] getPublicExponent() {
@@ -75,6 +79,7 @@ public class RSAKey {
 
     /**
      * Set the public exponent.
+     * 
      * @param publicExponent 
      */
     public void setPublicExponent(byte[] publicExponent) {
@@ -87,6 +92,7 @@ public class RSAKey {
 
     /**
      * Get the private exponent.
+     * 
      * @return the private exponent
      */
     public byte[] getPrivateExponent() {
@@ -97,6 +103,7 @@ public class RSAKey {
 
     /**
      * Set the private exponent.
+     * 
      * @param privateExponent the private exponent
      */
     public void setPrivateExponent(byte[] privateExponent) {
@@ -109,8 +116,10 @@ public class RSAKey {
 
     /**
      * Read the XML file.
+     * 
      * @param content the content of the XML file
      * @return the {@link RSAKey} object with the information read
+     * 
      * @throws InvalidFormatException the format of the XML file is invalid
      */
     public static RSAKey read(byte[] content) throws InvalidFormatException {
@@ -137,7 +146,9 @@ public class RSAKey {
 
     /**
      * Output the object in UTF-8 XML format.
+     * 
      * @return the content in byte array
+     * 
      * @throws TransformerException some information is missing
      */
     public byte[] output() throws TransformerException {

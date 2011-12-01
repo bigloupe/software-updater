@@ -6,7 +6,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -85,7 +84,7 @@ public class PatchLogReader {
         startFileIndex = 0;
 
         TreeMap<Integer, PatchRecord> _revertMap = new TreeMap<Integer, PatchRecord>();
-        Map<Integer, PatchRecord> _failMap = new HashMap<Integer, PatchRecord>();
+        Map<Integer, PatchRecord> _failMap = new TreeMap<Integer, PatchRecord>();
 
         Pattern logPattern = Pattern.compile("^\\(([0-9]+)\\s(?:(0|1)|(2)\\s([0-9]+)\\s([a-z0-9]+)\\s([a-z0-9]+)\\s([a-z0-9]+)|(3|4|5)\\s([0-9]+))\\)\t.+?$");
 

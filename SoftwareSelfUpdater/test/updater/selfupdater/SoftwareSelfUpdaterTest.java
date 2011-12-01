@@ -269,8 +269,8 @@ public class SoftwareSelfUpdaterTest {
 
     /**
      * Copy a file/folder to another location.
-     * @param fromFile the file/folder to copy form
-     * @param toFile the file/folder location to copy to
+     * @param from the file/folder to copy form
+     * @param to the file/folder location to copy to
      * @throws IOException error occurred when reading/writing the content from/into the file
      */
     public static void copy(File from, File to) throws IOException {

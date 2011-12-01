@@ -95,38 +95,15 @@ public class Patcher implements Pausable {
 
     /**
      * Constructor.
-     * @param listener the listener to listen to patching event and information
      * @param logFile the log file
-     * @param softwareDir the directory where the patch apply to
-     * @param tempDir the temporary directory to store the patched file
      * @throws IOException {@code softwareDir} or {@code tempDir} is not a valid directory
      */
-    public Patcher(PatcherListener listener, File logFile, File softwareDir, File tempDir) throws IOException {
-        if (listener == null) {
-            throw new NullPointerException("argument 'listener' cannot be null");
-        }
+    public Patcher(File logFile) throws IOException {
         if (logFile == null) {
             throw new NullPointerException("argument 'logFile' cannot be null");
         }
-        if (softwareDir == null) {
-            throw new NullPointerException("argument 'softwareDir' cannot be null");
-        }
-        if (tempDir == null) {
-            throw new NullPointerException("argument 'tempDir' cannot be null");
-        }
 
-        this.listener = listener;
         this.logFile = logFile;
-
-        if (!softwareDir.exists() || !softwareDir.isDirectory()) {
-            throw new IOException("software directory not exist or not a directory");
-        }
-        this.softwareDir = softwareDir.getAbsolutePath() + File.separator;
-
-        this.tempDir = tempDir;
-        if (!tempDir.exists() || !tempDir.isDirectory()) {
-            throw new IOException("temporary directory not exist or not a directory");
-        }
 
         buf = new byte[32768];
         progress = 0;
@@ -280,7 +257,6 @@ public class Patcher implements Pausable {
      * Do the operation. 'remove', 'new' (folder only) and 'force' have no action to do here.
      * @param operation the operation to do
      * @param patchIn the stream to read in
-     * @param tempNewFile the place to store the temporary generated in this operation
      * @return null if all succeed, a {@link Replacement} if replacement of files failed
      * @throws IOException error occurred when doing operation
      */
@@ -543,25 +519,46 @@ public class Patcher implements Pausable {
 
     /**
      * Apply the patch.
+     * @param listener the listener to listen to patching event and information
      * @param patchFile the patch file
      * @param patchId the patch id
      * @param aesKey the cipher key, null means no encryption used
-     * @param tempFileForDecryption if {@code aesKey} is specified, this should be provided to store the temporary decrypted file
+     * @param softwareDir the directory where the patch apply to
+     * @param tempDir the temporary directory to store the patched file
      * @param destinationReplacement a map that used to replace the destination path in {@code Operation}s in {@code patchFile}
      * @return a list containing those failed replacement
      * @throws IOException error occurred when doing patching
      */
-    public List<Replacement> doPatch(File patchFile, int patchId, AESKey aesKey, File tempFileForDecryption, Map<String, String> destinationReplacement) throws IOException {
+    public List<Replacement> doPatch(final PatcherListener listener, File patchFile, int patchId, AESKey aesKey, File softwareDir, File tempDir, Map<String, String> destinationReplacement) throws IOException {
+        if (listener == null) {
+            throw new NullPointerException("argument 'listener' cannot be null");
+        }
         if (patchFile == null) {
             throw new NullPointerException("argument 'patchFile' cannot be null");
         }
-        if (aesKey != null && tempFileForDecryption == null) {
-            throw new NullPointerException("argument 'tempFileForDecryption' cannot be null while argument 'aesKey' is not null");
+        if (softwareDir == null) {
+            throw new NullPointerException("argument 'softwareDir' cannot be null");
         }
+        if (tempDir == null) {
+            throw new NullPointerException("argument 'tempDir' cannot be null");
+        }
+
+        this.listener = listener;
 
         if (!patchFile.exists() || patchFile.isDirectory()) {
             throw new IOException("patch file not exist or not a file");
         }
+
+        if (!softwareDir.exists() || !softwareDir.isDirectory()) {
+            throw new IOException("software directory not exist or not a directory");
+        }
+        this.softwareDir = softwareDir.getAbsolutePath() + File.separator;
+
+        this.tempDir = tempDir;
+        if (!tempDir.exists() || !tempDir.isDirectory()) {
+            throw new IOException("temporary directory not exist or not a directory");
+        }
+
 
         File _patchFile = patchFile;
         List<Replacement> replacementFailedList = new ArrayList<Replacement>();
@@ -606,6 +603,8 @@ public class Patcher implements Pausable {
             decryptProgress = 25;
             updateProgress = 50;
             validateFilesProgress = 20;
+
+            File tempFileForDecryption = new File(tempDir.getAbsolutePath() + File.separator + patchId + ".patch.decrypted");
 
             final float _decryptProgress = decryptProgress;
             final float _stageMinimumProgress = stageMinimumProgress;
@@ -723,7 +722,7 @@ public class Patcher implements Pausable {
                 for (ValidationFile _validationFile : validations) {
                     listener.patchProgress((int) progress, String.format("Validating file: %1$s", _validationFile.getFilePath()));
 
-                    File _file = new File(softwareDir + _validationFile.getFilePath());
+                    File _file = new File(this.softwareDir + _validationFile.getFilePath());
 
                     if (_validationFile.getFileLength() == -1) {
                         if (!_file.isDirectory()) {
@@ -823,14 +822,19 @@ public class Patcher implements Pausable {
     /**
      * Remove all backup file in {@link #tempDir}. 
      * Should invoke this after the patching succeed and status recorded.
+     * @return true if clear succeed, false if failed
      */
-    public void clearBackup() {
+    public boolean clearBackup() {
         File[] files = tempDir.listFiles();
+        if (files == null) {
+            return false;
+        }
         for (File file : files) {
             if (file.getName().matches("old_[0-9]+")) {
                 file.delete();
             }
         }
+        return true;
     }
 
     /**

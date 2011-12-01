@@ -12,6 +12,7 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.MessageDigest;
@@ -98,6 +99,7 @@ public class CommonUtil {
      * Convert the hex string to a byte array. The length of the {@code hexString} should be multiple of 2.
      * @param hexString the hex string to convert
      * @return the byte array
+     * @throws IllegalArgumentException length of {@code hexString} is not multiple of 2
      */
     public static byte[] hexStringToByteArray(String hexString) {
         if (hexString == null) {
@@ -176,6 +178,7 @@ public class CommonUtil {
 
     /**
      * Set UI look & feel to system look & feel.
+     * @throws Exception error occurred when setting look & feel
      */
     public static void setLookAndFeel() throws Exception {
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -541,6 +544,9 @@ public class CommonUtil {
         }
 
         File[] files = directory.listFiles();
+        if (files == null) {
+            return false;
+        }
         for (File file : files) {
             if (file.isDirectory()) {
                 if (!truncateFolderRecursively(file)) {
@@ -569,6 +575,9 @@ public class CommonUtil {
 
         if (directory.isDirectory()) {
             File[] files = directory.listFiles();
+            if (files == null) {
+                return false;
+            }
             for (File file : files) {
                 if (file.isDirectory()) {
                     if (!truncateFolderRecursively(file)) {
@@ -592,7 +601,6 @@ public class CommonUtil {
      * @param contentBlockSize  the content block size, it should be key size (in bits) divided by 8, then minus 11
      * @param b the data to encrypt
      * @return the encrypted data
-     * @throws IOException error occurred when writing to 
      */
     public static byte[] rsaEncrypt(RSAPrivateKey key, int blockSize, int contentBlockSize, byte[] b) {
         if (key == null) {
@@ -782,9 +790,13 @@ public class CommonUtil {
         FileLock lock = null;
         try {
             fout = new FileOutputStream(file, true);
-            lock = fout.getChannel().tryLock();
+            try {
+                lock = fout.getChannel().tryLock();
+            } catch (OverlappingFileLockException ex) {
+                throw new IOException(ex);
+            }
             return lock != null;
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             // if any IOException caught, consider it as failure and no exception is thrown
             if (debug) {
                 Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
@@ -798,7 +810,8 @@ public class CommonUtil {
     }
 
     /**
-     * Search through the directory and find all sub-folders, files and those in its sub-folders recursively.
+     * Search through the directory and find all sub-folders, files and those in its sub-folders recursively. 
+     * This function will skip when there is not enough right to access the folder.
      * @param directory the directory to search through to get files
      * @param rootPath the path to use to replace the map key in return result
      * @return a map with the key be the relative path of the file to the {@code directory} (start with "/") and value be the file
@@ -817,14 +830,16 @@ public class CommonUtil {
 
         if (directory.isDirectory()) {
             File[] files = directory.listFiles();
-            for (File _file : files) {
-                if (_file.isHidden()) {
-                    continue;
-                }
-                if (_file.isDirectory()) {
-                    returnResult.putAll(getAllFiles(_file, fileRootPath));
-                } else {
-                    returnResult.put(_file.getAbsolutePath().replace(fileRootPath, "").replace(File.separator, "/"), _file);
+            if (files != null) {
+                for (File _file : files) {
+                    if (_file.isHidden()) {
+                        continue;
+                    }
+                    if (_file.isDirectory()) {
+                        returnResult.putAll(getAllFiles(_file, fileRootPath));
+                    } else {
+                        returnResult.put(_file.getAbsolutePath().replace(fileRootPath, "").replace(File.separator, "/"), _file);
+                    }
                 }
             }
         }
@@ -971,17 +986,22 @@ public class CommonUtil {
     /**
      * Truncate a file to zero size.
      * @param file the file to truncate
+     * @return true if the file exist and truncated, false if error occurred 
      */
-    public static void truncateFile(File file) {
+    public static boolean truncateFile(File file) {
         if (file == null) {
             throw new NullPointerException("argument 'file' cannot be null");
         }
+
         FileOutputStream fout = null;
         try {
             fout = new FileOutputStream(file);
         } catch (FileNotFoundException ex) {
+            return false;
         } finally {
             closeQuietly(fout);
         }
+
+        return true;
     }
 }

@@ -37,7 +37,7 @@ public class PatchPacker {
      * @param saveToFile the place to store the packed patch
      * @param aesKey the cipher key, null means don't use encryption
      * @param tempFileForEncryption if {@code aesKey} is specified, this should be provided to store the temporary encrypted file
-     * @throws IOExceptionerror occurred when packing
+     * @throws IOException error occurred when packing
      * @throws InvalidFormatException the format of the patch XML in the patch is invalid
      */
     public static void pack(File sourceFolder, File saveToFile, AESKey aesKey, File tempFileForEncryption) throws IOException, InvalidFormatException {

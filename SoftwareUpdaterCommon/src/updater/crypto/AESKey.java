@@ -27,6 +27,7 @@ public class AESKey {
 
     /**
      * Constructor.
+     * 
      * @param key the cipher key
      * @param IV the initial vector, should be exactly 16 bytes (128 bits).
      */
@@ -37,6 +38,7 @@ public class AESKey {
 
     /**
      * Get the cipher key.
+     * 
      * @return the cipher key
      */
     public byte[] getKey() {
@@ -47,6 +49,7 @@ public class AESKey {
 
     /**
      * Set the cipher key.
+     * 
      * @param key the cipher key
      */
     public void setKey(byte[] key) {
@@ -59,6 +62,7 @@ public class AESKey {
 
     /**
      * Get the initial vector.
+     * 
      * @return the initial vector
      */
     public byte[] getIV() {
@@ -69,6 +73,7 @@ public class AESKey {
 
     /**
      * Set the initial vector. The length of the IV should be 128 bits (16 bytes).
+     * 
      * @param IV the initial vector
      */
     public void setIV(byte[] IV) {
@@ -84,8 +89,11 @@ public class AESKey {
 
     /**
      * Read the XML file.
+     * 
      * @param content the content of the XML file
+     * 
      * @return the {@link AESKey} object with the information read
+     * 
      * @throws InvalidFormatException the format of the XML file is invalid
      */
     public static AESKey read(byte[] content) throws InvalidFormatException {
@@ -109,7 +117,9 @@ public class AESKey {
 
     /**
      * Output the object in UTF-8 XML format.
+     * 
      * @return the content in byte array
+     * 
      * @throws TransformerException some information is missing
      */
     public byte[] output() throws TransformerException {

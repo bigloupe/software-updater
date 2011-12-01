@@ -12,7 +12,7 @@ public interface DownloadPatchesListener {
     /**
      * Notify a patch is downloaded.
      * @param patch the patch
-     * @return true if record saved, false if not
+     * @throws IOException error occurred when saving the status 
      */
     void downloadPatchesPatchDownloaded(Patch patch) throws IOException;
 

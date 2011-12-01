@@ -444,7 +444,8 @@ public class SoftwarePatchBuilder {
             patchFile = decryptedPatchFile;
         }
 
-        Patcher patcher = new Patcher(new PatcherListener() {
+        Patcher patcher = new Patcher(new File(tempDir.getAbsolutePath() + "/action.log"));
+        patcher.doPatch(new PatcherListener() {
 
             @Override
             public void patchProgress(int percentage, String message) {
@@ -454,8 +455,7 @@ public class SoftwarePatchBuilder {
             @Override
             public void patchEnableCancel(boolean enable) {
             }
-        }, new File(tempDir.getAbsolutePath() + "/action.log"), new File(doArgs[0]), tempDir);
-        patcher.doPatch(patchFile, 0, aesKey, decryptedPatchFile, new HashMap<String, String>());
+        }, patchFile, 0, aesKey, new File(doArgs[0]), tempDir, new HashMap<String, String>());
 
         System.out.println("Patch completed.");
 

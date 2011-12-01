@@ -67,7 +67,7 @@ public class KeyGeneratorTest {
 
         int[] tests = new int[]{512, 2048};
         for (int bits : tests) {
-            System.out.println("- test gen key " + bits + "-bits, encrypt and decrypt");
+            System.out.println("+ test gen key " + bits + "-bits, encrypt and decrypt");
 
             KeyGenerator.generateRSA(bits, tmpFile);
             assertTrue(tmpFile.exists());
@@ -106,7 +106,7 @@ public class KeyGeneratorTest {
 
         int[] tests = new int[]{128, 256};
         for (int bits : tests) {
-            System.out.println("- test gen key " + bits + "-bits, encrypt and decrypt");
+            System.out.println("+ test gen key " + bits + "-bits, encrypt and decrypt");
 
             KeyGenerator.generateAES(bits, tmpFile);
             assertTrue(tmpFile.exists());

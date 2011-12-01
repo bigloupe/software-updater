@@ -52,6 +52,7 @@ public class PatchDownloader {
      * @param patches the patches to download
      * @param retryTimes total number of times to retry
      * @param retryDelay the time to delay before each retry
+     * @return the download result
      * @throws InvalidFormatException the format of the client script is invalid
      * @throws MalformedURLException any one URL of patches is invalid
      * @throws IOException error occurred when reading the client script
@@ -72,6 +73,7 @@ public class PatchDownloader {
      * @param patches the patches to download
      * @param retryTimes total number of times to retry
      * @param retryDelay the time to delay before each retry
+     * @return the download result
      * @throws MalformedURLException any one URL of patches is invalid
      */
     public static DownloadPatchesResult downloadPatches(final DownloadPatchesListener listener, File clientScriptFile, Client clientScript, List<Patch> patches, int retryTimes, int retryDelay) throws MalformedURLException {
@@ -85,6 +87,7 @@ public class PatchDownloader {
      * @param patches the patches to download
      * @param retryTimes total number of times to retry
      * @param retryDelay the time to delay before each retry
+     * @return the download result
      * @throws MalformedURLException any one URL of patches is invalid
      */
     public static DownloadPatchesResult downloadPatches(final DownloadPatchesListener listener, List<Patch> patches, String storagePath, int retryTimes, int retryDelay) throws MalformedURLException {

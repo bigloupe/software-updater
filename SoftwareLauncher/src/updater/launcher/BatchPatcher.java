@@ -110,7 +110,7 @@ public class BatchPatcher implements Pausable {
             }
 
             // temporary storage folder for this patch
-            File tempDirForPatch = new File(tempDir.getAbsolutePath() + "/" + _patch.getId());
+            File tempDirForPatch = new File(tempDir.getAbsolutePath() + File.separator + _patch.getId());
             if (!tempDirForPatch.isDirectory() && !tempDirForPatch.mkdirs()) {
                 throw new IOException("Failed to create folder for patches.");
             }
@@ -130,7 +130,8 @@ public class BatchPatcher implements Pausable {
 
             // initialize patcher
             final int _count = count;
-            patcher = new Patcher(new PatcherListener() {
+            patcher = new Patcher(new File(tempDirForPatch + File.separator + "action.log"));
+            List<Replacement> replacementList = patcher.doPatch(new PatcherListener() {
 
                 @Override
                 public void patchProgress(int percentage, String message) {
@@ -143,8 +144,7 @@ public class BatchPatcher implements Pausable {
                 public void patchEnableCancel(boolean enable) {
                     listener.patchEnableCancel(enable);
                 }
-            }, new File(tempDirForPatch + File.separator + "action.log"), applyToFolder, tempDirForPatch);
-            List<Replacement> replacementList = patcher.doPatch(patchFile, _patch.getId(), aesKey, decryptedPatchFile, destinationReplacement);
+            }, patchFile, _patch.getId(), aesKey, applyToFolder, tempDirForPatch, destinationReplacement);
             for (Replacement _replacement : replacementList) {
                 switch (_replacement.getOperationType()) {
                     case REMOVE:
