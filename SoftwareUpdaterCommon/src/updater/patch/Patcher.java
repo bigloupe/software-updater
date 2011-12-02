@@ -46,25 +46,9 @@ public class Patcher implements Pausable {
         debug = debugMode == null || !debugMode.equals("true") ? false : true;
     }
     /**
-     * The listener to listen to patching event and information.
-     */
-    protected PatcherListener listener;
-    /**
      * The log file.
      */
     protected File logFile;
-    /**
-     * The log writer for logging patching event.
-     */
-    protected PatchLogWriter log;
-    /**
-     * The temporary directory to store the patched file.
-     */
-    protected File tempDir;
-    /**
-     * The directory where the patch apply to. (With a file separator at the end.)
-     */
-    protected String softwareDir;
     /**
      * The buffer for general purpose.
      */
@@ -73,6 +57,25 @@ public class Patcher implements Pausable {
      * The patching progress, from 0 to 100.
      */
     protected float progress;
+    /**
+     * Temporary references for {@link #doPatch(updater.patch.PatcherListener, java.io.File, int, updater.crypto.AESKey, java.io.File, java.io.File, java.util.Map)}
+     */
+    /**
+     * The listener to listen to patching event and information.
+     */
+    protected PatcherListener listener;
+    /**
+     * The directory where the patch apply to. (With a file separator at the end.)
+     */
+    protected String softwareDir;
+    /**
+     * The temporary directory to store the patched file.
+     */
+    protected File tempDir;
+    /**
+     * The log writer for logging patching event.
+     */
+    protected PatchLogWriter log;
     /**
      * Pausable.
      */
