@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.util.Arrays;
 import java.util.Properties;
 import javax.swing.JOptionPane;
@@ -21,6 +22,7 @@ import javax.swing.UIManager;
  * When the launcher encounter any files that it can't do a replacement due to file locking, then this will be used.
  * The launcher will launch this and exit (to release the file lock on the itself), then this self updater will do the replacement 
  * according to a list the launcher give it.
+ * 
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class SoftwareSelfUpdater {
@@ -61,6 +63,7 @@ public class SoftwareSelfUpdater {
      * C:\tmp\2.old<br />
      * (a new line character here)
      * </p>
+     * 
      * @param args 0: lock folder path, 1: replacement file path, start from 2: command and arguments to launch the software.
      */
     public static void main(String[] args) {
@@ -136,6 +139,14 @@ public class SoftwareSelfUpdater {
                             JOptionPane.showMessageDialog(null, String.format("Failed to move file from %1$s to %2$s", newFilePath, destinationFilePath));
                             throw new Exception();
                         }
+                        if (!destinationFilePath.isEmpty()
+                                && newFilePath.isEmpty()
+                                && destinationMoveToPath.isEmpty()
+                                && !destinationFile.isDirectory()
+                                && !destinationFile.mkdirs()) {
+                            JOptionPane.showMessageDialog(null, String.format("Failed to create folder %1$s", destinationFilePath));
+                            throw new Exception();
+                        }
                     } catch (Exception ex) {
                         Object[] options = {"Recover", "Exit & Restart manually"};
                         int result = JOptionPane.showOptionDialog(null, "Recover back to original version or exit & restart your computer manually?", "Update Failed", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
@@ -177,13 +188,27 @@ public class SoftwareSelfUpdater {
 
     /**
      * Rename the file {@code from} to {@code to} within {@code timeout} milli seconds.
+     * 
      * @param from the position to move from
      * @param to the position to move to
      * @param timeout the maximum execution time in milli second
-     * @param retryDelay the time delay in milli second between each retry
+     * @param retryDelay the time delay in milli second between each retry, must >= 0
+     * 
      * @return true if rename succeed, false if rename failed
+     * 
+     * @throws IllegalArgumentException {@code retryDelay} < 0
      */
     public static boolean renameFile(File from, File to, int timeout, int retryDelay) {
+        if (from == null) {
+            throw new NullPointerException("argument 'from' cannot be null");
+        }
+        if (to == null) {
+            throw new NullPointerException("argument 'to' cannot be null");
+        }
+        if (retryDelay < 0) {
+            throw new IllegalArgumentException("argument 'retryDelay' must >= 0");
+        }
+
         long startTime = System.currentTimeMillis();
         while (!from.renameTo(to)) {
             if (System.currentTimeMillis() - startTime > timeout) {
@@ -193,6 +218,7 @@ public class SoftwareSelfUpdater {
                 Thread.sleep(retryDelay);
             } catch (InterruptedException ex) {
                 // currently don't allow cancel so this should not be interrupted
+                Thread.currentThread().interrupt();
             }
         }
         return true;
@@ -214,12 +240,21 @@ public class SoftwareSelfUpdater {
 
     /**
      * Acquire a exclusive lock on the file with retry.
+     * 
      * @param fileToLock the file to lock
      * @param timeout the retry timeout
      * @param retryDelay the time to sleep between retries
+     * 
      * @return the lock if acquired successfully, null if failed
      */
     public static ConcurrentLock acquireLock(File fileToLock, int timeout, int retryDelay) {
+        if (fileToLock == null) {
+            throw new NullPointerException("argument 'fileToLock' cannot be null");
+        }
+        if (retryDelay < 0) {
+            throw new IllegalArgumentException(String.format("argument 'retryDelay' must >= 0, found: %1$d", retryDelay));
+        }
+
         ConcurrentLock returnLock = null;
         long acquireLockStart = System.currentTimeMillis();
 
@@ -228,22 +263,36 @@ public class SoftwareSelfUpdater {
         while (true) {
             try {
                 lockFileOut = new FileOutputStream(fileToLock);
-                fileLock = lockFileOut.getChannel().tryLock();
-                if (fileLock == null) {
-                    throw new IOException("retry");
+                try {
+                    fileLock = lockFileOut.getChannel().tryLock();
+                    if (fileLock == null) {
+                        throw new IOException("retry");
+                    }
+                } catch (OverlappingFileLockException ex) {
+                    throw new IOException(ex);
                 }
+
                 returnLock = new ConcurrentLock(lockFileOut, fileLock);
                 break;
-            } catch (Exception ex) {
-                if (acquireLockStart - System.currentTimeMillis() >= timeout) {
+            } catch (IOException ex) {
+                // exceed timeout
+                if (System.currentTimeMillis() - acquireLockStart >= timeout) {
                     break;
                 }
+                // retry delay
                 try {
                     Thread.sleep(retryDelay);
                 } catch (InterruptedException ex1) {
+                    Thread.currentThread().interrupt();
                     break;
                 }
+
                 continue;
+            } finally {
+                if (returnLock == null) {
+                    closeQuietly(lockFileOut);
+                    releaseQuietly(fileLock);
+                }
             }
         }
 
@@ -251,7 +300,8 @@ public class SoftwareSelfUpdater {
     }
 
     /**
-     * Release the file lock quietly without throwing any exception
+     * Release the file lock quietly without throwing any exception.
+     * 
      * @param fileLock the file lock to release
      */
     public static void releaseQuietly(FileLock fileLock) {
@@ -264,7 +314,8 @@ public class SoftwareSelfUpdater {
     }
 
     /**
-     * Close the closeable quietly without throwing any exception
+     * Close the closeable quietly without throwing any exception.
+     * 
      * @param closeable the object with closable
      */
     public static void closeQuietly(Closeable closeable) {
@@ -278,8 +329,11 @@ public class SoftwareSelfUpdater {
 
     /**
      * Read the resource file from the jar.
+     * 
      * @param path the resource path
+     * 
      * @return the content of the resource file in byte array
+     * 
      * @throws IOException error occurred when reading the content from the file
      */
     public static byte[] readResourceFile(String path) throws IOException {

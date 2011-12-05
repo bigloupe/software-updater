@@ -4,3 +4,12 @@ test folder/2.txt
 test folder/a.txt
 test folder/b.txt
 test folder/c.txt
+test folder/dest1.txt
+
+test folder/backup1.txt
+test folder/dest2
+
+
+test folder/dest3.txt
+test folder/new3.txt
+

@@ -197,7 +197,7 @@ public class CommonUtil {
             return file.getAbsolutePath();
         } else {
             String filePath = file.getAbsolutePath();
-            int pos = filePath.replace(File.separator, "/").lastIndexOf('/');
+            int pos = filePath.lastIndexOf(File.separator);
             return pos != -1 ? filePath.substring(0, pos) : filePath;
         }
     }
@@ -256,16 +256,14 @@ public class CommonUtil {
 
         FileInputStream fromFileStream = null;
         FileOutputStream toFileStream = null;
-        FileChannel fromFileChannel = null;
-        FileChannel toFileChannel = null;
         try {
             long fromFileLength = fromFile.length();
 
             fromFileStream = new FileInputStream(fromFile);
             toFileStream = new FileOutputStream(toFile);
 
-            fromFileChannel = fromFileStream.getChannel();
-            toFileChannel = toFileStream.getChannel();
+            FileChannel fromFileChannel = fromFileStream.getChannel();
+            FileChannel toFileChannel = toFileStream.getChannel();
 
             long byteToRead = 0, cumulateByteRead = 0;
             while (cumulateByteRead < fromFileLength) {
@@ -278,8 +276,6 @@ public class CommonUtil {
                         fromFileLength, cumulateByteRead, fromFile.getAbsolutePath()));
             }
         } finally {
-            closeQuietly(fromFileChannel);
-            closeQuietly(toFileChannel);
             closeQuietly(fromFileStream);
             closeQuietly(toFileStream);
         }

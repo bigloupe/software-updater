@@ -120,7 +120,7 @@ public class PatchDownloader {
         downloadProgress.setTotalSize(totalDownloadSize);
 
         // download
-        for (Patch update : patches) {
+        for (Patch patch : patches) {
             final AtomicInteger patchDownloadedSize = new AtomicInteger(0);
             DownloadProgressListener getPatchListener = new DownloadProgressListener() {
 
@@ -172,9 +172,9 @@ public class PatchDownloader {
                 }
             };
 
-            File saveToFile = new File(storagePath + File.separator + update.getId() + ".patch");
+            File saveToFile = new File(storagePath + File.separator + patch.getId() + ".patch");
 
-            DownloadResult updateResult = getPatch(getPatchListener, update.getDownloadUrl(), saveToFile, update.getDownloadChecksum(), update.getDownloadLength(), retryTimesRemaining.get(), retryDelay);
+            DownloadResult updateResult = getPatch(getPatchListener, patch.getDownloadUrl(), saveToFile, patch.getDownloadChecksum(), patch.getDownloadLength(), retryTimesRemaining.get(), retryDelay);
             if (updateResult == DownloadResult.INTERRUPTED) {
                 return DownloadPatchesResult.DOWNLOAD_INTERRUPTED;
             }
@@ -182,13 +182,13 @@ public class PatchDownloader {
                 return DownloadPatchesResult.ERROR;
             }
 
-            downloadedSize.set(downloadedSize.get() + update.getDownloadLength());
+            downloadedSize.set(downloadedSize.get() + patch.getDownloadLength());
             try {
                 // update client script
-                listener.downloadPatchesPatchDownloaded(new Patch(update.getId(),
-                        update.getType(), update.getVersionFrom(), update.getVersionFromSubsequent(), update.getVersionTo(),
+                listener.downloadPatchesPatchDownloaded(new Patch(patch.getId(),
+                        patch.getType(), patch.getVersionFrom(), patch.getVersionFromSubsequent(), patch.getVersionTo(),
                         null, null, -1,
-                        update.getDownloadEncryptionType(), update.getDownloadEncryptionKey(), update.getDownloadEncryptionIV(),
+                        patch.getDownloadEncryptionType(), patch.getDownloadEncryptionKey(), patch.getDownloadEncryptionIV(),
                         new ArrayList<Operation>(), new ArrayList<ValidationFile>()));
             } catch (IOException ex) {
                 return DownloadPatchesResult.SAVE_TO_CLIENT_SCRIPT_FAIL;

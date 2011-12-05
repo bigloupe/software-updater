@@ -5,7 +5,6 @@ import java.nio.channels.FileLock;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.nio.channels.FileChannel;
 import java.io.FileOutputStream;
-import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.File;
@@ -54,52 +53,8 @@ public class SoftwareSelfUpdaterTest {
     }
 
     @Test
-    public void testMain() throws IOException {
-        System.out.println("+++++ testMain +++++");
-
-        File testFolder = new File("test folder/");
-
-        if (testFolder.exists()) {
-            if (testFolder.isDirectory()) {
-                truncateFolder(testFolder);
-            } else {
-                testFolder.delete();
-            }
-        }
-
-        try {
-            copy(new File("test/updater/selfupdater/SoftwareSelfUpdaterTest"), testFolder);
-
-            final File testFile = new File("test folder/testLaunch A9fD6");
-            testFile.delete();
-            assertFalse(testFile.exists());
-
-            SoftwareSelfUpdater.main(new String[]{"test folder/", "test folder/replacement list.txt", "java", "-jar", "test folder/LaunchTest.jar", testFile.getAbsolutePath()});
-
-            assertEquals(new String(readFile(new File("test folder/0.txt"))), "1");
-            assertEquals(new String(readFile(new File("test folder/2.txt"))), "0");
-            assertFalse(new File("test folder/1.txt").exists());
-            assertEquals(new String(readFile(new File("test folder/a.txt"))), "b");
-            assertEquals(new String(readFile(new File("test folder/c.txt"))), "a");
-            assertFalse(new File("test folder/b.txt").exists());
-
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException ex) {
-            }
-
-            assertTrue(testFile.exists());
-            testFile.delete();
-            assertFalse(testFile.exists());
-        } finally {
-            truncateFolder(testFolder);
-            testFolder.delete();
-        }
-    }
-
-    @Test
-    public void testUpdateLock() throws IOException {
-        System.out.println("+++++ testUpdateLock +++++");
+    public void test() throws IOException {
+        System.out.println("+++++ test +++++");
 
         File testFolder = new File("test folder/");
 
@@ -115,12 +70,10 @@ public class SoftwareSelfUpdaterTest {
             copy(new File("test/updater/selfupdater/SoftwareSelfUpdaterTest"), testFolder);
 
             FileOutputStream fout = null;
-            FileChannel channel = null;
             FileLock lock = null;
             try {
                 fout = new FileOutputStream(new File("test folder/global_lock"));
-                channel = fout.getChannel();
-                lock = channel.tryLock();
+                lock = fout.getChannel().tryLock();
             } finally {
             }
 
@@ -128,6 +81,7 @@ public class SoftwareSelfUpdaterTest {
             testFile.delete();
             assertFalse(testFile.exists());
 
+            long startTime = System.currentTimeMillis();
             final AtomicBoolean runFinished = new AtomicBoolean(false);
             final AtomicLong runFinishedTime = new AtomicLong(0);
             new Thread(new Runnable() {
@@ -146,7 +100,6 @@ public class SoftwareSelfUpdaterTest {
             }
 
             lock.release();
-            channel.close();
             fout.close();
             long releaseLockTime = System.currentTimeMillis();
 
@@ -157,8 +110,8 @@ public class SoftwareSelfUpdaterTest {
                 }
             }
 
+            assertTrue(runFinishedTime.get() - startTime > 1000);
             long timeDifference = runFinishedTime.get() - releaseLockTime;
-            assertTrue(timeDifference > 0);
             assertTrue(Long.toString(timeDifference), timeDifference < 1020);
 
             assertEquals(new String(readFile(new File("test folder/0.txt"))), "1");
@@ -167,6 +120,11 @@ public class SoftwareSelfUpdaterTest {
             assertEquals(new String(readFile(new File("test folder/a.txt"))), "b");
             assertEquals(new String(readFile(new File("test folder/c.txt"))), "a");
             assertFalse(new File("test folder/b.txt").exists());
+            assertEquals(new String(readFile(new File("test folder/backup1.txt"))), "dest1");
+            assertFalse(new File("test folder/dest1.txt").exists());
+            assertTrue(new File("test folder/dest2").isDirectory());
+            assertEquals(new String(readFile(new File("test folder/dest3.txt"))), "new3");
+            assertFalse(new File("test folder/new3.txt").exists());
 
             try {
                 Thread.sleep(100);
@@ -177,92 +135,7 @@ public class SoftwareSelfUpdaterTest {
             testFile.delete();
             assertFalse(testFile.exists());
         } finally {
-            truncateFolder(testFolder);
-            testFolder.delete();
-        }
-    }
-
-    @Test
-    public void testFileLock() throws IOException {
-        System.out.println("+++++ testFileLock +++++");
-
-        File testFolder = new File("test folder/");
-
-        if (testFolder.exists()) {
-            if (testFolder.isDirectory()) {
-                truncateFolder(testFolder);
-            } else {
-                testFolder.delete();
-            }
-        }
-
-        try {
-            copy(new File("test/updater/selfupdater/SoftwareSelfUpdaterTest"), testFolder);
-
-            FileOutputStream fout = null;
-            FileChannel channel = null;
-            FileLock lock = null;
-            try {
-                fout = new FileOutputStream(new File("test folder/0.txt"), true);
-                channel = fout.getChannel();
-                lock = channel.tryLock();
-            } finally {
-            }
-
-            final File testFile = new File("test folder/testLaunch A9fD6");
-            testFile.delete();
-            assertFalse(testFile.exists());
-
-            final AtomicBoolean runFinished = new AtomicBoolean(false);
-            final AtomicLong runFinishedTime = new AtomicLong(0);
-            new Thread(new Runnable() {
-
-                @Override
-                public void run() {
-                    SoftwareSelfUpdater.main(new String[]{"test folder/", "test folder/replacement list.txt", "java", "-jar", "test folder/LaunchTest.jar", testFile.getAbsolutePath()});
-                    runFinished.set(true);
-                    runFinishedTime.set(System.currentTimeMillis());
-                }
-            }).start();
-
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ex) {
-            }
-
-            lock.release();
-            channel.close();
-            fout.close();
-            long releaseLockTime = System.currentTimeMillis();
-
-            while (!runFinished.get()) {
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException ex) {
-                }
-            }
-
-            long timeDifference = runFinishedTime.get() - releaseLockTime;
-            assertTrue(timeDifference > 0);
-            assertTrue(Long.toString(timeDifference), timeDifference < 1020);
-
-            assertEquals(new String(readFile(new File("test folder/0.txt"))), "1");
-            assertEquals(new String(readFile(new File("test folder/2.txt"))), "0");
-            assertFalse(new File("test folder/1.txt").exists());
-            assertEquals(new String(readFile(new File("test folder/a.txt"))), "b");
-            assertEquals(new String(readFile(new File("test folder/c.txt"))), "a");
-            assertFalse(new File("test folder/b.txt").exists());
-
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException ex) {
-            }
-
-            assertTrue(testFile.exists());
-            testFile.delete();
-            assertFalse(testFile.exists());
-        } finally {
-            truncateFolder(testFolder);
+            assertTrue(truncateFolder(testFolder));
             testFolder.delete();
         }
     }
@@ -282,8 +155,13 @@ public class SoftwareSelfUpdaterTest {
             }
 
             File[] files = from.listFiles();
+            if (files == null) {
+                throw new IOException(String.format("Failed to list the files in folder: %1$s", from.getAbsolutePath()));
+            }
+            String fromAbsPath = from.getAbsolutePath();
+            String toAbsPath = to.getAbsolutePath();
             for (File file : files) {
-                File copyTo = new File(to.getAbsolutePath() + File.separator + file.getAbsolutePath().replace(from.getAbsolutePath(), ""));
+                File copyTo = new File(toAbsPath + File.separator + file.getAbsolutePath().replace(fromAbsPath, ""));
                 if (file.isDirectory()) {
                     copy(file, copyTo);
                 } else {
@@ -326,7 +204,7 @@ public class SoftwareSelfUpdaterTest {
                         fileLength, cumulateByteRead, file.getAbsolutePath()));
             }
         } finally {
-            closeQuietly(fin);
+            SoftwareSelfUpdater.closeQuietly(fin);
         }
 
         return content;
@@ -348,16 +226,14 @@ public class SoftwareSelfUpdaterTest {
 
         FileInputStream fromFileStream = null;
         FileOutputStream toFileStream = null;
-        FileChannel fromFileChannel = null;
-        FileChannel toFileChannel = null;
         try {
             long fromFileLength = fromFile.length();
 
             fromFileStream = new FileInputStream(fromFile);
             toFileStream = new FileOutputStream(toFile);
 
-            fromFileChannel = fromFileStream.getChannel();
-            toFileChannel = toFileStream.getChannel();
+            FileChannel fromFileChannel = fromFileStream.getChannel();
+            FileChannel toFileChannel = toFileStream.getChannel();
 
             long byteToRead = 0, cumulateByteRead = 0;
             while (cumulateByteRead < fromFileLength) {
@@ -370,23 +246,8 @@ public class SoftwareSelfUpdaterTest {
                         fromFileLength, cumulateByteRead, fromFile.getAbsolutePath()));
             }
         } finally {
-            closeQuietly(fromFileChannel);
-            closeQuietly(toFileChannel);
-            closeQuietly(fromFileStream);
-            closeQuietly(toFileStream);
-        }
-    }
-
-    /**
-     * Close the stream quietly without any IO exception thrown.
-     * @param closeable the stream to close, accept null
-     */
-    public static void closeQuietly(Closeable closeable) {
-        if (closeable != null) {
-            try {
-                closeable.close();
-            } catch (IOException ex) {
-            }
+            SoftwareSelfUpdater.closeQuietly(fromFileStream);
+            SoftwareSelfUpdater.closeQuietly(toFileStream);
         }
     }
 

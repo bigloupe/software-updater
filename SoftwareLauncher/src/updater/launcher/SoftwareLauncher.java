@@ -205,7 +205,13 @@ public class SoftwareLauncher {
                     Object[] options = {"Recover", "Exit & Restart manually"};
                     int result = JOptionPane.showOptionDialog(null, "Recover back to original version or exit & restart your computer manually?", "Update Failed", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
                     if (result == 0) {
-                        doRevert(client.getPatches(), new File(storagePath));
+                        try {
+                            doRevert(client.getPatches(), new File(storagePath));
+                        } catch (IOException ex1) {
+                            JOptionPane.showMessageDialog(updaterFrame, "Error occurred when doing the revertion.");
+                            Logger.getLogger(SoftwareLauncher.class.getName()).log(Level.SEVERE, null, ex1);
+                            return;
+                        }
                     } else {
                         return;
                     }

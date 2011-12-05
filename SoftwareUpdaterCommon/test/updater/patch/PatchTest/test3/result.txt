@@ -1,0 +1,53 @@
+1. folder '1':
+   - dest: not exist, backup: exist
+2. folder '2':
+   - dest: exist, backup: not exist
+   file '2/2':
+   - dest: exist, backup: not exist
+3. file '3':
+   - dest: exist, backup: not exist
+   {catch error}
+4. folder '4':
+   - dest: not exist, backup: not exist
+5. folder '5':
+   - dest: exist, backup: not exist
+   {catch error}
+6. file '6':
+   - dest: not exist, backup: exist
+7. file '7':
+   - dest: not exist, backup: exist
+8. file '8':
+   - dest: not exist, backup: not exist
+   {catch error}
+
+9. folder '9':
+   - dest: exist, backup: not exist
+10. file '10':
+    - dest: exist, backup: not exist
+    {catch error}
+11. folder '11':
+    - dest: exist, backup: not exist
+12. folder '12':
+    - dest: exist, backup: not exist
+    {catch error}
+13. file '13':
+    - dest: exist, backup: not exist
+14. file '14':
+    - dest: exist, backup: not exist
+    {catch error}
+15. file '15':
+    - dest: exist, backup: not exist
+
+24. folder '24':
+    - dest: exist, backup: not exist
+25. file '25':
+    - dest: new file, backup: old file
+26. file '26':
+    - dest: new file, backup: old file
+27. file '27':
+    - dest: exist, backup: not exist
+28. file '28':
+    - dest: new file, backup: old file
+29. file '29':
+    - dest: not exist, backup: old file
+    {catch error}

@@ -1,0 +1,19 @@
+16. folder '16':
+    - dest: exist, backup: not exist
+17. file '17':
+    - dest: exist, backup: not exist
+    {catch error}
+18. folder '18':
+    - dest: exist, backup: not exist
+19. folder '19':
+    - dest: exist, backup: not exist
+    {catch error}
+20. file '20':
+    - dest: new file, backup: old
+21. file '21':
+    - dest: new file, backup: not exist
+22. file '22':
+    - dest: exist, backup: exist
+    {catch error}
+23. file '23':
+    - dest: new file, backup: not exist

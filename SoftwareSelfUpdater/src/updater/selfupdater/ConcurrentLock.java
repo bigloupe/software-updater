@@ -43,16 +43,19 @@ public class ConcurrentLock {
      * Release the lock.
      */
     public synchronized void release() {
-        try {
-            if (fileLock != null) {
+        if (fileLock != null) {
+            try {
                 fileLock.release();
                 fileLock = null;
+            } catch (IOException ex) {
             }
-            if (lockFileOut != null) {
+        }
+        if (lockFileOut != null) {
+            try {
                 lockFileOut.close();
                 lockFileOut = null;
+            } catch (IOException ex) {
             }
-        } catch (IOException ex) {
         }
     }
 }
