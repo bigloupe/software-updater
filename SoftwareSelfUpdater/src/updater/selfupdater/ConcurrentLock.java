@@ -12,50 +12,50 @@ import java.nio.channels.FileLock;
  */
 public class ConcurrentLock {
 
-    /**
-     * The file output stream that the lock belongs to.
-     */
-    protected OutputStream lockFileOut;
-    /**
-     * The file lock.
-     */
-    protected FileLock fileLock;
+  /**
+   * The file output stream that the lock belongs to.
+   */
+  protected OutputStream lockFileOut;
+  /**
+   * The file lock.
+   */
+  protected FileLock fileLock;
 
-    /**
-     * Constructor.
-     * 
-     * @param fileOut the file output stream that the lock belongs to
-     * @param fileLock the file lock
-     */
-    public ConcurrentLock(FileOutputStream fileOut, FileLock fileLock) {
-        if (fileOut == null) {
-            throw new NullPointerException("argument 'fileOut' cannot be null");
-        }
-        if (fileLock == null) {
-            throw new NullPointerException("argument 'fileLock' cannot be null");
-        }
-
-        this.lockFileOut = fileOut;
-        this.fileLock = fileLock;
+  /**
+   * Constructor.
+   * 
+   * @param fileOut the file output stream that the lock belongs to
+   * @param fileLock the file lock
+   */
+  public ConcurrentLock(FileOutputStream fileOut, FileLock fileLock) {
+    if (fileOut == null) {
+      throw new NullPointerException("argument 'fileOut' cannot be null");
+    }
+    if (fileLock == null) {
+      throw new NullPointerException("argument 'fileLock' cannot be null");
     }
 
-    /**
-     * Release the lock.
-     */
-    public synchronized void release() {
-        if (fileLock != null) {
-            try {
-                fileLock.release();
-                fileLock = null;
-            } catch (IOException ex) {
-            }
-        }
-        if (lockFileOut != null) {
-            try {
-                lockFileOut.close();
-                lockFileOut = null;
-            } catch (IOException ex) {
-            }
-        }
+    this.lockFileOut = fileOut;
+    this.fileLock = fileLock;
+  }
+
+  /**
+   * Release the lock.
+   */
+  public synchronized void release() {
+    if (fileLock != null) {
+      try {
+        fileLock.release();
+        fileLock = null;
+      } catch (IOException ex) {
+      }
     }
+    if (lockFileOut != null) {
+      try {
+        lockFileOut.close();
+        lockFileOut = null;
+      } catch (IOException ex) {
+      }
+    }
+  }
 }
