@@ -46,6 +46,7 @@
     - dest: new file, backup: old file
 27. file '27':
     - dest: exist, backup: not exist
+    {catch error}
 28. file '28':
     - dest: new file, backup: old file
 29. file '29':

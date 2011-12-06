@@ -582,10 +582,10 @@ public class Patcher implements Pausable {
             for (PatchRecord patchRecord : failList) {
                 extraFileIndexes.put(patchRecord.getFileIndex(), new Object());
             }
-            List<PatchRecord> revertList = logReader.getRevertList();
-            for (PatchRecord patchRecord : revertList) {
-                extraFileIndexes.put(patchRecord.getFileIndex(), new Object());
-            }
+//            List<PatchRecord> revertList = logReader.getRevertList();
+//            for (PatchRecord patchRecord : revertList) {
+//                extraFileIndexes.put(patchRecord.getFileIndex(), new Object());
+//            }
             patchingStarted = logReader.isLogStarted();
         }
         //</editor-fold>
@@ -672,7 +672,7 @@ public class Patcher implements Pausable {
 
             // start log
             if (!patchingStarted) {
-                log.logStart(patchId, patch.getVersionFrom(), patch.getVersionTo());
+                log.logStart();
             } else {
                 log.logResume();
             }
@@ -689,7 +689,7 @@ public class Patcher implements Pausable {
             for (int i = 0, iEnd = operations.size(); i < iEnd; i++) {
                 Operation _operation = operations.get(i);
 
-                if (!(i >= startFromFileIndex || extraFileIndexes.get(i) != null)) {
+                if (!(i >= startFromFileIndex - 1 || extraFileIndexes.get(i) != null)) {
                     long byteSkipped = decompressedPatchIn.skip(_operation.getPatchLength());
                     if (byteSkipped != _operation.getPatchLength()) {
                         throw new IOException("Failed to skip remaining bytes in 'interruptiblePatchIn'.");
