@@ -6,9 +6,9 @@ package updater.util;
  */
 public interface Pausable {
 
-    /**
-     * Pause or resume the action.
-     * @param pause true to pause, false to resume
-     */
-    void pause(boolean pause);
+  /**
+   * Pause or resume the action.
+   * @param pause true to pause, false to resume
+   */
+  void pause(boolean pause);
 }

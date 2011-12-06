@@ -22,6 +22,7 @@ mkdir -p "$SOFTWARE_DIRECTORY/src"
 linkDir src/watne
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/concurrent"
 linkFile src/updater/concurrent/ConcurrentLock.java
+linkFile src/updater/concurrent/LockType.java
 linkFile src/updater/concurrent/LockUtil.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/crypto"
 linkFile src/updater/crypto/AESKey.java
@@ -36,8 +37,9 @@ mkdir -p "$SOFTWARE_DIRECTORY/src/updater/patch"
 linkFile src/updater/patch/Compression.java
 linkFile src/updater/patch/OperationType.java
 linkFile src/updater/patch/PatchReadUtil.java
-linkFile src/updater/patch/PatchLogReader.java
-linkFile src/updater/patch/PatchLogWriter.java
+linkFile src/updater/patch/PatchRecord.java
+linkFile src/updater/patch/LogReader.java
+linkFile src/updater/patch/LogWriter.java
 linkFile src/updater/patch/Patcher.java
 linkFile src/updater/patch/PatcherListener.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/util"
@@ -73,9 +75,10 @@ linkFile src/updater/patch/OperationType.java
 linkFile src/updater/patch/PatchCreator.java
 linkFile src/updater/patch/PatchExtractor.java
 linkFile src/updater/patch/PatchReadUtil.java
+linkFile src/updater/patch/PatchRecord.java
 linkFile src/updater/patch/PatchWriteUtil.java
-linkFile src/updater/patch/PatchLogReader.java
-linkFile src/updater/patch/PatchLogWriter.java
+linkFile src/updater/patch/LogReader.java
+linkFile src/updater/patch/LogWriter.java
 linkFile src/updater/patch/PatchPacker.java
 linkFile src/updater/patch/Patcher.java
 linkFile src/updater/patch/PatcherListener.java
@@ -95,6 +98,7 @@ SOFTWARE_DIRECTORY="SoftwarePatchDownloader"
 
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/concurrent"
 linkFile src/updater/concurrent/ConcurrentLock.java
+linkFile src/updater/concurrent/LockType.java
 linkFile src/updater/concurrent/LockUtil.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/gui"
 linkFile src/updater/gui/JTitledPanel.java
@@ -108,6 +112,7 @@ mkdir -p "$SOFTWARE_DIRECTORY/src/updater/util"
 linkFile src/updater/util/CommonUtil.java
 linkFile src/updater/util/DownloadProgressListener.java
 linkFile src/updater/util/DownloadProgressUtil.java
+linkFile src/updater/util/DownloadResult.java
 linkFile src/updater/util/HTTPDownloader.java
 linkFile src/updater/util/Interruptible.java
 linkFile src/updater/util/Pausable.java

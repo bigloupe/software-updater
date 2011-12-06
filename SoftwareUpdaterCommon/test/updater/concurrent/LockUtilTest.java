@@ -129,26 +129,26 @@ public class LockUtilTest {
 
         ConcurrentLock instanceLock1, instanceLock2, instanceLock3, updaterLock1, downloaderLock1, downloaderLock2;
 
-        instanceLock1 = LockUtil.acquireLock(LockUtil.LockType.INSTANCE, lockFolder, 0, 0);
+        instanceLock1 = LockUtil.acquireLock(LockType.INSTANCE, lockFolder, 0, 0);
         assertNotNull(instanceLock1);
-        instanceLock2 = LockUtil.acquireLock(LockUtil.LockType.INSTANCE, lockFolder, 0, 0);
+        instanceLock2 = LockUtil.acquireLock(LockType.INSTANCE, lockFolder, 0, 0);
         assertNotNull(instanceLock2);
 
-        downloaderLock1 = LockUtil.acquireLock(LockUtil.LockType.DOWNLOADER, lockFolder, 0, 0);
+        downloaderLock1 = LockUtil.acquireLock(LockType.DOWNLOADER, lockFolder, 0, 0);
         assertNotNull(downloaderLock1);
 
-        instanceLock3 = LockUtil.acquireLock(LockUtil.LockType.INSTANCE, lockFolder, 0, 0);
+        instanceLock3 = LockUtil.acquireLock(LockType.INSTANCE, lockFolder, 0, 0);
         assertNotNull(instanceLock3);
 
-        updaterLock1 = LockUtil.acquireLock(LockUtil.LockType.UPDATER, lockFolder, 0, 0);
+        updaterLock1 = LockUtil.acquireLock(LockType.UPDATER, lockFolder, 0, 0);
         assertNull(updaterLock1);
 
         downloaderLock1.release();
 
-        updaterLock1 = LockUtil.acquireLock(LockUtil.LockType.UPDATER, lockFolder, 0, 0);
+        updaterLock1 = LockUtil.acquireLock(LockType.UPDATER, lockFolder, 0, 0);
         assertNull(updaterLock1);
 
-        downloaderLock1 = LockUtil.acquireLock(LockUtil.LockType.DOWNLOADER, lockFolder, 0, 0);
+        downloaderLock1 = LockUtil.acquireLock(LockType.DOWNLOADER, lockFolder, 0, 0);
         assertNotNull(downloaderLock1);
         downloaderLock1.release();
 
@@ -156,18 +156,18 @@ public class LockUtilTest {
         instanceLock2.release();
         instanceLock3.release();
 
-        downloaderLock1 = LockUtil.acquireLock(LockUtil.LockType.DOWNLOADER, lockFolder, 0, 0);
+        downloaderLock1 = LockUtil.acquireLock(LockType.DOWNLOADER, lockFolder, 0, 0);
         assertNotNull(downloaderLock1);
-        downloaderLock2 = LockUtil.acquireLock(LockUtil.LockType.DOWNLOADER, lockFolder, 0, 0);
+        downloaderLock2 = LockUtil.acquireLock(LockType.DOWNLOADER, lockFolder, 0, 0);
         assertNull(downloaderLock2);
         downloaderLock1.release();
 
-        updaterLock1 = LockUtil.acquireLock(LockUtil.LockType.UPDATER, lockFolder, 0, 0);
+        updaterLock1 = LockUtil.acquireLock(LockType.UPDATER, lockFolder, 0, 0);
         assertNotNull(updaterLock1);
 
-        instanceLock1 = LockUtil.acquireLock(LockUtil.LockType.INSTANCE, lockFolder, 0, 0);
+        instanceLock1 = LockUtil.acquireLock(LockType.INSTANCE, lockFolder, 0, 0);
         assertNull(instanceLock1);
-        downloaderLock1 = LockUtil.acquireLock(LockUtil.LockType.DOWNLOADER, lockFolder, 0, 0);
+        downloaderLock1 = LockUtil.acquireLock(LockType.DOWNLOADER, lockFolder, 0, 0);
         assertNull(downloaderLock1);
 
         updaterLock1.release();

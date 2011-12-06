@@ -21,7 +21,7 @@ import updater.TestCommon;
 import updater.script.Catalog;
 import updater.script.InvalidFormatException;
 import updater.script.Patch;
-import updater.util.HTTPDownloader.DownloadResult;
+import updater.util.DownloadResult;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>

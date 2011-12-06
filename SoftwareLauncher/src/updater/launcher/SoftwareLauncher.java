@@ -23,11 +23,11 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.xml.transform.TransformerException;
 import updater.concurrent.ConcurrentLock;
+import updater.concurrent.LockType;
 import updater.concurrent.LockUtil;
-import updater.concurrent.LockUtil.LockType;
 import updater.gui.UpdaterWindow;
+import updater.patch.PatchRecord;
 import updater.patch.Patcher;
-import updater.patch.Patcher.Replacement;
 import updater.script.Client;
 import updater.script.Client.Information;
 import updater.script.InvalidFormatException;
@@ -75,7 +75,7 @@ public class SoftwareLauncher {
      */
     public static void start(final File clientScriptFile, final Client client, String[] args) throws IOException, LaunchFailedException {
         boolean launchSoftware = false;
-        List<Replacement> replacementFailList = new ArrayList<Replacement>();
+        List<PatchRecord> replacementFailList = new ArrayList<PatchRecord>();
         if (!client.getPatches().isEmpty()) {
             String storagePath = client.getStoragePath();
             Information clientInfo = client.getInformation();
@@ -265,7 +265,7 @@ public class SoftwareLauncher {
         }
     }
 
-    public static void handleReplacement(Client clientScript, List<Replacement> replacementList, String[] launchArgs) throws IOException {
+    public static void handleReplacement(Client clientScript, List<PatchRecord> replacementList, String[] launchArgs) throws IOException {
         if (replacementList == null || replacementList.isEmpty()) {
             return;
         }
@@ -326,13 +326,13 @@ public class SoftwareLauncher {
      * @param replacementList the replacement list
      * @throws IOException error occurred when writing to the file
      */
-    protected static void writeReplacement(File file, List<Replacement> replacementList) throws IOException {
+    protected static void writeReplacement(File file, List<PatchRecord> replacementList) throws IOException {
         PrintWriter writer = null;
         try {
             writer = new PrintWriter(new FileOutputStream(file));
 
-            for (Replacement _replacement : replacementList) {
-                writer.println(_replacement.getDestination());
+            for (PatchRecord _replacement : replacementList) {
+                writer.println(_replacement.getDestinationFilePath());
                 writer.println(_replacement.getNewFilePath());
                 writer.println(_replacement.getBackupFilePath());
             }

@@ -1,8 +1,7 @@
 package updater.patch;
 
 import java.util.List;
-import updater.patch.PatchLogReader.PatchRecord;
-import updater.patch.PatchLogWriter.Action;
+import updater.patch.LogWriter.Action;
 import updater.TestCommon;
 import java.io.File;
 import java.io.IOException;
@@ -64,13 +63,13 @@ public class PatchLogTest {
     logFile4.delete();
     logFile5.delete();
 
-    PatchLogWriter writer1 = null, writer2 = null, writer3 = null, writer4 = null, writer5 = null;
+    LogWriter writer1 = null, writer2 = null, writer3 = null, writer4 = null, writer5 = null;
     try {
-      writer1 = new PatchLogWriter(logFile1);
-      writer2 = new PatchLogWriter(logFile2);
-      writer3 = new PatchLogWriter(logFile3);
-      writer4 = new PatchLogWriter(logFile4);
-      writer5 = new PatchLogWriter(logFile5);
+      writer1 = new LogWriter(logFile1);
+      writer2 = new LogWriter(logFile2);
+      writer3 = new LogWriter(logFile3);
+      writer4 = new LogWriter(logFile4);
+      writer5 = new LogWriter(logFile5);
 
       writer1.logStart();
       writer1.logPatch(Action.START, 0, OperationType.PATCH, "backup1", "from1", "to1");
@@ -145,11 +144,11 @@ public class PatchLogTest {
     assertTrue(logFile5.length() > 10);
 
     try {
-      PatchLogReader reader1 = new PatchLogReader(logFile1);
-      PatchLogReader reader2 = new PatchLogReader(logFile2);
-      PatchLogReader reader3 = new PatchLogReader(logFile3);
-      PatchLogReader reader4 = new PatchLogReader(logFile4);
-      PatchLogReader reader5 = new PatchLogReader(logFile5);
+      LogReader reader1 = new LogReader(logFile1);
+      LogReader reader2 = new LogReader(logFile2);
+      LogReader reader3 = new LogReader(logFile3);
+      LogReader reader4 = new LogReader(logFile4);
+      LogReader reader5 = new LogReader(logFile5);
 
       boolean logStarted = reader1.isLogStarted();
       boolean logEnded = reader1.isLogEnded();

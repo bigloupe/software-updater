@@ -34,17 +34,17 @@ import updater.util.CommonUtil;
  * (1)   finish
  * </p>
  * 
- * <p>Should invoke {@link #logStart()} first, {@link #logPatch(updater.patch.PatchLogWriter.Action, int, updater.patch.PatchLogWriter.OperationType, java.lang.String, java.lang.String)} 
+ * <p>Should invoke {@link #logStart()} first, {@link #logPatch(updater.patch.LogWriter.Action, int, updater.patch.LogWriter.OperationType, java.lang.String, java.lang.String)} 
  * second, {@link #logEnd()} last.</p>
  * 
  * <p>One log should serve only one apply-patch event.</p>
  * 
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
-public class PatchLogWriter implements Closeable {
+public class LogWriter implements Closeable {
 
   /**
-   * The allowed patch action used by {@link #logPatch(updater.patch.PatchLogWriter.Action, int, updater.patch.PatchLogWriter.OperationType, java.lang.String, java.lang.String)}.
+   * The allowed patch action used by {@link #logPatch(updater.patch.LogWriter.Action, int, updater.patch.LogWriter.OperationType, java.lang.String, java.lang.String)}.
    */
   public static enum Action {
 
@@ -89,9 +89,11 @@ public class PatchLogWriter implements Closeable {
   /**
    * Constructor.
    * @param file the file to append the log on
-   * @throws IOException if the file exists but is a directory rather than a regular file, does not exist but cannot be created, or cannot be opened for any other reason
+   * @throws IOException if the file exists but is a directory rather than a 
+   * regular file, does not exist but cannot be created, or cannot be opened 
+   * for any other reason
    */
-  public PatchLogWriter(File file) throws IOException {
+  public LogWriter(File file) throws IOException {
     if (file == null) {
       throw new NullPointerException("argument 'file' cannot be null");
     }
@@ -127,7 +129,8 @@ public class PatchLogWriter implements Closeable {
 
   /**
    * Log resume patching. This will output a new line character.
-   * This is to solve the case if last log record is not ended with new line character due to IO error.
+   * This is to solve the case if last log record is not ended with new line 
+   * character due to IO error.
    * @throws IOException error occurred when writing to log
    */
   public void logResume() throws IOException {

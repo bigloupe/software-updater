@@ -23,8 +23,8 @@ import updater.script.Patch.Operation;
 import updater.script.Patch.ValidationFile;
 import updater.util.DownloadProgressListener;
 import updater.util.DownloadProgressUtil;
+import updater.util.DownloadResult;
 import updater.util.HTTPDownloader;
-import updater.util.HTTPDownloader.DownloadResult;
 
 /**
  * Patch and catalog downloader.

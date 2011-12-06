@@ -1,7 +1,6 @@
 package updater.patch;
 
 import java.util.List;
-import updater.patch.Patcher.Replacement;
 import java.util.HashMap;
 import updater.crypto.AESKey;
 import java.io.File;
@@ -59,7 +58,7 @@ public class PatchTest {
   public void tearDown() {
   }
 
-  public List<Replacement> detailPatchingTestInit(File patch, AESKey aesKey) throws Exception {
+  public List<PatchRecord> detailPatchingTestInit(File patch, AESKey aesKey) throws Exception {
     File logFile = new File(tempDir.getAbsolutePath() + File.separator + "action.log");
     return new Patcher(logFile).doPatch(new PatcherListener() {
 
@@ -108,7 +107,7 @@ public class PatchTest {
 
   public void testStep1(File patch, AESKey aesKey) throws Exception {
     try {
-      List<Replacement> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -121,7 +120,7 @@ public class PatchTest {
 
   public void testStep2(File patch, AESKey aesKey) throws Exception {
     try {
-      List<Replacement> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -137,7 +136,7 @@ public class PatchTest {
 
   public void testStep3(File patch, AESKey aesKey) throws Exception {
     try {
-      List<Replacement> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -158,7 +157,7 @@ public class PatchTest {
 
   public void testStep4(File patch, AESKey aesKey) throws Exception {
     try {
-      List<Replacement> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -183,7 +182,7 @@ public class PatchTest {
 
   public void testStep5(File patch, AESKey aesKey) throws Exception {
     try {
-      List<Replacement> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -211,7 +210,7 @@ public class PatchTest {
 
   public void testStep6(File patch, AESKey aesKey) throws Exception {
     try {
-      List<Replacement> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -242,7 +241,7 @@ public class PatchTest {
 
   public void testStep7(File patch, AESKey aesKey) throws Exception {
     try {
-      List<Replacement> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -279,7 +278,7 @@ public class PatchTest {
 
   public void testStep8(File patch, AESKey aesKey) throws Exception {
     try {
-      List<Replacement> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -326,7 +325,7 @@ public class PatchTest {
 
   public void testStep9(File patch, AESKey aesKey) throws Exception {
     try {
-      List<Replacement> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -378,7 +377,7 @@ public class PatchTest {
 
   public void testStep10(File patch, AESKey aesKey) throws Exception {
     try {
-      List<Replacement> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       assertExistance(8, 1, false, false, false, true);
       assertExistance(7, 2, false, false, false, true);

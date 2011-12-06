@@ -44,7 +44,7 @@ import updater.util.CommonUtil;
  * 
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
-public class PatchLogReader {
+public class LogReader {
 
   /**
    * Indicate whether the log has started.
@@ -63,7 +63,8 @@ public class PatchLogReader {
    */
   protected List<PatchRecord> failList;
   /**
-   * Indicate when to start to patch the unfinished patching. -1 means patch finished.
+   * Indicate when to start to patch the unfinished patching. -1 means patch 
+   * finished.
    */
   protected int startFileIndex;
 
@@ -72,7 +73,7 @@ public class PatchLogReader {
    * @param file the log file
    * @throws IOException error occurred when reading the log file
    */
-  public PatchLogReader(File file) throws IOException {
+  public LogReader(File file) throws IOException {
     if (file == null) {
       throw new NullPointerException("argument 'file' cannot be null");
     }
@@ -214,110 +215,11 @@ public class PatchLogReader {
   }
 
   /**
-   * Get the file index that indicate when to start to patch the unfinished patching.
+   * Get the file index that indicate when to start to patch the unfinished 
+   * patching.
    * @return the file index
    */
   public int getStartFileIndex() {
     return startFileIndex;
-  }
-
-  /**
-   * The record used to represent the essential data in a row of replacement log.
-   */
-  public static class PatchRecord {
-
-    /**
-     * The file index of the record.
-     */
-    protected int fileIndex;
-    /**
-     * The backup file path of the replacement record.
-     */
-    protected String backupFilePath;
-    /**
-     * The copy-from file path of the replacement record.
-     */
-    protected String newFilePath;
-    /**
-     * The copy-to file path of the replacement record.
-     */
-    protected String destinationFilePath;
-
-    /**
-     * Constructor.
-     * @param fileIndex the file index of the record
-     * @param backupPath the backup file path
-     * @param newFilePath the copy-from file path
-     * @param destinationFilePath the copy-to file path
-     */
-    public PatchRecord(int fileIndex, String backupPath, String newFilePath, String destinationFilePath) {
-      this.fileIndex = fileIndex;
-      this.backupFilePath = backupPath;
-      this.newFilePath = newFilePath;
-      this.destinationFilePath = destinationFilePath;
-    }
-
-    /**
-     * Get the file index of the record.
-     * @return the file index
-     */
-    public int getFileIndex() {
-      return fileIndex;
-    }
-
-    /**
-     * Get the backup file path of the replacement record.
-     * @return the file path
-     */
-    public String getBackupFilePath() {
-      return newFilePath;
-    }
-
-    /**
-     * Get the copy-from file path of the replacement record.
-     * @return the file path
-     */
-    public String getNewFilePath() {
-      return newFilePath;
-    }
-
-    /**
-     * Get the copy-to file path of the replacement record.
-     * @return the file path
-     */
-    public String getDestinationFilePath() {
-      return destinationFilePath;
-    }
-
-    @Override
-    public String toString() {
-      return fileIndex + ": " + newFilePath;
-    }
-
-    @Override
-    public int hashCode() {
-      int hash = 7;
-      hash = 89 * hash + this.fileIndex;
-      hash = 89 * hash + (this.backupFilePath != null ? this.backupFilePath.hashCode() : 0);
-      hash = 89 * hash + (this.newFilePath != null ? this.newFilePath.hashCode() : 0);
-      hash = 89 * hash + (this.destinationFilePath != null ? this.destinationFilePath.hashCode() : 0);
-      return hash;
-    }
-
-    @Override
-    public boolean equals(Object compareTo) {
-      if (compareTo == null || !(compareTo instanceof PatchRecord)) {
-        return false;
-      }
-      if (compareTo == this) {
-        return true;
-      }
-      PatchRecord _object = (PatchRecord) compareTo;
-
-      return _object.getFileIndex() == fileIndex
-              && _object.getBackupFilePath().equals(getBackupFilePath())
-              && _object.getNewFilePath().equals(getNewFilePath())
-              && _object.getDestinationFilePath().equals(getDestinationFilePath());
-    }
   }
 }

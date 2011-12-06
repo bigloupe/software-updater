@@ -14,7 +14,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import updater.TestCommon;
-import updater.util.HTTPDownloader.DownloadResult;
 
 /**
  * @author Chan Wai Shing <cws1989@gmail.com>

@@ -11,6 +11,7 @@ mkdir "%softwareDirectory%\src"
 call:linkDir src\watne
 mkdir "%softwareDirectory%\src\updater\concurrent"
 call:linkFile src\updater\concurrent\ConcurrentLock.java
+call:linkFile src\updater\concurrent\LockType.java
 call:linkFile src\updater\concurrent\LockUtil.java
 mkdir "%softwareDirectory%\src\updater\crypto"
 call:linkFile src\updater\crypto\AESKey.java
@@ -25,8 +26,9 @@ mkdir "%softwareDirectory%\src\updater\patch"
 call:linkFile src\updater\patch\Compression.java
 call:linkFile src\updater\patch\OperationType.java
 call:linkFile src\updater\patch\PatchReadUtil.java
-call:linkFile src\updater\patch\PatchLogReader.java
-call:linkFile src\updater\patch\PatchLogWriter.java
+call:linkFile src\updater\patch\PatchRecord.java
+call:linkFile src\updater\patch\LogReader.java
+call:linkFile src\updater\patch\LogWriter.java
 call:linkFile src\updater\patch\Patcher.java
 call:linkFile src\updater\patch\PatcherListener.java
 mkdir "%softwareDirectory%\src\updater\util"
@@ -62,9 +64,10 @@ call:linkFile src\updater\patch\OperationType.java
 call:linkFile src\updater\patch\PatchCreator.java
 call:linkFile src\updater\patch\PatchExtractor.java
 call:linkFile src\updater\patch\PatchReadUtil.java
+call:linkFile src\updater\patch\PatchRecord.java
 call:linkFile src\updater\patch\PatchWriteUtil.java
-call:linkFile src\updater\patch\PatchLogReader.java
-call:linkFile src\updater\patch\PatchLogWriter.java
+call:linkFile src\updater\patch\LogReader.java
+call:linkFile src\updater\patch\LogWriter.java
 call:linkFile src\updater\patch\PatchPacker.java
 call:linkFile src\updater\patch\Patcher.java
 call:linkFile src\updater\patch\PatcherListener.java
@@ -84,6 +87,7 @@ set softwareDirectory=SoftwarePatchDownloader
 
 mkdir "%softwareDirectory%\src\updater\concurrent"
 call:linkFile src\updater\concurrent\ConcurrentLock.java
+call:linkFile src\updater\concurrent\LockType.java
 call:linkFile src\updater\concurrent\LockUtil.java
 mkdir "%softwareDirectory%\src\updater\gui"
 call:linkFile src\updater\gui\JTitledPanel.java
@@ -97,6 +101,7 @@ mkdir "%softwareDirectory%\src\updater\util"
 call:linkFile src\updater\util\CommonUtil.java
 call:linkFile src\updater\util\DownloadProgressListener.java
 call:linkFile src\updater\util\DownloadProgressUtil.java
+call:linkFile src\updater\util\DownloadResult.java
 call:linkFile src\updater\util\HTTPDownloader.java
 call:linkFile src\updater\util\Interruptible.java
 call:linkFile src\updater\util\Pausable.java

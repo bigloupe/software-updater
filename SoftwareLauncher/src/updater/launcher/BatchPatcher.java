@@ -7,8 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import updater.crypto.AESKey;
+import updater.patch.PatchRecord;
 import updater.patch.Patcher;
-import updater.patch.Patcher.Replacement;
 import updater.patch.PatcherListener;
 import updater.script.Patch;
 import updater.util.Pausable;
@@ -60,7 +60,7 @@ public class BatchPatcher implements Pausable {
      * @return 
      * @throws IOException 
      */
-    public List<Replacement> doPatch(final BatchPatchListener listener, File applyToFolder, File tempDir, String fromVersion, List<Patch> patches) throws IOException {
+    public List<PatchRecord> doPatch(final BatchPatchListener listener, File applyToFolder, File tempDir, String fromVersion, List<Patch> patches) throws IOException {
         if (listener == null) {
             throw new NullPointerException("argument 'listener' cannot be null");
         }
@@ -84,7 +84,7 @@ public class BatchPatcher implements Pausable {
         }
         List<Patch> _patches = new ArrayList<Patch>(patches);
 
-        List<Replacement> returnList = new ArrayList<Replacement>();
+        List<PatchRecord> returnList = new ArrayList<PatchRecord>();
 
         if (_patches.isEmpty()) {
             return returnList;
@@ -131,7 +131,7 @@ public class BatchPatcher implements Pausable {
             // initialize patcher
             final int _count = count;
             patcher = new Patcher(new File(tempDirForPatch + File.separator + "action.log"));
-            List<Replacement> replacementList = patcher.doPatch(new PatcherListener() {
+            List<PatchRecord> replacementList = patcher.doPatch(new PatcherListener() {
 
                 @Override
                 public void patchProgress(int percentage, String message) {
@@ -145,19 +145,19 @@ public class BatchPatcher implements Pausable {
                     listener.patchEnableCancel(enable);
                 }
             }, patchFile, _patch.getId(), aesKey, applyToFolder, tempDirForPatch, destinationReplacement);
-            for (Replacement _replacement : replacementList) {
+            for (PatchRecord _replacement : replacementList) {
                 switch (_replacement.getOperationType()) {
                     case REMOVE:
-                        destinationReplacement.put(_replacement.getDestination(), _replacement.getBackupFilePath());
+                        destinationReplacement.put(_replacement.getDestinationFilePath(), _replacement.getBackupFilePath());
                         break;
                     case REPLACE:
                     case PATCH:
                     case FORCE:
-                        destinationReplacement.put(_replacement.getDestination(), _replacement.getNewFilePath());
+                        destinationReplacement.put(_replacement.getDestinationFilePath(), _replacement.getNewFilePath());
                         break;
                     case NEW:
-                        if (!_replacement.getNewFilePath().isEmpty() && !_replacement.getDestination().isEmpty()) {
-                            destinationReplacement.put(_replacement.getDestination(), _replacement.getNewFilePath());
+                        if (!_replacement.getNewFilePath().isEmpty() && !_replacement.getDestinationFilePath().isEmpty()) {
+                            destinationReplacement.put(_replacement.getDestinationFilePath(), _replacement.getNewFilePath());
                         }
                         break;
                 }
