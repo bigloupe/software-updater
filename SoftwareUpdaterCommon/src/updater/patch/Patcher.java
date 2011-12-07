@@ -480,6 +480,7 @@ public class Patcher implements Pausable {
                   returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
                 }
               } else if (operation.getNewFileLength() == destFileLength && operation.getNewFileChecksum().equals(destFileChecksum)) {
+                log.logPatch(LogWriter.Action.START, operation.getId(), operationType, "", "", "");
                 // succeed
               } else {
                 throw new IOException(String.format("Force file: error occurred when doing file %1$s", destFile.getAbsolutePath()));

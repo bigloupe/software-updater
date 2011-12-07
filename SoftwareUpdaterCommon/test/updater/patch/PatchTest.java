@@ -703,24 +703,28 @@ public class PatchTest {
 
 
     // self-made simple test case
+    System.out.println("+ *** simple test case ***");
     File packedZipFile = new File(packagePath + "test1_pack");
     File unzipToFolder = new File("test1_pack/");
     zipPackTest(packedZipFile, unzipToFolder, tempDir, aesKey);
     assertTrue(CommonUtil.truncateFolder(tempDir));
 
     // Discuz! upgrade
+    System.out.println("+ *** Discuz! upgrade ***");
     packedZipFile = new File(packagePath + "test2_pack");
     unzipToFolder = new File("test2_pack/");
     zipPackTest(packedZipFile, unzipToFolder, tempDir, null);
     assertTrue(CommonUtil.truncateFolder(tempDir));
 
     // phpBB 1.4.4 -> 2.0
+    System.out.println("+ *** phpBB 1.4.4 -> 2.0 ***");
     packedZipFile = new File(packagePath + "test3_pack");
     unzipToFolder = new File("test3_pack/");
     zipPackTest(packedZipFile, unzipToFolder, tempDir, aesKey);
     assertTrue(CommonUtil.truncateFolder(tempDir));
 
     // phpBB 2.0 -> 3.0.9
+    System.out.println("+ *** phpBB 2.0 -> 3.0.9 ***");
     packedZipFile = new File(packagePath + "test4_pack");
     unzipToFolder = new File("test4_pack/");
     zipPackTest(packedZipFile, unzipToFolder, tempDir, null);
@@ -738,6 +742,8 @@ public class PatchTest {
       assertTrue(tempDir.mkdirs());
     }
 
+    System.out.println("+ preparing");
+
     CommonUtil.truncateFolder(unzipToFolder);
     TestCommon.unzip(packedZipFile, unzipToFolder);
 
@@ -747,7 +753,6 @@ public class PatchTest {
     File newOverOldFolder = new File(unzipToFolder.getAbsolutePath() + File.separator + "PatchTest_new_over_old"); // this is the folder that contains all files after applying full patch of 'new' on 'old'
 
 
-    System.out.println("+ patching");
     File patch = new File(tempDir.getAbsolutePath() + File.separator + "patch.patch");
     File tempDirForCreatePatch = new File(tempDir.getAbsolutePath() + File.separator + "create_patch");
     File tempFileForPatchEncryption = new File(patch.getAbsolutePath() + ".encrypted");
@@ -758,10 +763,15 @@ public class PatchTest {
     tempDirForPatch.mkdirs();
     tempDirForApplyPatch.mkdirs();
 
+    // copy 'old' folder to new directory
+    assertTrue(CommonUtil.truncateFolder(tempDirForPatch));
+    TestCommon.copyFolder(oldFolder, tempDirForPatch);
+
+    System.out.println("+ create patch");
     // create patch of new from old (upgrade patch)
     PatchCreator.createPatch(oldFolder, newFolder, tempDirForCreatePatch, patch, -1, "1.0.0", "1.0.1", aesKey, tempFileForPatchEncryption);
-    // copy 'old' folder to new directory
-    TestCommon.copyFolder(oldFolder, tempDirForPatch);
+
+    System.out.println("+ patching");
     // apply the patch on 'old' folder
     Patcher patcher = new Patcher(logFile);
     patcher.doPatch(new PatcherListener() {
@@ -799,7 +809,6 @@ public class PatchTest {
     // compare the new 'old' folder and the 'new' folder
     assertTrue(TestCommon.compareFolder(tempDirForPatch, newFolder));
 
-    System.out.println("+ full-pack patching");
     File fullPatch = new File(tempDir.getAbsolutePath() + File.separator + "full_patch.patch");
     File tempDirForCreateFullPatch = new File(tempDir.getAbsolutePath() + File.separator + "create_full_patch");
     File tempFileForFullPatchEncryption = new File(fullPatch.getAbsolutePath() + ".encrypted");
@@ -810,11 +819,15 @@ public class PatchTest {
     tempDirForFullPatch.mkdirs();
     tempDirForApplyFullPatch.mkdirs();
 
-    // create patch of new from old (full patch)
-    PatchCreator.createFullPatch(newFolder, fullPatch, -1, "1.0.0", null, "1.0.1", aesKey, tempFileForFullPatchEncryption);
     // copy 'old' folder to new directory
     assertTrue(CommonUtil.truncateFolder(tempDirForFullPatch));
     TestCommon.copyFolder(oldFolder, tempDirForFullPatch);
+
+    System.out.println("+ create full-pack patch");
+    // create patch of new from old (full patch)
+    PatchCreator.createFullPatch(newFolder, fullPatch, -1, "1.0.0", null, "1.0.1", aesKey, tempFileForFullPatchEncryption);
+
+    System.out.println("+ full-pack patching");
     // apply the patch on 'old' folder
     patcher = new Patcher(logFileForFullPatch);
     patcher.doPatch(new PatcherListener() {
@@ -836,7 +849,7 @@ public class PatchTest {
     } catch (Exception ex) {
       fail("! revert failed");
     }
-    assertTrue(TestCommon.compareFolder2(tempDirForFullPatch, oldFolder));
+    assertTrue(TestCommon.compareFolderContainAtLeast(tempDirForFullPatch, oldFolder));
 
     System.out.println("+ full-pack patching after revert");
     patcher.doPatch(new PatcherListener() {

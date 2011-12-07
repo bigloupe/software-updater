@@ -84,7 +84,11 @@ public class TestCommon {
     return true;
   }
 
-  public static boolean compareFolder2(File folder1, File folder2) {
+  /**
+   * Files in {@code folder2} must exist in {@code folder1}. {@code folder1}
+   * can contain more files than {@code folder2} but not less than.
+   */
+  public static boolean compareFolderContainAtLeast(File folder1, File folder2) {
     Map<String, File> folder1Files = CommonUtil.getAllFiles(folder1, folder1.getAbsolutePath());
     Map<String, File> folder2Files = CommonUtil.getAllFiles(folder2, folder2.getAbsolutePath());
 
