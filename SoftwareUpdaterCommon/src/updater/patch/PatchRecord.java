@@ -100,7 +100,7 @@ public class PatchRecord {
    * @return the file path
    */
   public String getBackupFilePath() {
-    return newFilePath;
+    return backupFilePath;
   }
 
   /**
@@ -121,7 +121,8 @@ public class PatchRecord {
 
   @Override
   public String toString() {
-    return fileIndex + ": " + newFilePath;
+    return "fileIndex: " + fileIndex + ", operationType: " + (getOperationType() != null ? getOperationType().getValue() : "")
+            + ", dest: " + destinationFilePath + ", new: " + newFilePath + ", backup: " + backupFilePath;
   }
 
   @Override
@@ -146,7 +147,7 @@ public class PatchRecord {
     PatchRecord _object = (PatchRecord) compareTo;
 
     return _object.getFileIndex() == fileIndex
-            && _object.getOperationType().equals(getOperationType())
+            && (_object.getOperationType() == null && getOperationType() == null || (_object.getOperationType() != null && getOperationType() != null && _object.getOperationType().equals(getOperationType())))
             && _object.getBackupFilePath().equals(getBackupFilePath())
             && _object.getNewFilePath().equals(getNewFilePath())
             && _object.getDestinationFilePath().equals(getDestinationFilePath());

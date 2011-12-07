@@ -84,6 +84,34 @@ public class TestCommon {
     return true;
   }
 
+  public static boolean compareFolder2(File folder1, File folder2) {
+    Map<String, File> folder1Files = CommonUtil.getAllFiles(folder1, folder1.getAbsolutePath());
+    Map<String, File> folder2Files = CommonUtil.getAllFiles(folder2, folder2.getAbsolutePath());
+
+    if (folder1Files.size() < folder2Files.size()) {
+      return false;
+    }
+
+    for (String _path : folder2Files.keySet()) {
+      File _folder2File = folder2Files.get(_path);
+      File _folder1File = folder1Files.remove(_path);
+      if (_folder1File == null || _folder2File.isFile() != _folder1File.isFile()) {
+        return false;
+      }
+      if (_folder2File.isFile()) {
+        try {
+          if (!CommonUtil.compareFile(_folder2File, _folder1File)) {
+            return false;
+          }
+        } catch (IOException ex) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
   public static void copyFolder(File fromFolder, File toFolder) throws IOException {
     if (fromFolder == null || toFolder == null) {
       return;

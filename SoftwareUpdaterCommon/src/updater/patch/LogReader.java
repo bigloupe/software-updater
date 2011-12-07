@@ -82,7 +82,7 @@ public class LogReader {
     logEnded = false;
     revertList = new ArrayList<PatchRecord>();
     failList = new ArrayList<PatchRecord>();
-    startFileIndex = 0;
+    startFileIndex = 1;
 
     TreeMap<Integer, PatchRecord> _revertMap = new TreeMap<Integer, PatchRecord>();
     Map<Integer, PatchRecord> _failMap = new TreeMap<Integer, PatchRecord>();
@@ -156,6 +156,7 @@ public class LogReader {
             currentFileIndex = -1;
             break;
           case 5:
+            logEnded = false;
             int revertFileIndex = Integer.parseInt(matcher.group(8));
             PatchRecord revertRecord = _revertMap.remove(revertFileIndex);
             if (revertRecord != null) {

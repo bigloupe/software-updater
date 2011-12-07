@@ -1,5 +1,6 @@
 package updater.patch;
 
+import updater.concurrent.ConcurrentLock;
 import java.util.List;
 import java.util.HashMap;
 import updater.crypto.AESKey;
@@ -10,6 +11,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import updater.concurrent.LockUtil;
 import updater.crypto.KeyGenerator;
 import updater.util.CommonUtil;
 import static org.junit.Assert.*;
@@ -46,7 +48,8 @@ public class PatchTest {
   public void setUp() {
     tempDir = new File("PatchTest_tmp_dir_na4Ja");
     if (!tempDir.isDirectory()) {
-      assertTrue(tempDir.mkdirs());
+      tempDir.mkdirs();
+      assertTrue(tempDir.isDirectory());
     }
     assertTrue(CommonUtil.truncateFolder(tempDir));
 
@@ -74,6 +77,8 @@ public class PatchTest {
 
   @Test
   public void test() throws Exception {
+    System.out.println("+++++ test +++++");
+
     File aesKeyFile = new File(tempDir.getAbsolutePath() + File.separator + "aes.xml");
     KeyGenerator.generateAES(256, aesKeyFile);
     AESKey aesKey = AESKey.read(CommonUtil.readFile(aesKeyFile));
@@ -425,6 +430,114 @@ public class PatchTest {
     }
   }
 
+  @Test
+  public void test2() throws Exception {
+    System.out.println("+++++ test2 +++++");
+
+    File aesKeyFile = new File(tempDir.getAbsolutePath() + File.separator + "aes.xml");
+    KeyGenerator.generateAES(256, aesKeyFile);
+    AESKey aesKey = AESKey.read(CommonUtil.readFile(aesKeyFile));
+
+    File newFolder = new File(packagePath + File.separator + "test4/software/1.1");
+    File patch = new File(tempDir.getAbsolutePath() + File.separator + "patch");
+    File tempFileForPatchEncryption = new File(tempDir.getAbsolutePath() + File.separator + "patch.encrypted");
+    tempDirForApplyPatch.mkdirs();
+
+    PatchCreator.createFullPatch(newFolder, patch, -1, "1.0.0", null, "1.0.1", aesKey, tempFileForPatchEncryption);
+    TestCommon.copyFolder(new File(packagePath + File.separator + "test4/1.0/"), softwareFolder);
+    TestCommon.copyFolder(new File(packagePath + File.separator + "test4/temp/"), tempDirForApplyPatch);
+
+    test2Step1(patch, aesKey);
+    test2Step2(patch, aesKey);
+    test2Step3(patch, aesKey);
+    test2Step4(patch, aesKey);
+
+    assertTrue(CommonUtil.truncateFolder(tempDir));
+    tempDir.delete();
+  }
+
+  public void test2Step1(File patch, AESKey aesKey) throws Exception {
+    try {
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      assertTrue(replacementList.isEmpty());
+      fail();
+    } catch (Exception ex) {
+      assertExistance(16, 1, true, true, true, false);
+      assertExistance(17, 2, false, false, true, false);
+      assertExistance(18, 3, true, true, false, false);
+
+      new File(softwareFolder.getAbsolutePath() + File.separator + "17").delete();
+      new File(softwareFolder.getAbsolutePath() + File.separator + "17").mkdirs();
+    }
+  }
+
+  public void test2Step2(File patch, AESKey aesKey) throws Exception {
+    try {
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      assertTrue(replacementList.isEmpty());
+      fail();
+    } catch (Exception ex) {
+      assertExistance(16, 1, true, true, true, false);
+
+      assertExistance(17, 2, true, true, true, false);
+      assertExistance(18, 3, true, true, true, false);
+      assertExistance(19, 4, true, true, true, false);
+      assertExistance(20, 5, false, false, true, false);
+
+      new File(softwareFolder.getAbsolutePath() + File.separator + "19").delete();
+    }
+  }
+
+  public void test2Step3(File patch, AESKey aesKey) throws Exception {
+    try {
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      assertTrue(replacementList.isEmpty());
+      fail();
+    } catch (Exception ex) {
+      assertExistance(16, 1, true, true, true, false);
+
+      assertExistance(17, 2, true, true, true, false);
+      assertExistance(18, 3, true, true, true, false);
+
+      assertExistance(19, 4, false, false, true, false);
+      assertExistance(20, 5, false, false, true, true);
+      assertTrue(new String(CommonUtil.readFile(new File(softwareFolder.getAbsolutePath() + File.separator + "20"))).equals("20_new"));
+      assertTrue(new String(CommonUtil.readFile(new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_5"))).equals("20_old"));
+      assertExistance(21, 6, false, false, true, false);
+      assertTrue(new String(CommonUtil.readFile(new File(softwareFolder.getAbsolutePath() + File.separator + "21"))).equals("21_new"));
+      assertExistance(22, 7, false, false, true, true);
+      assertExistance(23, 8, false, false, false, false);
+
+      new File(softwareFolder.getAbsolutePath() + File.separator + "22").delete();
+      new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_7").delete();
+    }
+  }
+
+  public void test2Step4(File patch, AESKey aesKey) throws Exception {
+    try {
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      assertTrue(replacementList.isEmpty());
+      assertExistance(16, 1, true, true, true, false);
+
+      assertExistance(17, 2, true, true, true, false);
+      assertExistance(18, 3, true, true, true, false);
+
+      assertExistance(19, 4, false, false, true, false);
+      assertExistance(20, 5, false, false, true, true);
+      assertTrue(new String(CommonUtil.readFile(new File(softwareFolder.getAbsolutePath() + File.separator + "20"))).equals("20_new"));
+      assertTrue(new String(CommonUtil.readFile(new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_5"))).equals("20_old"));
+      assertExistance(21, 6, false, false, true, false);
+      assertTrue(new String(CommonUtil.readFile(new File(softwareFolder.getAbsolutePath() + File.separator + "21"))).equals("21_new"));
+
+      assertExistance(22, 7, false, false, true, false);
+      assertTrue(new String(CommonUtil.readFile(new File(softwareFolder.getAbsolutePath() + File.separator + "22"))).equals("22_new"));
+      assertExistance(23, 8, false, false, true, false);
+      assertTrue(new String(CommonUtil.readFile(new File(softwareFolder.getAbsolutePath() + File.separator + "23"))).equals("23_new"));
+    } catch (Exception ex) {
+      fail();
+    }
+  }
+
   public void assertExistance(int fileIndex, int operationId, boolean destIsDirectory, boolean backupIsDirectory, boolean destExist, boolean backupExist) {
     File destFile = new File(softwareFolder + File.separator + fileIndex);
     File backupFile = new File(tempDirForApplyPatch + File.separator + "old_" + operationId);
@@ -450,7 +563,137 @@ public class PatchTest {
     }
   }
 
-//  @Test
+  @Test
+  public void test3() throws Exception {
+    System.out.println("+++++ test3 +++++");
+
+    File aesKeyFile = new File(tempDir.getAbsolutePath() + File.separator + "aes.xml");
+    KeyGenerator.generateAES(256, aesKeyFile);
+    AESKey aesKey = AESKey.read(CommonUtil.readFile(aesKeyFile));
+
+    File newFolder = new File(packagePath + File.separator + "lock_test_1/software/1.1");
+    File patch = new File(tempDir.getAbsolutePath() + File.separator + "patch");
+    File tempFileForPatchEncryption = new File(tempDir.getAbsolutePath() + File.separator + "patch.encrypted");
+    tempDirForApplyPatch.mkdirs();
+
+    PatchCreator.createFullPatch(newFolder, patch, -1, "1.0.0", null, "1.0.1", aesKey, tempFileForPatchEncryption);
+    TestCommon.copyFolder(new File(packagePath + File.separator + "lock_test_1/1.0/"), softwareFolder);
+    TestCommon.copyFolder(new File(packagePath + File.separator + "lock_test_1/temp/"), tempDirForApplyPatch);
+
+    test3Step1(patch, aesKey);
+
+    assertTrue(CommonUtil.truncateFolder(tempDir));
+    tempDir.delete();
+  }
+
+  public void test3Step1(File patch, AESKey aesKey) throws Exception {
+    ConcurrentLock lock20 = null;
+    try {
+      lock20 = LockUtil.acquireLock(new File(softwareFolder.getAbsolutePath() + File.separator + "20"), 0, 0);
+      assertNotNull(lock20);
+
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      assertEquals(1, replacementList.size());
+      assertEquals(replacementList.get(0), new PatchRecord(OperationType.FORCE, new File(softwareFolder.getAbsolutePath() + File.separator + "20").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "3").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_3").getAbsolutePath()));
+
+      assertExistance(16, 1, true, true, true, false);
+      assertExistance(18, 2, true, true, true, false);
+      assertExistance(20, 3, false, false, true, false);
+      assertFalse(new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "3").exists());
+      assertExistance(21, 4, false, false, true, false);
+      assertTrue(new String(CommonUtil.readFile(new File(softwareFolder.getAbsolutePath() + File.separator + "21"))).equals("21_new"));
+      assertExistance(23, 5, false, false, true, false);
+      assertTrue(new String(CommonUtil.readFile(new File(softwareFolder.getAbsolutePath() + File.separator + "23"))).equals("23_new"));
+    } catch (Exception ex) {
+      fail();
+    } finally {
+      if (lock20 != null) {
+        lock20.release();
+      }
+    }
+  }
+
+  @Test
+  public void test4() throws Exception {
+    System.out.println("+++++ test4 +++++");
+
+    File aesKeyFile = new File(tempDir.getAbsolutePath() + File.separator + "aes.xml");
+    KeyGenerator.generateAES(256, aesKeyFile);
+    AESKey aesKey = AESKey.read(CommonUtil.readFile(aesKeyFile));
+
+    File oldFolder = new File(packagePath + File.separator + "lock_test_2/software/1.0");
+    File newFolder = new File(packagePath + File.separator + "lock_test_2/software/1.1");
+    File patch = new File(tempDir.getAbsolutePath() + File.separator + "patch");
+    File tempDirForCreatePatch = new File(tempDir.getAbsolutePath() + File.separator + "create_patch");
+    File tempFileForPatchEncryption = new File(tempDir.getAbsolutePath() + File.separator + "patch.encrypted");
+    tempDirForCreatePatch.mkdirs();
+    tempDirForApplyPatch.mkdirs();
+
+    PatchCreator.createPatch(oldFolder, newFolder, tempDirForCreatePatch, patch, -1, "1.0.0", "1.0.1", aesKey, tempFileForPatchEncryption);
+    TestCommon.copyFolder(new File(packagePath + File.separator + "lock_test_2/1.0/"), softwareFolder);
+    TestCommon.copyFolder(new File(packagePath + File.separator + "lock_test_2/temp/"), tempDirForApplyPatch);
+
+    test4Step1(patch, aesKey);
+
+    assertTrue(CommonUtil.truncateFolder(tempDir));
+    tempDir.delete();
+  }
+
+  public void test4Step1(File patch, AESKey aesKey) throws Exception {
+    ConcurrentLock lock1_file = null, lock6 = null, lock26 = null;
+    try {
+      File folder1LockFile = new File(softwareFolder.getAbsolutePath() + File.separator + "1/lock");
+      CommonUtil.truncateFile(folder1LockFile);
+      lock1_file = LockUtil.acquireLock(folder1LockFile, 0, 0);
+      assertNotNull(lock1_file);
+      lock6 = LockUtil.acquireLock(new File(softwareFolder.getAbsolutePath() + File.separator + "6"), 0, 0);
+      assertNotNull(lock6);
+      lock26 = LockUtil.acquireLock(new File(softwareFolder.getAbsolutePath() + File.separator + "26"), 0, 0);
+      assertNotNull(lock26);
+
+      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      assertEquals(2, replacementList.size());
+      assertEquals(replacementList.get(0), new PatchRecord(OperationType.REMOVE, new File(softwareFolder.getAbsolutePath() + File.separator + "6").getAbsolutePath(), "", new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_2").getAbsolutePath()));
+      assertEquals(replacementList.get(1), new PatchRecord(OperationType.REPLACE, new File(softwareFolder.getAbsolutePath() + File.separator + "26").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "11").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_11").getAbsolutePath()));
+
+      lock1_file.release();
+      lock6.release();
+      lock26.release();
+
+      assertExistance(7, 1, false, false, false, true);
+      assertExistance(6, 2, false, false, true, false);
+      assertExistance(4, 3, true, true, false, false);
+      assertExistance(2, 4, true, true, true, false);
+      assertTrue(new File(softwareFolder.getAbsolutePath() + File.separator + "2/2").exists());
+      assertExistance(1, 5, true, true, true, false);
+      assertExistance(11, 6, true, true, true, false);
+      assertExistance(13, 7, false, false, true, false);
+      assertExistance(15, 8, false, false, true, false);
+      assertExistance(9, 9, true, true, true, false);
+      assertExistance(25, 10, false, false, true, true);
+      assertTrue(new String(CommonUtil.readFile(new File(softwareFolder.getAbsolutePath() + File.separator + "25"))).equals("25_new"));
+      assertTrue(new String(CommonUtil.readFile(new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_10"))).equals("25_old"));
+      assertExistance(26, 11, false, false, true, false);
+      assertTrue(new String(CommonUtil.readFile(new File(softwareFolder.getAbsolutePath() + File.separator + "26"))).equals("26_old"));
+      assertExistance(28, 12, false, false, true, true);
+      assertTrue(new String(CommonUtil.readFile(new File(softwareFolder.getAbsolutePath() + File.separator + "28"))).equals("28_new"));
+      assertTrue(new String(CommonUtil.readFile(new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_12"))).equals("28_old"));
+    } catch (Exception ex) {
+      fail();
+    } finally {
+      if (lock1_file != null) {
+        lock1_file.release();
+      }
+      if (lock6 != null) {
+        lock6.release();
+      }
+      if (lock26 != null) {
+        lock26.release();
+      }
+    }
+  }
+
+  @Test
   public void patchingTest() throws Exception {
     System.out.println("+++++ patchingTest +++++");
 
@@ -534,6 +777,27 @@ public class PatchTest {
     // compare the new 'old' folder and the 'new' folder
     assertTrue(TestCommon.compareFolder(tempDirForPatch, newFolder));
 
+    System.out.println("+ revert patch");
+    try {
+      patcher.revert();
+    } catch (Exception ex) {
+      fail("! revert failed");
+    }
+    assertTrue(TestCommon.compareFolder(tempDirForPatch, oldFolder));
+
+    System.out.println("+ patching after revert");
+    patcher.doPatch(new PatcherListener() {
+
+      @Override
+      public void patchProgress(int percentage, String message) {
+      }
+
+      @Override
+      public void patchEnableCancel(boolean enable) {
+      }
+    }, patch, 1, aesKey, tempDirForPatch, tempDirForApplyPatch, new HashMap<String, String>());
+    // compare the new 'old' folder and the 'new' folder
+    assertTrue(TestCommon.compareFolder(tempDirForPatch, newFolder));
 
     System.out.println("+ full-pack patching");
     File fullPatch = new File(tempDir.getAbsolutePath() + File.separator + "full_patch.patch");
@@ -553,6 +817,28 @@ public class PatchTest {
     TestCommon.copyFolder(oldFolder, tempDirForFullPatch);
     // apply the patch on 'old' folder
     patcher = new Patcher(logFileForFullPatch);
+    patcher.doPatch(new PatcherListener() {
+
+      @Override
+      public void patchProgress(int percentage, String message) {
+      }
+
+      @Override
+      public void patchEnableCancel(boolean enable) {
+      }
+    }, fullPatch, 1, aesKey, tempDirForFullPatch, tempDirForApplyFullPatch, new HashMap<String, String>());
+    // compare the new 'old' folder and the 'new_over_old' folder
+    assertTrue(TestCommon.compareFolder(tempDirForFullPatch, newOverOldFolder));
+
+    System.out.println("+ revert full patch");
+    try {
+      patcher.revert();
+    } catch (Exception ex) {
+      fail("! revert failed");
+    }
+    assertTrue(TestCommon.compareFolder2(tempDirForFullPatch, oldFolder));
+
+    System.out.println("+ full-pack patching after revert");
     patcher.doPatch(new PatcherListener() {
 
       @Override

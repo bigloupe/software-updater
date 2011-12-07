@@ -1,0 +1,10 @@
+16. folder '16':
+    - dest: exist, backup: not exist
+18. folder '18':
+    - dest: exist, backup: not exist
+20. file '20':
+    - dest: new file, backup: old
+21. file '21':
+    - dest: new file, backup: not exist
+23. file '23':
+    - dest: new file, backup: not exist

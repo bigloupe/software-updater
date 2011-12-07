@@ -1,0 +1,63 @@
+remove:
+  type folder: (dest, backup)
+    dest exist:
+      dest is folder:
+        dest folder empty:
+          ** dest->backup				1
+        dest folder not empty:
+          ** {ok}					2
+      dest is file:
+        ** {error}
+    dest not exist:
+      ** {ok}						4
+  type file: (dest, backup)
+    dest exist:
+      dest is folder:
+        ** {error}
+      dest is file:
+        ** dest->backup					6
+    dest not exist:
+      ** backup exist -> {ok};				7
+         backup not exist -> {error}
+new:
+  type folder: (dest)
+    dest exist:
+      dest is folder:
+        ** {ok}						9
+      dest is file:
+        ** {error}
+    dest not exist:
+      ** create dest folder				11
+  type file: (new, dest)
+    dest exist:
+      dest is folder:
+        ** {error}
+      dest is file:
+        ** length & checksum of dest match new -> {ok};	13
+           else -> {error}
+    dest not exist:
+      ** output patch -> new, new->dest			15
+patch:
+  type file: (new, dest, backup)
+    dest exist:
+      dest is folder:
+        ** {error}
+      dest is file:
+        ** backup exist: {ok};				25
+           length & checksum of dest match old: patch dest -> new, dest->backup, new->dest;			26
+           else -> {error}
+    dest not exist:
+      ** backup exist & new exist -> new->dest;		28
+         else -> {error}
+replace:
+  type file: (new, dest, backup)
+    dest exist:
+      dest is folder:
+        ** {error}
+      dest is file:
+        ** backup exist: {ok};
+           length & checksum of dest match old: output patch -> new, dest->backup, new->dest;
+           else -> {error}
+    dest not exist:
+      ** backup exist & new exist -> new->dest;
+         else -> {error}

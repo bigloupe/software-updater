@@ -208,8 +208,8 @@ public class Patcher implements Pausable {
           interruptiblePatchIn.addInterruptedTask(_interruptedTask);
           //</editor-fold>
 
-          int byteRead,
-           remaining = operation.getPatchLength();
+          int byteRead;
+          int remaining = operation.getPatchLength();
           while (true) {
             if (remaining <= 0) {
               break;
@@ -467,11 +467,17 @@ public class Patcher implements Pausable {
               throw new IOException(String.format("Force file: destFile %1$s expecting file but is a folder", destFile.getAbsolutePath()));
             } else {
               long destFileLength = destFile.length();
-              String destFileChecksum = CommonUtil.getSHA256String(destFile);
-              if (!backupFile.exists() && (operation.getNewFileLength() != destFileLength || !operation.getNewFileChecksum().equals(destFileChecksum))) {
+              String destFileChecksum = null;
+              try {
+                destFileChecksum = CommonUtil.getSHA256String(destFile);
+              } catch (IOException ex) {
+              }
+              if (destFileChecksum == null) {
+                returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+              } else if (!backupFile.exists() && (operation.getNewFileLength() != destFileLength || !operation.getNewFileChecksum().equals(destFileChecksum))) {
                 prepareNewFile(operation, patchIn, newFile, destFile);
                 if (!destFile.renameTo(backupFile) || !newFile.renameTo(destFile)) {
-                  returnValue = new PatchRecord(operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+                  returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
                 }
               } else if (operation.getNewFileLength() == destFileLength && operation.getNewFileChecksum().equals(destFileChecksum)) {
                 // succeed
@@ -482,7 +488,7 @@ public class Patcher implements Pausable {
           } else {
             prepareNewFile(operation, patchIn, newFile, destFile);
             if (!newFile.renameTo(destFile)) {
-              returnValue = new PatchRecord(operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+              returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
             }
           }
         }
@@ -495,12 +501,19 @@ public class Patcher implements Pausable {
           if (destFile.isDirectory()) {
             throw new IOException(String.format("Replace/Patch file: destFile %1$s expecting file but is a directory", destFile.getAbsolutePath()));
           } else {
-            if (backupFile.exists()) {
+            String destFileChecksum = null;
+            try {
+              destFileChecksum = CommonUtil.getSHA256String(destFile);
+            } catch (IOException ex) {
+            }
+            if (destFileChecksum == null) {
+              returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+            } else if (backupFile.exists()) {
               // succeed
-            } else if (operation.getOldFileLength() == destFile.length() && operation.getOldFileChecksum().equals(CommonUtil.getSHA256String(destFile))) {
+            } else if (operation.getOldFileLength() == destFile.length() && operation.getOldFileChecksum().equals(destFileChecksum)) {
               prepareNewFile(operation, patchIn, newFile, destFile);
               if (!destFile.renameTo(backupFile) || !newFile.renameTo(destFile)) {
-                returnValue = new PatchRecord(operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+                returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
               }
             } else {
               throw new IOException(String.format("Replace/Patch file: error occurred when doing file %1$s", destFile.getAbsolutePath()));
@@ -509,7 +522,7 @@ public class Patcher implements Pausable {
         } else {
           if (backupFile.exists() && newFile.exists()) {
             if (!newFile.renameTo(destFile)) {
-              returnValue = new PatchRecord(operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+              returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
             }
           } else {
             throw new IOException(String.format("Replace/Patch file: error occurred when doing file, destFile %1$s not found", destFile.getAbsolutePath()));
@@ -693,7 +706,7 @@ public class Patcher implements Pausable {
       for (int i = 0, iEnd = operations.size(); i < iEnd; i++) {
         Operation _operation = operations.get(i);
 
-        if (!(i >= startFromFileIndex - 1 || extraFileIndexes.get(i) != null)) {
+        if (!(i + 1 >= startFromFileIndex || extraFileIndexes.get(i + 1) != null)) {
           long byteSkipped = decompressedPatchIn.skip(_operation.getPatchLength());
           if (byteSkipped != _operation.getPatchLength()) {
             throw new IOException("Failed to skip remaining bytes in 'interruptiblePatchIn'.");
@@ -784,14 +797,14 @@ public class Patcher implements Pausable {
 
         List<PatchRecord> failList = logReader.getFailList();
         for (PatchRecord patchRecord : failList) {
-          log.logRevert(patchRecord.getFileIndex());
           revertFile(patchRecord);
+          log.logRevert(patchRecord.getFileIndex());
         }
 
         List<PatchRecord> revertList = logReader.getRevertList();
         for (PatchRecord patchRecord : revertList) {
-          log.logRevert(patchRecord.getFileIndex());
           revertFile(patchRecord);
+          log.logRevert(patchRecord.getFileIndex());
         }
       } finally {
         CommonUtil.closeQuietly(log);
@@ -811,9 +824,16 @@ public class Patcher implements Pausable {
     File backupFile = new File(patchRecord.getBackupFilePath());
     if (!newFile.exists() && destFile.exists()) {
       if (patchRecord.getNewFilePath().isEmpty()) {
-        if (!destFile.delete()) {
-          throw new IOException(String.format("Failed to delete %1$s (dest)", patchRecord.getDestinationFilePath()));
+        if (destFile.isDirectory()) {
+          destFile.delete();
+        } else {
+          if (!destFile.delete()) {
+            throw new IOException(String.format("Failed to delete %1$s (dest)", patchRecord.getDestinationFilePath()));
+          }
         }
+//        if (!destFile.delete()) {
+//          throw new IOException(String.format("Failed to delete %1$s (dest)", patchRecord.getDestinationFilePath()));
+//        }
       } else {
         if (!destFile.renameTo(newFile)) {
           throw new IOException(String.format("Failed to move %1$s to %2$s (dest->new)", patchRecord.getDestinationFilePath(), patchRecord.getBackupFilePath()));

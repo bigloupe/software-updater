@@ -58,7 +58,7 @@ public class LockUtil {
     FileLock fileLock = null;
     while (true) {
       try {
-        lockFileOut = new FileOutputStream(fileToLock);
+        lockFileOut = new FileOutputStream(fileToLock, true);
         try {
           fileLock = lockFileOut.getChannel().tryLock();
           if (fileLock == null) {

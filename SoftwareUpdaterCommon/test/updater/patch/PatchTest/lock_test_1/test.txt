@@ -1,0 +1,19 @@
+force:
+  type folder: (dest)
+    dest exist:
+      dest is folder:
+        ** {ok}						16
+      dest is file:
+        ** {error}
+    dest not exist:
+      ** create dest folder				18
+  type file: (new, dest, backup)
+    dest exist:
+      dest is folder:
+        ** {error}
+      dest is file:
+        ** backup not exist & checksum of dest not match new: output patch -> new, dest->backup, new->dest;	20
+           checksum of dest match new: {ok};		21
+           else: {error}
+    dest not exist:
+      ** output patch -> new, new->dest			23
