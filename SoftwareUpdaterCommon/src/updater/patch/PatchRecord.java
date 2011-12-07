@@ -31,11 +31,11 @@ public class PatchRecord {
   /**
    * Constructor.
    * @param fileIndex the file index of the record
-   * @param backupPath the backup file path
+   * @param backupFilePath the backup file path
    * @param newFilePath the copy-from file path
    * @param destinationFilePath the copy-to file path
    */
-  public PatchRecord(int fileIndex, String backupPath, String newFilePath, String destinationFilePath) {
+  public PatchRecord(int fileIndex, String backupFilePath, String newFilePath, String destinationFilePath) {
     if (newFilePath == null) {
       throw new NullPointerException("argument 'newFilePath' cannot be null");
     }
@@ -47,7 +47,7 @@ public class PatchRecord {
     }
     this.fileIndex = fileIndex;
     this.operationType = null;
-    this.backupFilePath = backupPath;
+    this.backupFilePath = backupFilePath;
     this.newFilePath = newFilePath;
     this.destinationFilePath = destinationFilePath;
   }
