@@ -90,7 +90,7 @@ public class LogReader {
 
     Pattern logPattern = Pattern.compile("^(?:"
             + "(0|1)|"
-            + "(2)\\s([0-9]+)\\s([0-9]+)\\s([0-9]+)\\s([0-9]+)\\s([0-9]+)\\s\"((?:[^\\\\\"]|\\\\.)*)\"\\s\"((?:[^\\\\\"]|\\\\.)*)\"\\s\"((?:[^\\\\\"]|\\\\.)*)\"|"
+            + "(2)\\s([0-9]+)\\s([0-9]+)\\s([0-9]+)\\s\"((?:[^\\\\\"]|\\\\.)*)\"\\s\"((?:[^\\\\\"]|\\\\.)*)\"\\s\"((?:[^\\\\\"]|\\\\.)*)\"|"
             + "(3|4|5)\\s([0-9]+)(?:\\s([0-9]+))?"
             + ")$");
 
@@ -117,8 +117,8 @@ public class LogReader {
             actionId = Integer.parseInt(matcher.group(1));
           } else if (matcher.group(2) != null) {
             actionId = Integer.parseInt(matcher.group(2));
-          } else if (matcher.group(11) != null) {
-            actionId = Integer.parseInt(matcher.group(11));
+          } else if (matcher.group(9) != null) {
+            actionId = Integer.parseInt(matcher.group(9));
           }
         } catch (NumberFormatException ex) {
           throw new IOException("Log format invalid.");
@@ -136,18 +136,16 @@ public class LogReader {
           case 2:
             currentFileIndex = Integer.parseInt(matcher.group(3));
             operationId = Integer.parseInt(matcher.group(4));
-            backupFileExist = Integer.parseInt(matcher.group(5)) == 1;
-            newFileExist = Integer.parseInt(matcher.group(6)) == 1;
-            destinationFileExist = Integer.parseInt(matcher.group(7)) == 1;
-            currentBackupPath = matcher.group(8).replace("\\\"", "\"");
-            currentfromPath = matcher.group(9).replace("\\\"", "\"");
-            currentToPath = matcher.group(10).replace("\\\"", "\"");
+            destinationFileExist = Integer.parseInt(matcher.group(5)) == 1;
+            currentBackupPath = matcher.group(6).replace("\\\"", "\"");
+            currentfromPath = matcher.group(7).replace("\\\"", "\"");
+            currentToPath = matcher.group(8).replace("\\\"", "\"");
             break;
           case 3:
-            if (currentFileIndex != Integer.parseInt(matcher.group(12))) {
+            if (currentFileIndex != Integer.parseInt(matcher.group(10))) {
               throw new IOException("Log format invalid.");
             }
-            _revertMap.put(currentFileIndex, new PatchRecord(currentFileIndex, operationId, backupFileExist, newFileExist, destinationFileExist, currentBackupPath, currentfromPath, currentToPath));
+            _revertMap.put(currentFileIndex, new PatchRecord(currentFileIndex, operationId, destinationFileExist, currentBackupPath, currentfromPath, currentToPath));
             currentBackupPath = null;
             if (currentFileIndex >= startFileIndex) {
               startFileIndex = currentFileIndex + 1;
@@ -155,10 +153,10 @@ public class LogReader {
             currentFileIndex = -1;
             break;
           case 4:
-            if (currentFileIndex != Integer.parseInt(matcher.group(12))) {
+            if (currentFileIndex != Integer.parseInt(matcher.group(10))) {
               throw new IOException("Log format invalid.");
             }
-            _failMap.put(currentFileIndex, new PatchRecord(currentFileIndex, operationId, backupFileExist, newFileExist, destinationFileExist, currentBackupPath, currentfromPath, currentToPath));
+            _failMap.put(currentFileIndex, new PatchRecord(currentFileIndex, operationId, destinationFileExist, currentBackupPath, currentfromPath, currentToPath));
             currentBackupPath = null;
             if (currentFileIndex >= startFileIndex) {
               startFileIndex = currentFileIndex + 1;
@@ -167,7 +165,7 @@ public class LogReader {
             break;
           case 5:
             logEnded = false;
-            int revertFileIndex = Integer.parseInt(matcher.group(12));
+            int revertFileIndex = Integer.parseInt(matcher.group(10));
             PatchRecord revertRecord = _revertMap.remove(revertFileIndex);
             if (revertRecord != null) {
               _failMap.put(revertFileIndex, revertRecord);
@@ -186,7 +184,7 @@ public class LogReader {
       }
 
       if (currentBackupPath != null) {
-        failList.add(new PatchRecord(startFileIndex, operationId, backupFileExist, newFileExist, destinationFileExist, currentBackupPath, currentfromPath, currentToPath));
+        failList.add(new PatchRecord(startFileIndex, operationId, destinationFileExist, currentBackupPath, currentfromPath, currentToPath));
       }
     } finally {
       CommonUtil.closeQuietly(in);

@@ -71,54 +71,54 @@ public class PatchLogTest {
       writer5 = new LogWriter(logFile5);
 
       writer1.logStart();
-      writer1.logPatch(LogAction.START, 0, 1, false, false, false, "backup1", "from1", "to1");
+      writer1.logPatch(LogAction.START, 0, 1, false, "backup1", "from1", "to1");
       writer1.logPatch(LogAction.FINISH, 0);
-      writer1.logPatch(LogAction.START, 1, 2, false, false, false, "backup2", "from2", "to2");
+      writer1.logPatch(LogAction.START, 1, 2, false, "backup2", "from2", "to2");
       writer1.logPatch(LogAction.FINISH, 1);
-      writer1.logPatch(LogAction.START, 2, 3, false, false, false, "backup3", "from3", "to3");
+      writer1.logPatch(LogAction.START, 2, 3, false, "backup3", "from3", "to3");
       writer1.logPatch(LogAction.FAILED, 2);
-      writer1.logPatch(LogAction.START, 3, 4, false, false, false, "backup4", "from4", "to4");
-      writer1.logPatch(LogAction.START, 3, 4, false, false, false, "backup4", "from4", "to4");
+      writer1.logPatch(LogAction.START, 3, 4, false, "backup4", "from4", "to4");
+      writer1.logPatch(LogAction.START, 3, 4, false, "backup4", "from4", "to4");
       writer1.logPatch(LogAction.FINISH, 3);
-      writer1.logPatch(LogAction.START, 4, 5, false, false, false, "backup5", "from5", "to5");
+      writer1.logPatch(LogAction.START, 4, 5, false, "backup5", "from5", "to5");
       writer1.logPatch(LogAction.FAILED, 4);
-      writer1.logPatch(LogAction.START, 5, 6, false, false, false, "backup6", "from6", "to6");
+      writer1.logPatch(LogAction.START, 5, 6, false, "backup6", "from6", "to6");
       writer1.logPatch(LogAction.FAILED, 5);
-      writer1.logPatch(LogAction.START, 6, 7, false, false, false, "backup7", "from7", "to7");
+      writer1.logPatch(LogAction.START, 6, 7, false, "backup7", "from7", "to7");
       writer1.logPatch(LogAction.FINISH, 6);
-      writer1.logPatch(LogAction.START, 2, 3, false, false, false, "backup3", "from3", "to3");
+      writer1.logPatch(LogAction.START, 2, 3, false, "backup3", "from3", "to3");
       writer1.logPatch(LogAction.FINISH, 2);
       writer1.logEnd();
 
       writer2.logStart();
-      writer2.logPatch(LogAction.START, 0, 1, false, false, false, "backup1", "from1", "to1");
+      writer2.logPatch(LogAction.START, 0, 1, false, "backup1", "from1", "to1");
       writer2.logPatch(LogAction.FINISH, 0);
-      writer2.logPatch(LogAction.START, 1, 2, false, false, false, "backup2", "from2", "to2");
-      writer2.logPatch(LogAction.START, 1, 2, false, false, false, "backup2", "from2", "to2");
+      writer2.logPatch(LogAction.START, 1, 2, false, "backup2", "from2", "to2");
+      writer2.logPatch(LogAction.START, 1, 2, false, "backup2", "from2", "to2");
       writer2.logPatch(LogAction.FINISH, 1);
-      writer2.logPatch(LogAction.START, 2, 3, false, false, false, "backup3", "from3", "to3");
+      writer2.logPatch(LogAction.START, 2, 3, false, "backup3", "from3", "to3");
       writer2.logPatch(LogAction.FAILED, 2);
       writer2.logRevert(0);
-      writer2.logPatch(LogAction.START, 3, 4, false, false, false, "backup4", "from4", "to4");
+      writer2.logPatch(LogAction.START, 3, 4, false, "backup4", "from4", "to4");
 
       writer3.logStart();
-      writer3.logPatch(LogAction.START, 0, 1, false, false, false, "backup1", "from1", "to1");
+      writer3.logPatch(LogAction.START, 0, 1, false, "backup1", "from1", "to1");
       writer3.logPatch(LogAction.FAILED, 0);
-      writer3.logPatch(LogAction.START, 1, 2, false, false, false, "backup2", "from2", "to2");
+      writer3.logPatch(LogAction.START, 1, 2, false, "backup2", "from2", "to2");
       writer3.logPatch(LogAction.FINISH, 1);
-      writer3.logPatch(LogAction.START, 2, 3, false, false, false, "backup3", "from3", "to3");
+      writer3.logPatch(LogAction.START, 2, 3, false, "backup3", "from3", "to3");
       writer3.logPatch(LogAction.FAILED, 2);
 
       writer4.logStart();
-      writer4.logPatch(LogAction.START, 0, 1, false, false, false, "backup1", "from1", "to1");
+      writer4.logPatch(LogAction.START, 0, 1, false, "backup1", "from1", "to1");
       writer4.logPatch(LogAction.FAILED, 0);
-      writer4.logPatch(LogAction.START, 1, 2, false, false, false, "backup2", "from2", "to2");
+      writer4.logPatch(LogAction.START, 1, 2, false, "backup2", "from2", "to2");
       writer4.logPatch(LogAction.FAILED, 1);
 
       writer5.logStart();
-      writer5.logPatch(LogAction.START, 0, 1, false, false, false, "\"backup1", "fr\"om1", "to1\"");
+      writer5.logPatch(LogAction.START, 0, 1, false, "\"backup1", "fr\"om1", "to1\"");
       writer5.logPatch(LogAction.FINISH, 0);
-      writer5.logPatch(LogAction.START, 1, 2, false, false, false, "backup2", "from2", "to2");
+      writer5.logPatch(LogAction.START, 1, 2, false, "backup2", "from2", "to2");
       writer5.logPatch(LogAction.FINISH, 1);
     } catch (IOException ex) {
       fail("! Prepare log failed.");
@@ -157,8 +157,8 @@ public class PatchLogTest {
 
       assertTrue(logStarted);
       assertTrue(logEnded);
-      assertArrayEquals(new PatchRecord[]{new PatchRecord(4, 5, false, false, false, "backup5", "from5", "to5"), new PatchRecord(5, 6, false, false, false, "backup6", "from6", "to6")}, failList.toArray(new PatchRecord[failList.size()]));
-      assertArrayEquals(new PatchRecord[]{new PatchRecord(6, 7, false, false, false, "backup7", "from7", "to7"), new PatchRecord(3, 4, false, false, false, "backup4", "from4", "to4"), new PatchRecord(2, 3, false, false, false, "backup3", "from3", "to3"), new PatchRecord(1, 2, false, false, false, "backup2", "from2", "to2"), new PatchRecord(0, 1, false, false, false, "backup1", "from1", "to1")}, revertList.toArray(new PatchRecord[revertList.size()]));
+      assertArrayEquals(new PatchRecord[]{new PatchRecord(4, 5, false, "backup5", "from5", "to5"), new PatchRecord(5, 6, false, "backup6", "from6", "to6")}, failList.toArray(new PatchRecord[failList.size()]));
+      assertArrayEquals(new PatchRecord[]{new PatchRecord(6, 7, false, "backup7", "from7", "to7"), new PatchRecord(3, 4, false, "backup4", "from4", "to4"), new PatchRecord(2, 3, false, "backup3", "from3", "to3"), new PatchRecord(1, 2, false, "backup2", "from2", "to2"), new PatchRecord(0, 1, false, "backup1", "from1", "to1")}, revertList.toArray(new PatchRecord[revertList.size()]));
       assertEquals(7, startFileIndex);
 
 
@@ -170,8 +170,8 @@ public class PatchLogTest {
 
       assertTrue(logStarted);
       assertFalse(logEnded);
-      assertArrayEquals(new PatchRecord[]{new PatchRecord(0, 1, false, false, false, "backup1", "from1", "to1"), new PatchRecord(2, 3, false, false, false, "backup3", "from3", "to3"), new PatchRecord(3, 4, false, false, false, "backup4", "from4", "to4")}, failList.toArray(new PatchRecord[failList.size()]));
-      assertArrayEquals(new PatchRecord[]{new PatchRecord(1, 2, false, false, false, "backup2", "from2", "to2")}, revertList.toArray(new PatchRecord[revertList.size()]));
+      assertArrayEquals(new PatchRecord[]{new PatchRecord(0, 1, false, "backup1", "from1", "to1"), new PatchRecord(2, 3, false, "backup3", "from3", "to3"), new PatchRecord(3, 4, false, "backup4", "from4", "to4")}, failList.toArray(new PatchRecord[failList.size()]));
+      assertArrayEquals(new PatchRecord[]{new PatchRecord(1, 2, false, "backup2", "from2", "to2")}, revertList.toArray(new PatchRecord[revertList.size()]));
       assertEquals(3, startFileIndex);
 
 
@@ -183,8 +183,8 @@ public class PatchLogTest {
 
       assertTrue(logStarted);
       assertFalse(logEnded);
-      assertArrayEquals(new PatchRecord[]{new PatchRecord(0, 1, false, false, false, "backup1", "from1", "to1"), new PatchRecord(2, 3, false, false, false, "backup3", "from3", "to3")}, failList.toArray(new PatchRecord[failList.size()]));
-      assertArrayEquals(new PatchRecord[]{new PatchRecord(1, 2, false, false, false, "backup2", "from2", "to2")}, revertList.toArray(new PatchRecord[revertList.size()]));
+      assertArrayEquals(new PatchRecord[]{new PatchRecord(0, 1, false, "backup1", "from1", "to1"), new PatchRecord(2, 3, false, "backup3", "from3", "to3")}, failList.toArray(new PatchRecord[failList.size()]));
+      assertArrayEquals(new PatchRecord[]{new PatchRecord(1, 2, false, "backup2", "from2", "to2")}, revertList.toArray(new PatchRecord[revertList.size()]));
       assertEquals(3, startFileIndex);
 
 
@@ -196,7 +196,7 @@ public class PatchLogTest {
 
       assertTrue(logStarted);
       assertFalse(logEnded);
-      assertArrayEquals(new PatchRecord[]{new PatchRecord(0, 1, false, false, false, "backup1", "from1", "to1"), new PatchRecord(1, 2, false, false, false, "backup2", "from2", "to2")}, failList.toArray(new PatchRecord[failList.size()]));
+      assertArrayEquals(new PatchRecord[]{new PatchRecord(0, 1, false, "backup1", "from1", "to1"), new PatchRecord(1, 2, false, "backup2", "from2", "to2")}, failList.toArray(new PatchRecord[failList.size()]));
       assertArrayEquals(new PatchRecord[]{}, revertList.toArray(new PatchRecord[revertList.size()]));
       assertEquals(2, startFileIndex);
 
@@ -210,7 +210,7 @@ public class PatchLogTest {
       assertTrue(logStarted);
       assertFalse(logEnded);
       assertArrayEquals(new PatchRecord[]{}, failList.toArray(new PatchRecord[failList.size()]));
-      assertArrayEquals(new PatchRecord[]{new PatchRecord(1, 2, false, false, false, "backup2", "from2", "to2"), new PatchRecord(0, 1, false, false, false, "\"backup1", "fr\"om1", "to1\"")}, revertList.toArray(new PatchRecord[revertList.size()]));
+      assertArrayEquals(new PatchRecord[]{new PatchRecord(1, 2, false, "backup2", "from2", "to2"), new PatchRecord(0, 1, false, "\"backup1", "fr\"om1", "to1\"")}, revertList.toArray(new PatchRecord[revertList.size()]));
       assertEquals(2, startFileIndex);
     } catch (IOException ex) {
       System.out.println(ex);

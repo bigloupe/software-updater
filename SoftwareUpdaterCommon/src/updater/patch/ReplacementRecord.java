@@ -8,7 +8,7 @@ public class ReplacementRecord extends PatchRecord {
   protected OperationType operationType;
 
   public ReplacementRecord(OperationType operationType, String backupFilePath, String newFilePath, String destinationFilePath) {
-    super(-1, -1, false, false, false, backupFilePath, newFilePath, destinationFilePath);
+    super(-1, -1, false, backupFilePath, newFilePath, destinationFilePath);
     if (operationType == null) {
       throw new NullPointerException("argument 'operationType' cannot be null");
     }

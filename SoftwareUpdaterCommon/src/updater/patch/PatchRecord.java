@@ -16,14 +16,6 @@ public class PatchRecord {
    */
   protected int operationId;
   /**
-   * Indicate whether the backup file exist when patching or not.
-   */
-  protected boolean backupFileExist;
-  /**
-   * Indicate whether the new file exist when patching or not.
-   */
-  protected boolean newFileExist;
-  /**
    * Indicate whether the destination file exist when patching or not.
    */
   protected boolean destinationFileExist;
@@ -55,7 +47,7 @@ public class PatchRecord {
    * @param destinationFilePath the copy-to file path
    */
   public PatchRecord(int fileIndex, int operationId,
-          boolean backupFileExist, boolean newFileExist, boolean destinationFileExist,
+          boolean destinationFileExist,
           String backupFilePath, String newFilePath, String destinationFilePath) {
     if (newFilePath == null) {
       throw new NullPointerException("argument 'newFilePath' cannot be null");
@@ -68,8 +60,6 @@ public class PatchRecord {
     }
     this.fileIndex = fileIndex;
     this.operationId = operationId;
-    this.backupFileExist = backupFileExist;
-    this.newFileExist = newFileExist;
     this.destinationFileExist = destinationFileExist;
     this.backupFilePath = backupFilePath;
     this.newFilePath = newFilePath;
@@ -90,22 +80,6 @@ public class PatchRecord {
    */
   public int getOperationId() {
     return operationId;
-  }
-
-  /**
-   * Check if the backup file exist when patching or not.
-   * @return true means exist, false if not
-   */
-  public boolean isBackupFileExist() {
-    return backupFileExist;
-  }
-
-  /**
-   * Check if the new file exist when patching or not.
-   * @return true means exist, false if not
-   */
-  public boolean isNewFileExist() {
-    return newFileExist;
   }
 
   /**
@@ -151,7 +125,7 @@ public class PatchRecord {
   @Override
   public String toString() {
     return "fileIndex: " + fileIndex + ", operationId: " + operationId
-            + ", backupFileExist: " + backupFileExist + ", newFileExist: " + newFileExist + ", destinationFileExist: " + destinationFileExist
+            + ", destinationFileExist: " + destinationFileExist
             + ", dest: " + destinationFilePath + ", new: " + newFilePath + ", backup: " + backupFilePath;
   }
 
@@ -160,8 +134,6 @@ public class PatchRecord {
     int hash = 5;
     hash = 67 * hash + this.fileIndex;
     hash = 67 * hash + this.operationId;
-    hash = 67 * hash + (this.backupFileExist ? 1 : 0);
-    hash = 67 * hash + (this.newFileExist ? 1 : 0);
     hash = 67 * hash + (this.destinationFileExist ? 1 : 0);
     hash = 67 * hash + (this.backupFilePath != null ? this.backupFilePath.hashCode() : 0);
     hash = 67 * hash + (this.newFilePath != null ? this.newFilePath.hashCode() : 0);
@@ -181,8 +153,6 @@ public class PatchRecord {
 
     return _object.getFileIndex() == fileIndex
             && _object.getOperationId() == getOperationId()
-            && _object.isBackupFileExist() == isBackupFileExist()
-            && _object.isNewFileExist() == isNewFileExist()
             && _object.isDestinationFileExist() == isDestinationFileExist()
             && _object.getBackupFilePath().equals(getBackupFilePath())
             && _object.getNewFilePath().equals(getNewFilePath())

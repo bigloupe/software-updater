@@ -108,7 +108,8 @@ public class PatchTest {
 
     File logFile = new File(tempDir.getAbsolutePath() + File.separator + "action.log");
     new Patcher(logFile).revert();
-    assertTrue(TestCommon.compareFolderContainAtLeast(softwareFolder, new File(packagePath + File.separator + "test3/revert/")));
+    // there manipulated the temp dir, so can't do the comparison like test2()
+    assertTrue(TestCommon.compareFolder(softwareFolder, new File(packagePath + File.separator + "test3/revert")));
 
     assertTrue(CommonUtil.truncateFolder(tempDir));
     tempDir.delete();
@@ -465,7 +466,7 @@ public class PatchTest {
 
     File logFile = new File(tempDir.getAbsolutePath() + File.separator + "action.log");
     new Patcher(logFile).revert();
-    assertTrue(TestCommon.compareFolderContainAtLeast(softwareFolder, revertFile));
+    assertTrue(TestCommon.compareFolder(softwareFolder, revertFile));
 
     assertTrue(CommonUtil.truncateFolder(tempDir));
     tempDir.delete();
@@ -708,7 +709,7 @@ public class PatchTest {
     }
   }
 
-//  @Test
+  @Test
   public void patchingTest() throws Exception {
     System.out.println("+++++ patchingTest +++++");
 
