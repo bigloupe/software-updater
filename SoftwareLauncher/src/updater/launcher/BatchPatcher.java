@@ -10,6 +10,7 @@ import updater.crypto.AESKey;
 import updater.patch.PatchRecord;
 import updater.patch.Patcher;
 import updater.patch.PatcherListener;
+import updater.patch.ReplacementRecord;
 import updater.script.Patch;
 import updater.util.Pausable;
 
@@ -131,7 +132,7 @@ public class BatchPatcher implements Pausable {
             // initialize patcher
             final int _count = count;
             patcher = new Patcher(new File(tempDirForPatch + File.separator + "action.log"));
-            List<PatchRecord> replacementList = patcher.doPatch(new PatcherListener() {
+            List<ReplacementRecord> replacementList = patcher.doPatch(new PatcherListener() {
 
                 @Override
                 public void patchProgress(int percentage, String message) {
@@ -145,7 +146,7 @@ public class BatchPatcher implements Pausable {
                     listener.patchEnableCancel(enable);
                 }
             }, patchFile, _patch.getId(), aesKey, applyToFolder, tempDirForPatch, destinationReplacement);
-            for (PatchRecord _replacement : replacementList) {
+            for (ReplacementRecord _replacement : replacementList) {
                 switch (_replacement.getOperationType()) {
                     case REMOVE:
                         destinationReplacement.put(_replacement.getDestinationFilePath(), _replacement.getBackupFilePath());

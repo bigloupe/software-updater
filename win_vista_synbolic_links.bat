@@ -32,6 +32,7 @@ call:linkFile src\updater\patch\LogReader.java
 call:linkFile src\updater\patch\LogWriter.java
 call:linkFile src\updater\patch\Patcher.java
 call:linkFile src\updater\patch\PatcherListener.java
+call:linkFile src\updater\patch\ReplacementRecord.java
 mkdir "%softwareDirectory%\src\updater\util"
 call:linkFile src\updater\util\CommonUtil.java
 call:linkFile src\updater\util\Interruptible.java
@@ -73,6 +74,7 @@ call:linkFile src\updater\patch\LogWriter.java
 call:linkFile src\updater\patch\PatchPacker.java
 call:linkFile src\updater\patch\Patcher.java
 call:linkFile src\updater\patch\PatcherListener.java
+call:linkFile src\updater\patch\ReplacementRecord.java
 mkdir "%softwareDirectory%\src\updater\util"
 call:linkFile src\updater\util\CommonUtil.java
 call:linkFile src\updater\util\Interruptible.java

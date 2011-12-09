@@ -61,7 +61,7 @@ public class PatchTest {
   public void tearDown() {
   }
 
-  public List<PatchRecord> detailPatchingTestInit(File patch, AESKey aesKey) throws Exception {
+  public List<ReplacementRecord> detailPatchingTestInit(File patch, AESKey aesKey) throws Exception {
     File logFile = new File(tempDir.getAbsolutePath() + File.separator + "action.log");
     return new Patcher(logFile).doPatch(new PatcherListener() {
 
@@ -106,28 +106,9 @@ public class PatchTest {
     testStep9(patch, aesKey);
     testStep10(patch, aesKey);
 
-    File revertFile = new File(tempDir.getAbsolutePath() + File.separator + "revert");
-    TestCommon.copyFolder(new File(packagePath + File.separator + "test3/1.0/"), revertFile);
-    new File(revertFile.getAbsolutePath() + File.separator + "5").delete();
-    CommonUtil.truncateFile(new File(revertFile.getAbsolutePath() + File.separator + "5"));
-    new File(revertFile.getAbsolutePath() + File.separator + "3").delete();
-    new File(revertFile.getAbsolutePath() + File.separator + "3").mkdirs();
-    new File(revertFile.getAbsolutePath() + File.separator + "10").delete();
-    new File(revertFile.getAbsolutePath() + File.separator + "10").mkdirs();
-    new File(revertFile.getAbsolutePath() + File.separator + "12").delete();
-    CommonUtil.writeFile(new File(revertFile.getAbsolutePath() + File.separator + "12"), "");
-    new File(revertFile.getAbsolutePath() + File.separator + "14").delete();
-    CommonUtil.writeFile(new File(revertFile.getAbsolutePath() + File.separator + "14"), "14");
-    new File(revertFile.getAbsolutePath() + File.separator + "24").delete();
-    CommonUtil.writeFile(new File(revertFile.getAbsolutePath() + File.separator + "24"), "24_old");
-    new File(revertFile.getAbsolutePath() + File.separator + "27").delete();
-    CommonUtil.writeFile(new File(revertFile.getAbsolutePath() + File.separator + "27"), "27_old");
-    new File(revertFile.getAbsolutePath() + File.separator + "29").delete();
-    CommonUtil.writeFile(new File(revertFile.getAbsolutePath() + File.separator + "29"), "29_old");
-
     File logFile = new File(tempDir.getAbsolutePath() + File.separator + "action.log");
     new Patcher(logFile).revert();
-    assertTrue(TestCommon.compareFolderContainAtLeast(softwareFolder, revertFile));
+    assertTrue(TestCommon.compareFolderContainAtLeast(softwareFolder, new File(packagePath + File.separator + "test3/revert/")));
 
     assertTrue(CommonUtil.truncateFolder(tempDir));
     tempDir.delete();
@@ -135,7 +116,7 @@ public class PatchTest {
 
   public void testStep1(File patch, AESKey aesKey) throws Exception {
     try {
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -148,7 +129,7 @@ public class PatchTest {
 
   public void testStep2(File patch, AESKey aesKey) throws Exception {
     try {
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -164,7 +145,7 @@ public class PatchTest {
 
   public void testStep3(File patch, AESKey aesKey) throws Exception {
     try {
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -185,7 +166,7 @@ public class PatchTest {
 
   public void testStep4(File patch, AESKey aesKey) throws Exception {
     try {
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -210,7 +191,7 @@ public class PatchTest {
 
   public void testStep5(File patch, AESKey aesKey) throws Exception {
     try {
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -238,7 +219,7 @@ public class PatchTest {
 
   public void testStep6(File patch, AESKey aesKey) throws Exception {
     try {
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -269,7 +250,7 @@ public class PatchTest {
 
   public void testStep7(File patch, AESKey aesKey) throws Exception {
     try {
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -306,7 +287,7 @@ public class PatchTest {
 
   public void testStep8(File patch, AESKey aesKey) throws Exception {
     try {
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -353,7 +334,7 @@ public class PatchTest {
 
   public void testStep9(File patch, AESKey aesKey) throws Exception {
     try {
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -405,7 +386,7 @@ public class PatchTest {
 
   public void testStep10(File patch, AESKey aesKey) throws Exception {
     try {
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       assertExistance(8, 1, false, false, false, true);
       assertExistance(7, 2, false, false, false, true);
@@ -492,7 +473,7 @@ public class PatchTest {
 
   public void test2Step1(File patch, AESKey aesKey) throws Exception {
     try {
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -507,7 +488,7 @@ public class PatchTest {
 
   public void test2Step2(File patch, AESKey aesKey) throws Exception {
     try {
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -524,7 +505,7 @@ public class PatchTest {
 
   public void test2Step3(File patch, AESKey aesKey) throws Exception {
     try {
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       fail();
     } catch (Exception ex) {
@@ -549,7 +530,7 @@ public class PatchTest {
 
   public void test2Step4(File patch, AESKey aesKey) throws Exception {
     try {
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertTrue(replacementList.isEmpty());
       assertExistance(16, 1, true, true, true, false);
 
@@ -626,9 +607,9 @@ public class PatchTest {
       lock20 = LockUtil.acquireLock(new File(softwareFolder.getAbsolutePath() + File.separator + "20"), 0, 0);
       assertNotNull(lock20);
 
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertEquals(1, replacementList.size());
-      assertEquals(replacementList.get(0), new PatchRecord(OperationType.FORCE, new File(softwareFolder.getAbsolutePath() + File.separator + "20").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "3").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_3").getAbsolutePath()));
+      assertEquals(replacementList.get(0), new ReplacementRecord(OperationType.FORCE, new File(softwareFolder.getAbsolutePath() + File.separator + "20").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "3").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_3").getAbsolutePath()));
 
       assertExistance(16, 1, true, true, true, false);
       assertExistance(18, 2, true, true, true, false);
@@ -685,10 +666,10 @@ public class PatchTest {
       lock26 = LockUtil.acquireLock(new File(softwareFolder.getAbsolutePath() + File.separator + "26"), 0, 0);
       assertNotNull(lock26);
 
-      List<PatchRecord> replacementList = detailPatchingTestInit(patch, aesKey);
+      List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertEquals(2, replacementList.size());
-      assertEquals(replacementList.get(0), new PatchRecord(OperationType.REMOVE, new File(softwareFolder.getAbsolutePath() + File.separator + "6").getAbsolutePath(), "", new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_2").getAbsolutePath()));
-      assertEquals(replacementList.get(1), new PatchRecord(OperationType.REPLACE, new File(softwareFolder.getAbsolutePath() + File.separator + "26").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "11").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_11").getAbsolutePath()));
+      assertEquals(replacementList.get(0), new ReplacementRecord(OperationType.REMOVE, new File(softwareFolder.getAbsolutePath() + File.separator + "6").getAbsolutePath(), "", new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_2").getAbsolutePath()));
+      assertEquals(replacementList.get(1), new ReplacementRecord(OperationType.REPLACE, new File(softwareFolder.getAbsolutePath() + File.separator + "26").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "11").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_11").getAbsolutePath()));
 
       lock1_file.release();
       lock6.release();

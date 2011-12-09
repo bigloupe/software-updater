@@ -103,7 +103,7 @@ public class LogWriter implements Closeable {
    * @throws IOException error occurred when writing to log
    */
   public void logPatch(LogAction action, int fileIndex) throws IOException {
-    logPatch(action, fileIndex, 0, "", "", "");
+    logPatch(action, fileIndex, 0, false, false, false, "", "", "");
   }
 
   /**
@@ -111,12 +111,20 @@ public class LogWriter implements Closeable {
    * @param action the action
    * @param fileIndex the current file index in the patch
    * @param operationId the detail operation id of the {@code operationType}
+   * @param backupFileExist true means backup file exist when patching, false 
+   * if not
+   * @param newFileExist true means new file exist when patching, false 
+   * if not
+   * @param destinationFileExist true means destination file exist when 
+   * patching, false if not
    * @param backupFilePath the back up file path
    * @param newFilePath the move-from path
    * @param destinationFilePath the move-to path
    * @throws IOException error occurred when writing to log
    */
-  public void logPatch(LogAction action, int fileIndex, int operationId, String backupFilePath, String newFilePath, String destinationFilePath) throws IOException {
+  public void logPatch(LogAction action, int fileIndex, int operationId,
+          boolean backupFileExist, boolean newFileExist, boolean destinationFileExist,
+          String backupFilePath, String newFilePath, String destinationFilePath) throws IOException {
     if (action == null) {
       throw new NullPointerException("argument 'action' cannot be null");
     }
@@ -148,6 +156,12 @@ public class LogWriter implements Closeable {
     if (action == LogAction.START) {
       sb.append(' ');
       sb.append(operationId);
+      sb.append(' ');
+      sb.append(backupFileExist ? 1 : 0);
+      sb.append(' ');
+      sb.append(newFileExist ? 1 : 0);
+      sb.append(' ');
+      sb.append(destinationFileExist ? 1 : 0);
       sb.append(" \"");
       sb.append(backupFilePath.replace("\"", "\\\""));
       sb.append("\" \"");

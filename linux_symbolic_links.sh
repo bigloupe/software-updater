@@ -43,6 +43,7 @@ linkFile src/updater/patch/LogReader.java
 linkFile src/updater/patch/LogWriter.java
 linkFile src/updater/patch/Patcher.java
 linkFile src/updater/patch/PatcherListener.java
+linkFile src/updater/patch/ReplacementRecord.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/util"
 linkFile src/updater/util/CommonUtil.java
 linkFile src/updater/util/Interruptible.java
@@ -84,6 +85,7 @@ linkFile src/updater/patch/LogWriter.java
 linkFile src/updater/patch/PatchPacker.java
 linkFile src/updater/patch/Patcher.java
 linkFile src/updater/patch/PatcherListener.java
+linkFile src/updater/patch/ReplacementRecord.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/util"
 linkFile src/updater/util/CommonUtil.java
 linkFile src/updater/util/Interruptible.java

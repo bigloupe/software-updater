@@ -19,6 +19,7 @@ file: src/updater/patch/LogReader.java
 file: src/updater/patch/LogWriter.java
 file: src/updater/patch/Patcher.java
 file: src/updater/patch/PatcherListener.java
+file: src/updater/patch/ReplacementRecord.java
 file: src/updater/util/CommonUtil.java
 file: src/updater/util/Interruptible.java
 file: src/updater/util/InterruptibleInputStream.java
@@ -51,6 +52,7 @@ file: src/updater/patch/LogWriter.java
 file: src/updater/patch/PatchPacker.java
 file: src/updater/patch/Patcher.java
 file: src/updater/patch/PatcherListener.java
+file: src/updater/patch/ReplacementRecord.java
 file: src/updater/util/CommonUtil.java
 file: src/updater/util/Interruptible.java
 file: src/updater/util/InterruptibleInputStream.java

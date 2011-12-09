@@ -260,13 +260,15 @@ public class Patcher implements Pausable {
   /**
    * Do the operation. 'remove', 'new' (folder only) and 'force' have no action 
    * to do here.
+   * @param previousRecord the previous operation record, null means no 
+   * previous record
    * @param operation the operation to do
    * @param patchIn the stream to read in
    * @return null if all succeed, a {@link PatchRecord} if replacement of 
    * files failed
    * @throws IOException error occurred when doing operation
    */
-  protected PatchRecord doOperation(Operation operation, InterruptibleInputStream patchIn) throws IOException {
+  protected ReplacementRecord doOperation(PatchRecord previousRecord, Operation operation, InterruptibleInputStream patchIn) throws IOException {
     //<editor-fold defaultstate="collapsed" desc="logic behind this function">
 //remove:
 //  type folder: (dest, backup)
@@ -359,7 +361,7 @@ public class Patcher implements Pausable {
       throw new NullPointerException("argument 'patchIn' cannot be null");
     }
 
-    PatchRecord returnValue = null;
+    ReplacementRecord returnValue = null;
 
     OperationType operationType = OperationType.get(operation.getType());
     if (operationType == null) {
@@ -369,6 +371,12 @@ public class Patcher implements Pausable {
     File newFile = new File(tempDir + File.separator + operation.getId());
     File destFile = new File(softwareDir + operation.getDestFilePath());
     File backupFile = new File(tempDir + File.separator + "old_" + operation.getId());
+    boolean newFileExist = newFile.exists(), destFileExist = destFile.exists(), backupFileExist = backupFile.exists();
+    if (previousRecord != null) {
+      newFileExist = previousRecord.isNewFileExist();
+      destFileExist = previousRecord.isDestinationFileExist();
+      backupFileExist = previousRecord.isBackupFileExist();
+    }
     String newFileAbsPath = newFile.getAbsolutePath(), destFileAbsPath = destFile.getAbsolutePath(), backupFileAbsPath = backupFile.getAbsolutePath();
     switch (operationType) {
       case REMOVE:
@@ -377,40 +385,40 @@ public class Patcher implements Pausable {
           if (destFile.exists()) {
             if (destFile.isDirectory()) {
               if (destFile.list().length == 0) {
-                log.logPatch(LogAction.START, operation.getId(), 1, backupFileAbsPath, "", destFileAbsPath);
+                log.logPatch(LogAction.START, operation.getId(), 1, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, "", destFileAbsPath);
                 if (!destFile.renameTo(backupFile)) {
-                  returnValue = new PatchRecord(operationType, destFileAbsPath, "", backupFileAbsPath);
+                  returnValue = new ReplacementRecord(operationType, destFileAbsPath, "", backupFileAbsPath);
                 }
               } else {
-                log.logPatch(LogAction.START, operation.getId(), 2, backupFileAbsPath, "", destFileAbsPath);
+                log.logPatch(LogAction.START, operation.getId(), 2, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, "", destFileAbsPath);
                 // succeed
               }
             } else {
-              log.logPatch(LogAction.START, operation.getId(), 3, backupFileAbsPath, "", destFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 3, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, "", destFileAbsPath);
               throw new IOException(String.format("Remove folder: destFile %1$s expected folder but is a file", destFileAbsPath));
             }
           } else {
-            log.logPatch(LogAction.START, operation.getId(), 4, backupFileAbsPath, "", destFileAbsPath);
+            log.logPatch(LogAction.START, operation.getId(), 4, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, "", destFileAbsPath);
             // succeed
           }
         } else {
           listener.patchProgress((int) progress, String.format("Removing file %1$s ...", operation.getDestFilePath()));
           if (destFile.exists()) {
             if (destFile.isDirectory()) {
-              log.logPatch(LogAction.START, operation.getId(), 5, backupFileAbsPath, "", destFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 5, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, "", destFileAbsPath);
               throw new IOException(String.format("Remove file: destFile %1$s expecting file but is a folder", destFileAbsPath));
             } else {
-              log.logPatch(LogAction.START, operation.getId(), 6, backupFileAbsPath, "", destFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 6, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, "", destFileAbsPath);
               if (!destFile.renameTo(backupFile)) {
-                returnValue = new PatchRecord(operationType, destFileAbsPath, "", backupFileAbsPath);
+                returnValue = new ReplacementRecord(operationType, destFileAbsPath, "", backupFileAbsPath);
               }
             }
           } else {
             if (backupFile.exists()) {
-              log.logPatch(LogAction.START, operation.getId(), 7, backupFileAbsPath, "", destFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 7, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, "", destFileAbsPath);
               // succeed
             } else {
-              log.logPatch(LogAction.START, operation.getId(), 8, backupFileAbsPath, "", destFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 8, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, "", destFileAbsPath);
               throw new IOException(String.format("Remove file: destFile %1$s not found and backupFile %2$s not exist", destFileAbsPath, backupFileAbsPath));
             }
           }
@@ -421,14 +429,14 @@ public class Patcher implements Pausable {
           listener.patchProgress((int) progress, String.format("Creating new folder %1$s ...", operation.getDestFilePath()));
           if (destFile.exists()) {
             if (destFile.isDirectory()) {
-              log.logPatch(LogAction.START, operation.getId(), 9, "", "", destFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 9, newFileExist, destFileExist, backupFileExist, "", "", destFileAbsPath);
               // succeed
             } else {
-              log.logPatch(LogAction.START, operation.getId(), 10, "", "", destFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 10, newFileExist, destFileExist, backupFileExist, "", "", destFileAbsPath);
               throw new IOException(String.format("Add new folder: destFile %1$s expecting a folder but is a file", destFileAbsPath));
             }
           } else {
-            log.logPatch(LogAction.START, operation.getId(), 11, "", "", destFileAbsPath);
+            log.logPatch(LogAction.START, operation.getId(), 11, newFileExist, destFileExist, backupFileExist, "", "", destFileAbsPath);
             if (!destFile.mkdirs()) {
               throw new IOException(String.format("Failed to create folder: %1$s", destFileAbsPath));
             }
@@ -437,22 +445,22 @@ public class Patcher implements Pausable {
           listener.patchProgress((int) progress, String.format("Adding new file %1$s ...", operation.getDestFilePath()));
           if (destFile.exists()) {
             if (destFile.isDirectory()) {
-              log.logPatch(LogAction.START, operation.getId(), 12, "", newFileAbsPath, destFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 12, newFileExist, destFileExist, backupFileExist, "", newFileAbsPath, destFileAbsPath);
               throw new IOException(String.format("Add new file: destFile %1$s expecting a file but is a folder", destFileAbsPath));
             } else {
               if (operation.getNewFileLength() == destFile.length() && operation.getNewFileChecksum().equals(CommonUtil.getSHA256String(destFile))) {
-                log.logPatch(LogAction.START, operation.getId(), 13, "", newFileAbsPath, destFileAbsPath);
+                log.logPatch(LogAction.START, operation.getId(), 13, newFileExist, destFileExist, backupFileExist, "", newFileAbsPath, destFileAbsPath);
                 // succeed
               } else {
-                log.logPatch(LogAction.START, operation.getId(), 14, "", newFileAbsPath, destFileAbsPath);
+                log.logPatch(LogAction.START, operation.getId(), 14, newFileExist, destFileExist, backupFileExist, "", newFileAbsPath, destFileAbsPath);
                 throw new IOException(String.format("Add new file: destFile %1$s exist and not match with the length & checksum of the new file", destFileAbsPath));
               }
             }
           } else {
-            log.logPatch(LogAction.START, operation.getId(), 15, "", newFileAbsPath, destFileAbsPath);
+            log.logPatch(LogAction.START, operation.getId(), 15, newFileExist, destFileExist, backupFileExist, "", newFileAbsPath, destFileAbsPath);
             prepareNewFile(operation, patchIn, newFile, destFile);
             if (!newFile.renameTo(destFile)) {
-              returnValue = new PatchRecord(operationType, "", newFileAbsPath, backupFileAbsPath);
+              returnValue = new ReplacementRecord(operationType, "", newFileAbsPath, backupFileAbsPath);
             }
           }
         }
@@ -462,14 +470,14 @@ public class Patcher implements Pausable {
           listener.patchProgress((int) progress, String.format("Creating folder %1$s ...", operation.getDestFilePath()));
           if (destFile.exists()) {
             if (destFile.isDirectory()) {
-              log.logPatch(LogAction.START, operation.getId(), 16, "", "", destFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 16, newFileExist, destFileExist, backupFileExist, "", "", destFileAbsPath);
               // succeed
             } else {
-              log.logPatch(LogAction.START, operation.getId(), 17, "", "", destFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 17, newFileExist, destFileExist, backupFileExist, "", "", destFileAbsPath);
               throw new IOException(String.format("Force folder: destFile %1$s expecting folder but is a file", destFileAbsPath));
             }
           } else {
-            log.logPatch(LogAction.START, operation.getId(), 18, "", "", destFileAbsPath);
+            log.logPatch(LogAction.START, operation.getId(), 18, newFileExist, destFileExist, backupFileExist, "", "", destFileAbsPath);
             if (!destFile.mkdirs()) {
               throw new IOException(String.format("Failed to create folder: %1$s", destFileAbsPath));
             }
@@ -478,7 +486,7 @@ public class Patcher implements Pausable {
           listener.patchProgress((int) progress, String.format("Adding file %1$s ...", operation.getDestFilePath()));
           if (destFile.exists()) {
             if (destFile.isDirectory()) {
-              log.logPatch(LogAction.START, operation.getId(), 19, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 19, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
               throw new IOException(String.format("Force file: destFile %1$s expecting file but is a folder", destFileAbsPath));
             } else {
               long destFileLength = destFile.length();
@@ -488,27 +496,27 @@ public class Patcher implements Pausable {
               } catch (IOException ex) {
               }
               if (destFileChecksum == null) {
-                log.logPatch(LogAction.START, operation.getId(), 0, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
-                returnValue = new PatchRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
+                log.logPatch(LogAction.START, operation.getId(), 0, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+                returnValue = new ReplacementRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
               } else if (!backupFile.exists() && (operation.getNewFileLength() != destFileLength || !operation.getNewFileChecksum().equals(destFileChecksum))) {
-                log.logPatch(LogAction.START, operation.getId(), 20, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+                log.logPatch(LogAction.START, operation.getId(), 20, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
                 prepareNewFile(operation, patchIn, newFile, destFile);
                 if (!destFile.renameTo(backupFile) || !newFile.renameTo(destFile)) {
-                  returnValue = new PatchRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
+                  returnValue = new ReplacementRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
                 }
               } else if (operation.getNewFileLength() == destFileLength && operation.getNewFileChecksum().equals(destFileChecksum)) {
-                log.logPatch(LogAction.START, operation.getId(), 21, "", "", "");
+                log.logPatch(LogAction.START, operation.getId(), 21, newFileExist, destFileExist, backupFileExist, "", "", "");
                 // succeed
               } else {
-                log.logPatch(LogAction.START, operation.getId(), 22, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+                log.logPatch(LogAction.START, operation.getId(), 22, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
                 throw new IOException(String.format("Force file: error occurred when doing file %1$s", destFileAbsPath));
               }
             }
           } else {
-            log.logPatch(LogAction.START, operation.getId(), 23, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+            log.logPatch(LogAction.START, operation.getId(), 23, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
             prepareNewFile(operation, patchIn, newFile, destFile);
             if (!newFile.renameTo(destFile)) {
-              returnValue = new PatchRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
+              returnValue = new ReplacementRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
             }
           }
         }
@@ -518,7 +526,7 @@ public class Patcher implements Pausable {
         listener.patchProgress((int) progress, String.format("Patching %1$s ...", operation.getDestFilePath()));
         if (destFile.exists()) {
           if (destFile.isDirectory()) {
-            log.logPatch(LogAction.START, operation.getId(), 24, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+            log.logPatch(LogAction.START, operation.getId(), 24, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
             throw new IOException(String.format("Replace/Patch file: destFile %1$s expecting file but is a directory", destFileAbsPath));
           } else {
             String destFileChecksum = null;
@@ -527,30 +535,30 @@ public class Patcher implements Pausable {
             } catch (IOException ex) {
             }
             if (destFileChecksum == null) {
-              log.logPatch(LogAction.START, operation.getId(), 0, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
-              returnValue = new PatchRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 0, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+              returnValue = new ReplacementRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
             } else if (backupFile.exists()) {
-              log.logPatch(LogAction.START, operation.getId(), 25, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 25, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
               // succeed
             } else if (operation.getOldFileLength() == destFile.length() && operation.getOldFileChecksum().equals(destFileChecksum)) {
-              log.logPatch(LogAction.START, operation.getId(), 26, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 26, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
               prepareNewFile(operation, patchIn, newFile, destFile);
               if (!destFile.renameTo(backupFile) || !newFile.renameTo(destFile)) {
-                returnValue = new PatchRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
+                returnValue = new ReplacementRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
               }
             } else {
-              log.logPatch(LogAction.START, operation.getId(), 27, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+              log.logPatch(LogAction.START, operation.getId(), 27, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
               throw new IOException(String.format("Replace/Patch file: error occurred when doing file %1$s", destFileAbsPath));
             }
           }
         } else {
           if (backupFile.exists() && newFile.exists()) {
-            log.logPatch(LogAction.START, operation.getId(), 28, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+            log.logPatch(LogAction.START, operation.getId(), 28, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
             if (!newFile.renameTo(destFile)) {
-              returnValue = new PatchRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
+              returnValue = new ReplacementRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
             }
           } else {
-            log.logPatch(LogAction.START, operation.getId(), 29, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+            log.logPatch(LogAction.START, operation.getId(), 29, newFileExist, destFileExist, backupFileExist, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
             throw new IOException(String.format("Replace/Patch file: error occurred when doing file, destFile %1$s not found", destFileAbsPath));
           }
         }
@@ -575,7 +583,7 @@ public class Patcher implements Pausable {
    * @return a list containing those failed replacement
    * @throws IOException error occurred when doing patching
    */
-  public List<PatchRecord> doPatch(final PatcherListener listener, File patchFile, int patchId, AESKey aesKey, File softwareDir, File tempDir, Map<String, String> destinationReplacement) throws IOException {
+  public List<ReplacementRecord> doPatch(final PatcherListener listener, File patchFile, int patchId, AESKey aesKey, File softwareDir, File tempDir, Map<String, String> destinationReplacement) throws IOException {
     if (listener == null) {
       throw new NullPointerException("argument 'listener' cannot be null");
     }
@@ -607,9 +615,9 @@ public class Patcher implements Pausable {
 
 
     File _patchFile = patchFile;
-    List<PatchRecord> replacementFailedList = new ArrayList<PatchRecord>();
+    List<ReplacementRecord> replacementFailedList = new ArrayList<ReplacementRecord>();
     int startFromFileIndex = 0;
-    Map<Integer, Object> extraFileIndexes = new HashMap<Integer, Object>();
+    Map<Integer, PatchRecord> extraFileIndexes = new HashMap<Integer, PatchRecord>();
     boolean patchingStarted = false;
 
     //<editor-fold defaultstate="collapsed" desc="startFromFileIndex, extraFileIndexes & patchingStarted">
@@ -623,7 +631,7 @@ public class Patcher implements Pausable {
       startFromFileIndex = logReader.getStartFileIndex();
       List<PatchRecord> failList = logReader.getFailList();
       for (PatchRecord patchRecord : failList) {
-        extraFileIndexes.put(patchRecord.getFileIndex(), new Object());
+        extraFileIndexes.put(patchRecord.getFileIndex(), patchRecord);
       }
 //            List<PatchRecord> revertList = logReader.getRevertList();
 //            for (PatchRecord patchRecord : revertList) {
@@ -741,7 +749,7 @@ public class Patcher implements Pausable {
         }
 
         InterruptibleInputStream operationIn = new InterruptibleInputStream(decompressedPatchIn, _operation.getPatchLength());
-        PatchRecord failedReplacement = doOperation(_operation, operationIn);
+        ReplacementRecord failedReplacement = doOperation(extraFileIndexes.get(i + 1), _operation, operationIn);
         if (operationIn.remaining() != 0) {
           long byteSkipped = decompressedPatchIn.skip(operationIn.remaining());
           if (byteSkipped != operationIn.remaining()) {

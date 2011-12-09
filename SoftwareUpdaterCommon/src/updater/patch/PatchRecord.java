@@ -12,13 +12,21 @@ public class PatchRecord {
    */
   protected int fileIndex;
   /**
-   * The operation type.
-   */
-  protected OperationType operationType;
-  /**
    * The detail operation id.
    */
   protected int operationId;
+  /**
+   * Indicate whether the backup file exist when patching or not.
+   */
+  protected boolean backupFileExist;
+  /**
+   * Indicate whether the new file exist when patching or not.
+   */
+  protected boolean newFileExist;
+  /**
+   * Indicate whether the destination file exist when patching or not.
+   */
+  protected boolean destinationFileExist;
   /**
    * The backup file path of the replacement record.
    */
@@ -35,12 +43,20 @@ public class PatchRecord {
   /**
    * Constructor.
    * @param fileIndex the file index of the record
-   * @param operationId 
+   * @param operationId the operation id
+   * @param backupFileExist true means backup file exist when patching, false 
+   * if not
+   * @param newFileExist true means new file exist when patching, false 
+   * if not
+   * @param destinationFileExist true means destination file exist when 
+   * patching, false if not
    * @param backupFilePath the backup file path
    * @param newFilePath the copy-from file path
    * @param destinationFilePath the copy-to file path
    */
-  public PatchRecord(int fileIndex, int operationId, String backupFilePath, String newFilePath, String destinationFilePath) {
+  public PatchRecord(int fileIndex, int operationId,
+          boolean backupFileExist, boolean newFileExist, boolean destinationFileExist,
+          String backupFilePath, String newFilePath, String destinationFilePath) {
     if (newFilePath == null) {
       throw new NullPointerException("argument 'newFilePath' cannot be null");
     }
@@ -52,38 +68,12 @@ public class PatchRecord {
     }
     this.fileIndex = fileIndex;
     this.operationId = operationId;
-    this.operationType = null;
+    this.backupFileExist = backupFileExist;
+    this.newFileExist = newFileExist;
+    this.destinationFileExist = destinationFileExist;
     this.backupFilePath = backupFilePath;
     this.newFilePath = newFilePath;
     this.destinationFilePath = destinationFilePath;
-  }
-
-  /**
-   * Constructor.
-   * @param operationType the operation type
-   * @param destinationFilePath the path to move the new file to
-   * @param newFilePath the path where the new file locate
-   * @param backupFilePath the path where the backup file locate
-   */
-  public PatchRecord(OperationType operationType, String destinationFilePath, String newFilePath, String backupFilePath) {
-    if (operationType == null) {
-      throw new NullPointerException("argument 'operationType' cannot be null");
-    }
-    if (destinationFilePath == null) {
-      throw new NullPointerException("argument 'destinationFilePath' cannot be null");
-    }
-    if (newFilePath == null) {
-      throw new NullPointerException("argument 'newFilePath' cannot be null");
-    }
-    if (backupFilePath == null) {
-      throw new NullPointerException("argument 'backupFilePath' cannot be null");
-    }
-    this.fileIndex = -1;
-    this.operationId = -1;
-    this.operationType = operationType;
-    this.destinationFilePath = destinationFilePath;
-    this.newFilePath = newFilePath;
-    this.backupFilePath = backupFilePath;
   }
 
   /**
@@ -95,19 +85,35 @@ public class PatchRecord {
   }
 
   /**
-   * Get operation type.
-   * @return the operation type, null means not specified
-   */
-  public OperationType getOperationType() {
-    return operationType;
-  }
-
-  /**
    * Get detail operation id.
    * @return the operation id, -1 means not specified
    */
   public int getOperationId() {
     return operationId;
+  }
+
+  /**
+   * Check if the backup file exist when patching or not.
+   * @return true means exist, false if not
+   */
+  public boolean isBackupFileExist() {
+    return backupFileExist;
+  }
+
+  /**
+   * Check if the new file exist when patching or not.
+   * @return true means exist, false if not
+   */
+  public boolean isNewFileExist() {
+    return newFileExist;
+  }
+
+  /**
+   * Check if the destination file exist when patching or not.
+   * @return true means exist, false if not
+   */
+  public boolean isDestinationFileExist() {
+    return destinationFileExist;
   }
 
   /**
@@ -144,19 +150,22 @@ public class PatchRecord {
 
   @Override
   public String toString() {
-    return "fileIndex: " + fileIndex + ", operationType: " + (getOperationType() != null ? getOperationType().getValue() : "")
+    return "fileIndex: " + fileIndex + ", operationId: " + operationId
+            + ", backupFileExist: " + backupFileExist + ", newFileExist: " + newFileExist + ", destinationFileExist: " + destinationFileExist
             + ", dest: " + destinationFilePath + ", new: " + newFilePath + ", backup: " + backupFilePath;
   }
 
   @Override
   public int hashCode() {
-    int hash = 3;
-    hash = 17 * hash + this.fileIndex;
-    hash = 17 * hash + (this.operationType != null ? this.operationType.hashCode() : 0);
-    hash = 17 * hash + this.operationId;
-    hash = 17 * hash + (this.backupFilePath != null ? this.backupFilePath.hashCode() : 0);
-    hash = 17 * hash + (this.newFilePath != null ? this.newFilePath.hashCode() : 0);
-    hash = 17 * hash + (this.destinationFilePath != null ? this.destinationFilePath.hashCode() : 0);
+    int hash = 5;
+    hash = 67 * hash + this.fileIndex;
+    hash = 67 * hash + this.operationId;
+    hash = 67 * hash + (this.backupFileExist ? 1 : 0);
+    hash = 67 * hash + (this.newFileExist ? 1 : 0);
+    hash = 67 * hash + (this.destinationFileExist ? 1 : 0);
+    hash = 67 * hash + (this.backupFilePath != null ? this.backupFilePath.hashCode() : 0);
+    hash = 67 * hash + (this.newFilePath != null ? this.newFilePath.hashCode() : 0);
+    hash = 67 * hash + (this.destinationFilePath != null ? this.destinationFilePath.hashCode() : 0);
     return hash;
   }
 
@@ -171,8 +180,10 @@ public class PatchRecord {
     PatchRecord _object = (PatchRecord) compareTo;
 
     return _object.getFileIndex() == fileIndex
-            && _object.getOperationId() == _object.getOperationId()
-            && (_object.getOperationType() == null && getOperationType() == null || (_object.getOperationType() != null && getOperationType() != null && _object.getOperationType().equals(getOperationType())))
+            && _object.getOperationId() == getOperationId()
+            && _object.isBackupFileExist() == isBackupFileExist()
+            && _object.isNewFileExist() == isNewFileExist()
+            && _object.isDestinationFileExist() == isDestinationFileExist()
             && _object.getBackupFilePath().equals(getBackupFilePath())
             && _object.getNewFilePath().equals(getNewFilePath())
             && _object.getDestinationFilePath().equals(getDestinationFilePath());
