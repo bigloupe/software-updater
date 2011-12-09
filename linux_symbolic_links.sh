@@ -38,6 +38,7 @@ linkFile src/updater/patch/Compression.java
 linkFile src/updater/patch/OperationType.java
 linkFile src/updater/patch/PatchReadUtil.java
 linkFile src/updater/patch/PatchRecord.java
+linkFile src/updater/patch/LogAction.java
 linkFile src/updater/patch/LogReader.java
 linkFile src/updater/patch/LogWriter.java
 linkFile src/updater/patch/Patcher.java
@@ -77,6 +78,7 @@ linkFile src/updater/patch/PatchExtractor.java
 linkFile src/updater/patch/PatchReadUtil.java
 linkFile src/updater/patch/PatchRecord.java
 linkFile src/updater/patch/PatchWriteUtil.java
+linkFile src/updater/patch/LogAction.java
 linkFile src/updater/patch/LogReader.java
 linkFile src/updater/patch/LogWriter.java
 linkFile src/updater/patch/PatchPacker.java

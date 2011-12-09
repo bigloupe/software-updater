@@ -273,71 +273,71 @@ public class Patcher implements Pausable {
 //    dest exist:
 //      dest is folder:
 //        dest folder empty:
-//          ** dest->backup
+//          ** dest->backup                 1
 //        dest folder not empty:
-//          ** {ok}
+//          ** {ok}                         2
 //      dest is file:
-//        ** {error}
+//        ** {error}                        3
 //    dest not exist:
-//      ** {ok}
+//      ** {ok}                             4
 //  type file: (dest, backup)
 //    dest exist:
 //      dest is folder:
-//        ** {error}
+//        ** {error}                        5
 //      dest is file:
-//        ** dest->backup
+//        ** dest->backup                   6
 //    dest not exist:
-//      ** backup exist -> {ok};
-//         backup not exist -> {error}
+//      ** backup exist -> {ok};            7
+//         backup not exist -> {error}      8
 //new:
 //  type folder: (dest)
 //    dest exist:
 //      dest is folder:
-//        ** {ok}
+//        ** {ok}                           9
 //      dest is file:
-//        ** {error}
+//        ** {error}                        10
 //    dest not exist:
-//      ** create dest folder
+//      ** create dest folder               11
 //  type file: (new, dest)
 //    dest exist:
 //      dest is folder:
-//        ** {error}
+//        ** {error}                        12
 //      dest is file:
-//        ** length & checksum of dest match new -> {ok};
-//           else -> {error}
+//        ** length & checksum of dest match new -> {ok};       13
+//           else -> {error}                14
 //    dest not exist:
-//      ** output patch -> new, new->dest
+//      ** output patch -> new, new->dest   15
 //force:
 //  type folder: (dest)
 //    dest exist:
 //      dest is folder:
-//        ** {ok}
+//        ** {ok}                           16
 //      dest is file:
-//        ** {error}
+//        ** {error}                        17
 //    dest not exist:
-//      ** create dest folder
+//      ** create dest folder               18
 //  type file: (new, dest, backup)
 //    dest exist:
 //      dest is folder:
-//        ** {error}
+//        ** {error}                        19
 //      dest is file:
-//        ** backup not exist & checksum of dest not match new: output patch -> new, dest->backup, new->dest;
-//           checksum of dest match new: {ok};
-//           else: {error}
+//        ** backup not exist & checksum of dest not match new: output patch -> new, dest->backup, new->dest;   20
+//           checksum of dest match new: {ok};                                                                  21
+//           else: {error}                  22
 //    dest not exist:
-//      ** output patch -> new, new->dest
+//      ** output patch -> new, new->dest   23
 //patch:
 //  type file: (new, dest, backup)
 //    dest exist:
 //      dest is folder:
-//        ** {error}
+//        ** {error}                        24
 //      dest is file:
-//        ** backup exist: {ok};
-//           length & checksum of dest match old: patch dest -> new, dest->backup, new->dest;
-//           else -> {error}
+//        ** backup exist: {ok};            25
+//           length & checksum of dest match old: patch dest -> new, dest->backup, new->dest;                   26
+//           else -> {error}                27
 //    dest not exist:
-//      ** backup exist & new exist -> new->dest;
-//         else -> {error}
+//      ** backup exist & new exist -> new->dest;               28
+//         else -> {error}                  29
 //replace:
 //  type file: (new, dest, backup)
 //    dest exist:
@@ -369,102 +369,117 @@ public class Patcher implements Pausable {
     File newFile = new File(tempDir + File.separator + operation.getId());
     File destFile = new File(softwareDir + operation.getDestFilePath());
     File backupFile = new File(tempDir + File.separator + "old_" + operation.getId());
+    String newFileAbsPath = newFile.getAbsolutePath(), destFileAbsPath = destFile.getAbsolutePath(), backupFileAbsPath = backupFile.getAbsolutePath();
     switch (operationType) {
       case REMOVE:
-        log.logPatch(LogWriter.Action.START, operation.getId(), operationType, backupFile.getAbsolutePath(), "", destFile.getAbsolutePath());
         if (operation.getFileType().equals("folder")) {
           listener.patchProgress((int) progress, String.format("Removing folder %1$s ...", operation.getDestFilePath()));
           if (destFile.exists()) {
             if (destFile.isDirectory()) {
               if (destFile.list().length == 0) {
+                log.logPatch(LogAction.START, operation.getId(), 1, backupFileAbsPath, "", destFileAbsPath);
                 if (!destFile.renameTo(backupFile)) {
-                  returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), "", backupFile.getAbsolutePath());
+                  returnValue = new PatchRecord(operationType, destFileAbsPath, "", backupFileAbsPath);
                 }
               } else {
+                log.logPatch(LogAction.START, operation.getId(), 2, backupFileAbsPath, "", destFileAbsPath);
                 // succeed
               }
             } else {
-              throw new IOException(String.format("Remove folder: destFile %1$s expected folder but is a file", destFile.getAbsolutePath()));
+              log.logPatch(LogAction.START, operation.getId(), 3, backupFileAbsPath, "", destFileAbsPath);
+              throw new IOException(String.format("Remove folder: destFile %1$s expected folder but is a file", destFileAbsPath));
             }
           } else {
+            log.logPatch(LogAction.START, operation.getId(), 4, backupFileAbsPath, "", destFileAbsPath);
             // succeed
           }
         } else {
           listener.patchProgress((int) progress, String.format("Removing file %1$s ...", operation.getDestFilePath()));
           if (destFile.exists()) {
             if (destFile.isDirectory()) {
-              throw new IOException(String.format("Remove file: destFile %1$s expecting file but is a folder", destFile.getAbsolutePath()));
+              log.logPatch(LogAction.START, operation.getId(), 5, backupFileAbsPath, "", destFileAbsPath);
+              throw new IOException(String.format("Remove file: destFile %1$s expecting file but is a folder", destFileAbsPath));
             } else {
+              log.logPatch(LogAction.START, operation.getId(), 6, backupFileAbsPath, "", destFileAbsPath);
               if (!destFile.renameTo(backupFile)) {
-                returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), "", backupFile.getAbsolutePath());
+                returnValue = new PatchRecord(operationType, destFileAbsPath, "", backupFileAbsPath);
               }
             }
           } else {
             if (backupFile.exists()) {
+              log.logPatch(LogAction.START, operation.getId(), 7, backupFileAbsPath, "", destFileAbsPath);
               // succeed
             } else {
-              throw new IOException(String.format("Remove file: destFile %1$s not found and backupFile %2$s not exist", destFile.getAbsolutePath(), backupFile.getAbsolutePath()));
+              log.logPatch(LogAction.START, operation.getId(), 8, backupFileAbsPath, "", destFileAbsPath);
+              throw new IOException(String.format("Remove file: destFile %1$s not found and backupFile %2$s not exist", destFileAbsPath, backupFileAbsPath));
             }
           }
         }
         break;
       case NEW:
         if (operation.getFileType().equals("folder")) {
-          log.logPatch(LogWriter.Action.START, operation.getId(), operationType, "", "", destFile.getAbsolutePath());
           listener.patchProgress((int) progress, String.format("Creating new folder %1$s ...", operation.getDestFilePath()));
           if (destFile.exists()) {
             if (destFile.isDirectory()) {
+              log.logPatch(LogAction.START, operation.getId(), 9, "", "", destFileAbsPath);
               // succeed
             } else {
-              throw new IOException(String.format("Add new folder: destFile %1$s expecting a folder but is a file", destFile.getAbsolutePath()));
+              log.logPatch(LogAction.START, operation.getId(), 10, "", "", destFileAbsPath);
+              throw new IOException(String.format("Add new folder: destFile %1$s expecting a folder but is a file", destFileAbsPath));
             }
           } else {
+            log.logPatch(LogAction.START, operation.getId(), 11, "", "", destFileAbsPath);
             if (!destFile.mkdirs()) {
-              throw new IOException(String.format("Failed to create folder: %1$s", destFile.getAbsolutePath()));
+              throw new IOException(String.format("Failed to create folder: %1$s", destFileAbsPath));
             }
           }
         } else {
-          log.logPatch(LogWriter.Action.START, operation.getId(), operationType, "", newFile.getAbsolutePath(), destFile.getAbsolutePath());
           listener.patchProgress((int) progress, String.format("Adding new file %1$s ...", operation.getDestFilePath()));
           if (destFile.exists()) {
             if (destFile.isDirectory()) {
-              throw new IOException(String.format("Add new file: destFile %1$s expecting a file but is a folder", destFile.getAbsolutePath()));
+              log.logPatch(LogAction.START, operation.getId(), 12, "", newFileAbsPath, destFileAbsPath);
+              throw new IOException(String.format("Add new file: destFile %1$s expecting a file but is a folder", destFileAbsPath));
             } else {
               if (operation.getNewFileLength() == destFile.length() && operation.getNewFileChecksum().equals(CommonUtil.getSHA256String(destFile))) {
+                log.logPatch(LogAction.START, operation.getId(), 13, "", newFileAbsPath, destFileAbsPath);
                 // succeed
               } else {
-                throw new IOException(String.format("Add new file: destFile %1$s exist and not match with the length & checksum of the new file", destFile.getAbsolutePath()));
+                log.logPatch(LogAction.START, operation.getId(), 14, "", newFileAbsPath, destFileAbsPath);
+                throw new IOException(String.format("Add new file: destFile %1$s exist and not match with the length & checksum of the new file", destFileAbsPath));
               }
             }
           } else {
+            log.logPatch(LogAction.START, operation.getId(), 15, "", newFileAbsPath, destFileAbsPath);
             prepareNewFile(operation, patchIn, newFile, destFile);
             if (!newFile.renameTo(destFile)) {
-              returnValue = new PatchRecord(operationType, "", newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+              returnValue = new PatchRecord(operationType, "", newFileAbsPath, backupFileAbsPath);
             }
           }
         }
         break;
       case FORCE:
         if (operation.getFileType().equals("folder")) {
-          log.logPatch(LogWriter.Action.START, operation.getId(), operationType, "", "", destFile.getAbsolutePath());
           listener.patchProgress((int) progress, String.format("Creating folder %1$s ...", operation.getDestFilePath()));
           if (destFile.exists()) {
             if (destFile.isDirectory()) {
+              log.logPatch(LogAction.START, operation.getId(), 16, "", "", destFileAbsPath);
               // succeed
             } else {
-              throw new IOException(String.format("Force folder: destFile %1$s expecting folder but is a file", destFile.getAbsolutePath()));
+              log.logPatch(LogAction.START, operation.getId(), 17, "", "", destFileAbsPath);
+              throw new IOException(String.format("Force folder: destFile %1$s expecting folder but is a file", destFileAbsPath));
             }
           } else {
+            log.logPatch(LogAction.START, operation.getId(), 18, "", "", destFileAbsPath);
             if (!destFile.mkdirs()) {
-              throw new IOException(String.format("Failed to create folder: %1$s", destFile.getAbsolutePath()));
+              throw new IOException(String.format("Failed to create folder: %1$s", destFileAbsPath));
             }
           }
         } else {
-          log.logPatch(LogWriter.Action.START, operation.getId(), operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), destFile.getAbsolutePath());
           listener.patchProgress((int) progress, String.format("Adding file %1$s ...", operation.getDestFilePath()));
           if (destFile.exists()) {
             if (destFile.isDirectory()) {
-              throw new IOException(String.format("Force file: destFile %1$s expecting file but is a folder", destFile.getAbsolutePath()));
+              log.logPatch(LogAction.START, operation.getId(), 19, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+              throw new IOException(String.format("Force file: destFile %1$s expecting file but is a folder", destFileAbsPath));
             } else {
               long destFileLength = destFile.length();
               String destFileChecksum = null;
@@ -473,34 +488,38 @@ public class Patcher implements Pausable {
               } catch (IOException ex) {
               }
               if (destFileChecksum == null) {
-                returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+                log.logPatch(LogAction.START, operation.getId(), 0, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+                returnValue = new PatchRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
               } else if (!backupFile.exists() && (operation.getNewFileLength() != destFileLength || !operation.getNewFileChecksum().equals(destFileChecksum))) {
+                log.logPatch(LogAction.START, operation.getId(), 20, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
                 prepareNewFile(operation, patchIn, newFile, destFile);
                 if (!destFile.renameTo(backupFile) || !newFile.renameTo(destFile)) {
-                  returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+                  returnValue = new PatchRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
                 }
               } else if (operation.getNewFileLength() == destFileLength && operation.getNewFileChecksum().equals(destFileChecksum)) {
-                log.logPatch(LogWriter.Action.START, operation.getId(), operationType, "", "", "");
+                log.logPatch(LogAction.START, operation.getId(), 21, "", "", "");
                 // succeed
               } else {
-                throw new IOException(String.format("Force file: error occurred when doing file %1$s", destFile.getAbsolutePath()));
+                log.logPatch(LogAction.START, operation.getId(), 22, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+                throw new IOException(String.format("Force file: error occurred when doing file %1$s", destFileAbsPath));
               }
             }
           } else {
+            log.logPatch(LogAction.START, operation.getId(), 23, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
             prepareNewFile(operation, patchIn, newFile, destFile);
             if (!newFile.renameTo(destFile)) {
-              returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+              returnValue = new PatchRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
             }
           }
         }
         break;
       case PATCH:
       case REPLACE:
-        log.logPatch(LogWriter.Action.START, operation.getId(), operationType, backupFile.getAbsolutePath(), newFile.getAbsolutePath(), destFile.getAbsolutePath());
         listener.patchProgress((int) progress, String.format("Patching %1$s ...", operation.getDestFilePath()));
         if (destFile.exists()) {
           if (destFile.isDirectory()) {
-            throw new IOException(String.format("Replace/Patch file: destFile %1$s expecting file but is a directory", destFile.getAbsolutePath()));
+            log.logPatch(LogAction.START, operation.getId(), 24, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+            throw new IOException(String.format("Replace/Patch file: destFile %1$s expecting file but is a directory", destFileAbsPath));
           } else {
             String destFileChecksum = null;
             try {
@@ -508,31 +527,37 @@ public class Patcher implements Pausable {
             } catch (IOException ex) {
             }
             if (destFileChecksum == null) {
-              returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+              log.logPatch(LogAction.START, operation.getId(), 0, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+              returnValue = new PatchRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
             } else if (backupFile.exists()) {
+              log.logPatch(LogAction.START, operation.getId(), 25, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
               // succeed
             } else if (operation.getOldFileLength() == destFile.length() && operation.getOldFileChecksum().equals(destFileChecksum)) {
+              log.logPatch(LogAction.START, operation.getId(), 26, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
               prepareNewFile(operation, patchIn, newFile, destFile);
               if (!destFile.renameTo(backupFile) || !newFile.renameTo(destFile)) {
-                returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+                returnValue = new PatchRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
               }
             } else {
-              throw new IOException(String.format("Replace/Patch file: error occurred when doing file %1$s", destFile.getAbsolutePath()));
+              log.logPatch(LogAction.START, operation.getId(), 27, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+              throw new IOException(String.format("Replace/Patch file: error occurred when doing file %1$s", destFileAbsPath));
             }
           }
         } else {
           if (backupFile.exists() && newFile.exists()) {
+            log.logPatch(LogAction.START, operation.getId(), 28, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
             if (!newFile.renameTo(destFile)) {
-              returnValue = new PatchRecord(operationType, destFile.getAbsolutePath(), newFile.getAbsolutePath(), backupFile.getAbsolutePath());
+              returnValue = new PatchRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
             }
           } else {
-            throw new IOException(String.format("Replace/Patch file: error occurred when doing file, destFile %1$s not found", destFile.getAbsolutePath()));
+            log.logPatch(LogAction.START, operation.getId(), 29, backupFileAbsPath, newFileAbsPath, destFileAbsPath);
+            throw new IOException(String.format("Replace/Patch file: error occurred when doing file, destFile %1$s not found", destFileAbsPath));
           }
         }
         break;
     }
 
-    log.logPatch(returnValue == null ? LogWriter.Action.FINISH : LogWriter.Action.FAILED, operation.getId(), operationType);
+    log.logPatch(returnValue == null ? LogAction.FINISH : LogAction.FAILED, operation.getId());
 
     return returnValue;
   }
@@ -823,28 +848,61 @@ public class Patcher implements Pausable {
     File newFile = new File(patchRecord.getNewFilePath());
     File destFile = new File(patchRecord.getDestinationFilePath());
     File backupFile = new File(patchRecord.getBackupFilePath());
-    if (!newFile.exists() && destFile.exists()) {
-      if (patchRecord.getNewFilePath().isEmpty()) {
-        if (destFile.isDirectory()) {
-          destFile.delete();
-        } else {
-          if (!destFile.delete()) {
-            throw new IOException(String.format("Failed to delete %1$s (dest)", patchRecord.getDestinationFilePath()));
+    switch (patchRecord.getOperationId()) {
+      case 1:
+      case 6:
+      case 7:
+      case 13:
+      case 15:
+      case 20:
+      case 21:
+      case 23:
+      case 25:
+      case 26:
+      case 28:
+        if (!newFile.exists() && destFile.exists()) {
+          if (patchRecord.getNewFilePath().isEmpty()) {
+            if (destFile.isDirectory()) {
+              destFile.delete();
+            } else {
+              if (!destFile.delete()) {
+                throw new IOException(String.format("Failed to delete %1$s (dest)", patchRecord.getDestinationFilePath()));
+              }
+            }
+          } else {
+            if (!destFile.renameTo(newFile)) {
+              throw new IOException(String.format("Failed to move %1$s to %2$s (dest->new)", patchRecord.getDestinationFilePath(), patchRecord.getBackupFilePath()));
+            }
           }
         }
-//        if (!destFile.delete()) {
-//          throw new IOException(String.format("Failed to delete %1$s (dest)", patchRecord.getDestinationFilePath()));
-//        }
-      } else {
-        if (!destFile.renameTo(newFile)) {
-          throw new IOException(String.format("Failed to move %1$s to %2$s (dest->new)", patchRecord.getDestinationFilePath(), patchRecord.getBackupFilePath()));
+        if (!destFile.exists() && backupFile.exists()) {
+          if (!backupFile.renameTo(destFile)) {
+            throw new IOException(String.format("Failed to move %1$s to %2$s (backup->dest)", patchRecord.getBackupFilePath(), patchRecord.getDestinationFilePath()));
+          }
         }
-      }
-    }
-    if (!destFile.exists() && backupFile.exists()) {
-      if (!backupFile.renameTo(destFile)) {
-        throw new IOException(String.format("Failed to move %1$s to %2$s (backup->dest)", patchRecord.getBackupFilePath(), patchRecord.getDestinationFilePath()));
-      }
+        break;
+      case 0:
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+      case 8:
+      case 9:
+      case 10:
+      case 12:
+      case 14:
+      case 16:
+      case 17:
+      case 19:
+      case 22:
+      case 24:
+      case 27:
+      case 29:
+        break;
+      case 11:
+      case 18:
+        destFile.delete();
+        break;
     }
   }
 

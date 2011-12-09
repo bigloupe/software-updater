@@ -14,6 +14,7 @@ file: src/updater/patch/Compression.java
 file: src/updater/patch/OperationType.java
 file: src/updater/patch/PatchReadUtil.java
 file: src/updater/patch/PatchRecord.java
+file: src/updater/patch/LogAction.java
 file: src/updater/patch/LogReader.java
 file: src/updater/patch/LogWriter.java
 file: src/updater/patch/Patcher.java
@@ -44,6 +45,7 @@ file: src/updater/patch/PatchExtractor.java
 file: src/updater/patch/PatchReadUtil.java
 file: src/updater/patch/PatchRecord.java
 file: src/updater/patch/PatchWriteUtil.java
+file: src/updater/patch/LogAction.java
 file: src/updater/patch/LogReader.java
 file: src/updater/patch/LogWriter.java
 file: src/updater/patch/PatchPacker.java

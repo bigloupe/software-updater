@@ -17,27 +17,27 @@ import updater.util.CommonUtil;
  * Patch log reader.
  * 
  * <b>Format: </b><br />
- * ([action code] [file index (optional)] [hex encoded 'from' path (optional)])    [action (string)], fileIndex: [file Index], action: [operation type (string)], ['from' path] -> ['to' path]
+ * [action code] [file index (optional)] [detail operation id] [backup path (optional)] [new file path (optional)] [dest file path (optional)]
  * <ul>
- * <li>action code: 0 - start, 1 - finish, 2 - replacement start, 3 - replacement finish, 4 - replacement failed</li>
+ * <li>action code: 0 - start, 1 - finish, 2 - replacement start, 3 - replacement finish, 4 - replacement failed, 5 - revert</li>
  * </ul>
  * Note that '[' and ']' didn't really exist.
  * 
  * <p>
  * <b>Sample:</b><br />
- * (0)   start<br />
- * (2 0 433a5c75706 46174655c737461 72742e6a6172)   replacement start, fileIndex: 0, action: patch, back up: C:\\update\\old_start.jar, C:\\update\\start.jar->C:\\start.jar<br />
- * (3 0)   replacement end, fileIndex: 0<br />
- * (2 1 433a5c75706 46174655c757064617 465722e6a6172)   replacement start, fileIndex: 1, action: new, back up: C:\\update\\old_updater.jar, C:\\update\\updater.jar->C:\\updater.jar<br />
- * (3 1)   replacement end, fileIndex: 1<br />
- * (2 2 433a5c7570 646174655c7465737 42e6a6172)   replacement start, fileIndex: 2, action: remove, back up: C:\\update\\old_test.jar, C:\\update\\test.jar->C:\\test.jar<br />
- * (3 2)   replacement end, fileIndex: 2<br />
- * (2 3 433a5c7570 646174655c6c6f676f2 e706e67)   replacement start, fileIndex: 3, action: replace, back up: C:\\update\\old_logo.png, C:\\update\\logo.png->C:\\logo.png<br />
- * (4 3)   replacement failed, fileIndex: 3<br />
- * (5 3)  fileIndex: 3<br />
- * (2 3 433a5c7570 646174655c6c6f676f2 e706e67)   replacement start, fileIndex: 3, action: replace, back up: C:\\update\\old_logo.png, C:\\update\\logo.png->C:\\logo.png<br />
- * (4 3)   replacement failed, fileIndex: 3<br />
- * (1)   finish
+ * 0<br />
+ * 2 0 0 "C:\\update\\old_start.jar" "C:\\update\\start.jar" "C:\\start.jar"<br />
+ * 3 0<br />
+ * 2 1 0 "C:\\update\\old_updater.jar" "C:\\update\\updater.jar" "C:\\updater.jar"<br />
+ * 3 1<br />
+ * 2 2 0 "C:\\update\\old_test.jar" "C:\\update\\test.jar" "C:\\test.jar"<br />
+ * 3 2<br />
+ * 2 3 0 "C:\\update\\old_logo.png" "C:\\update\\logo.png" "C:\\logo.png"<br />
+ * 4 3<br />
+ * 5 3<br />
+ * 2 3 0 "C:\\update\\old_logo.png" "C:\\update\\logo.png" "C:\\logo.png"<br />
+ * 4 3<br />
+ * 1
  * </p>
  * 
  * <p>One log should serve only one apply-patch event.</p>
@@ -83,16 +83,21 @@ public class LogReader {
     revertList = new ArrayList<PatchRecord>();
     failList = new ArrayList<PatchRecord>();
     startFileIndex = 1;
+    int operationId = 0;
 
     TreeMap<Integer, PatchRecord> _revertMap = new TreeMap<Integer, PatchRecord>();
     Map<Integer, PatchRecord> _failMap = new TreeMap<Integer, PatchRecord>();
 
-    Pattern logPattern = Pattern.compile("^\\((?:(0|1)|(2)\\s([0-9]+)\\s([a-z0-9]*)\\s([a-z0-9]*)\\s([a-z0-9]*)|(3|4|5)\\s([0-9]+))\\)\t.+?$");
+    Pattern logPattern = Pattern.compile("^(?:"
+            + "(0|1)|"
+            + "(2)\\s([0-9]+)\\s([0-9]+)\\s\"((?:[^\\\\\"]|\\\\.)*)\"\\s\"((?:[^\\\\\"]|\\\\.)*)\"\\s\"((?:[^\\\\\"]|\\\\.)*)\"|"
+            + "(3|4|5)\\s([0-9]+)(?:\\s([0-9]+))?"
+            + ")$");
 
     // not very strict check, assume the log is correct and in sequence
     BufferedReader in = null;
     try {
-      in = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+      in = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"));
 
       String readLine = null;
       int currentFileIndex = -1;
@@ -111,8 +116,8 @@ public class LogReader {
             actionId = Integer.parseInt(matcher.group(1));
           } else if (matcher.group(2) != null) {
             actionId = Integer.parseInt(matcher.group(2));
-          } else if (matcher.group(7) != null) {
-            actionId = Integer.parseInt(matcher.group(7));
+          } else if (matcher.group(8) != null) {
+            actionId = Integer.parseInt(matcher.group(8));
           }
         } catch (NumberFormatException ex) {
           throw new IOException("Log format invalid.");
@@ -129,15 +134,16 @@ public class LogReader {
             break;
           case 2:
             currentFileIndex = Integer.parseInt(matcher.group(3));
-            currentBackupPath = new String(CommonUtil.hexStringToByteArray(matcher.group(4)), "UTF-8");
-            currentfromPath = new String(CommonUtil.hexStringToByteArray(matcher.group(5)), "UTF-8");
-            currentToPath = new String(CommonUtil.hexStringToByteArray(matcher.group(6)), "UTF-8");
+            operationId = Integer.parseInt(matcher.group(4));
+            currentBackupPath = matcher.group(5).replace("\\\"", "\"");
+            currentfromPath = matcher.group(6).replace("\\\"", "\"");
+            currentToPath = matcher.group(7).replace("\\\"", "\"");
             break;
           case 3:
-            if (currentFileIndex != Integer.parseInt(matcher.group(8))) {
+            if (currentFileIndex != Integer.parseInt(matcher.group(9))) {
               throw new IOException("Log format invalid.");
             }
-            _revertMap.put(currentFileIndex, new PatchRecord(currentFileIndex, currentBackupPath, currentfromPath, currentToPath));
+            _revertMap.put(currentFileIndex, new PatchRecord(currentFileIndex, operationId, currentBackupPath, currentfromPath, currentToPath));
             currentBackupPath = null;
             if (currentFileIndex >= startFileIndex) {
               startFileIndex = currentFileIndex + 1;
@@ -145,10 +151,10 @@ public class LogReader {
             currentFileIndex = -1;
             break;
           case 4:
-            if (currentFileIndex != Integer.parseInt(matcher.group(8))) {
+            if (currentFileIndex != Integer.parseInt(matcher.group(9))) {
               throw new IOException("Log format invalid.");
             }
-            _failMap.put(currentFileIndex, new PatchRecord(currentFileIndex, currentBackupPath, currentfromPath, currentToPath));
+            _failMap.put(currentFileIndex, new PatchRecord(currentFileIndex, operationId, currentBackupPath, currentfromPath, currentToPath));
             currentBackupPath = null;
             if (currentFileIndex >= startFileIndex) {
               startFileIndex = currentFileIndex + 1;
@@ -157,7 +163,7 @@ public class LogReader {
             break;
           case 5:
             logEnded = false;
-            int revertFileIndex = Integer.parseInt(matcher.group(8));
+            int revertFileIndex = Integer.parseInt(matcher.group(9));
             PatchRecord revertRecord = _revertMap.remove(revertFileIndex);
             if (revertRecord != null) {
               _failMap.put(revertFileIndex, revertRecord);
@@ -176,7 +182,7 @@ public class LogReader {
       }
 
       if (currentBackupPath != null) {
-        failList.add(new PatchRecord(startFileIndex, currentBackupPath, currentfromPath, currentToPath));
+        failList.add(new PatchRecord(startFileIndex, operationId, currentBackupPath, currentfromPath, currentToPath));
       }
     } finally {
       CommonUtil.closeQuietly(in);

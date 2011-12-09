@@ -106,6 +106,29 @@ public class PatchTest {
     testStep9(patch, aesKey);
     testStep10(patch, aesKey);
 
+    File revertFile = new File(tempDir.getAbsolutePath() + File.separator + "revert");
+    TestCommon.copyFolder(new File(packagePath + File.separator + "test3/1.0/"), revertFile);
+    new File(revertFile.getAbsolutePath() + File.separator + "5").delete();
+    CommonUtil.truncateFile(new File(revertFile.getAbsolutePath() + File.separator + "5"));
+    new File(revertFile.getAbsolutePath() + File.separator + "3").delete();
+    new File(revertFile.getAbsolutePath() + File.separator + "3").mkdirs();
+    new File(revertFile.getAbsolutePath() + File.separator + "10").delete();
+    new File(revertFile.getAbsolutePath() + File.separator + "10").mkdirs();
+    new File(revertFile.getAbsolutePath() + File.separator + "12").delete();
+    CommonUtil.writeFile(new File(revertFile.getAbsolutePath() + File.separator + "12"), "");
+    new File(revertFile.getAbsolutePath() + File.separator + "14").delete();
+    CommonUtil.writeFile(new File(revertFile.getAbsolutePath() + File.separator + "14"), "14");
+    new File(revertFile.getAbsolutePath() + File.separator + "24").delete();
+    CommonUtil.writeFile(new File(revertFile.getAbsolutePath() + File.separator + "24"), "24_old");
+    new File(revertFile.getAbsolutePath() + File.separator + "27").delete();
+    CommonUtil.writeFile(new File(revertFile.getAbsolutePath() + File.separator + "27"), "27_old");
+    new File(revertFile.getAbsolutePath() + File.separator + "29").delete();
+    CommonUtil.writeFile(new File(revertFile.getAbsolutePath() + File.separator + "29"), "29_old");
+
+    File logFile = new File(tempDir.getAbsolutePath() + File.separator + "action.log");
+    new Patcher(logFile).revert();
+    assertTrue(TestCommon.compareFolderContainAtLeast(softwareFolder, revertFile));
+
     assertTrue(CommonUtil.truncateFolder(tempDir));
     tempDir.delete();
   }
@@ -452,6 +475,17 @@ public class PatchTest {
     test2Step3(patch, aesKey);
     test2Step4(patch, aesKey);
 
+    File revertFile = new File(tempDir.getAbsolutePath() + File.separator + "revert");
+    TestCommon.copyFolder(new File(packagePath + File.separator + "test4/1.0/"), revertFile);
+    new File(revertFile.getAbsolutePath() + File.separator + "17").delete();
+    new File(revertFile.getAbsolutePath() + File.separator + "17").mkdirs();
+    new File(revertFile.getAbsolutePath() + File.separator + "19").delete();
+    new File(revertFile.getAbsolutePath() + File.separator + "22").delete();
+
+    File logFile = new File(tempDir.getAbsolutePath() + File.separator + "action.log");
+    new Patcher(logFile).revert();
+    assertTrue(TestCommon.compareFolderContainAtLeast(softwareFolder, revertFile));
+
     assertTrue(CommonUtil.truncateFolder(tempDir));
     tempDir.delete();
   }
@@ -693,7 +727,7 @@ public class PatchTest {
     }
   }
 
-  @Test
+//  @Test
   public void patchingTest() throws Exception {
     System.out.println("+++++ patchingTest +++++");
 
@@ -759,9 +793,11 @@ public class PatchTest {
     File tempDirForPatch = new File(tempDir.getAbsolutePath() + File.separator + "patch");
     File logFile = new File(tempDirForCreatePatch.getAbsolutePath() + File.separator + "action.log");
     File tempDirForApplyPatch = new File(tempDir.getAbsolutePath() + File.separator + "apply_patch");
+    File tempDirForApplyPatch2 = new File(tempDir.getAbsolutePath() + File.separator + "apply_patch2");
     tempDirForCreatePatch.mkdirs();
     tempDirForPatch.mkdirs();
     tempDirForApplyPatch.mkdirs();
+    tempDirForApplyPatch2.mkdirs();
 
     // copy 'old' folder to new directory
     assertTrue(CommonUtil.truncateFolder(tempDirForPatch));
@@ -787,13 +823,15 @@ public class PatchTest {
     // compare the new 'old' folder and the 'new' folder
     assertTrue(TestCommon.compareFolder(tempDirForPatch, newFolder));
 
+    TestCommon.copyFolder(tempDirForApplyPatch, tempDirForApplyPatch2);
+
     System.out.println("+ revert patch");
     try {
       patcher.revert();
     } catch (Exception ex) {
       fail("! revert failed");
     }
-    assertTrue(TestCommon.compareFolder(tempDirForPatch, oldFolder));
+    assertTrue(TestCommon.compareFolderContainAtLeast(tempDirForPatch, oldFolder));
 
     System.out.println("+ patching after revert");
     patcher.doPatch(new PatcherListener() {
@@ -809,15 +847,21 @@ public class PatchTest {
     // compare the new 'old' folder and the 'new' folder
     assertTrue(TestCommon.compareFolder(tempDirForPatch, newFolder));
 
+    System.out.println("+ compare temp dir with previous patching");
+    assertTrue(TestCommon.compareFolder(tempDirForApplyPatch, tempDirForApplyPatch2));
+
+
     File fullPatch = new File(tempDir.getAbsolutePath() + File.separator + "full_patch.patch");
     File tempDirForCreateFullPatch = new File(tempDir.getAbsolutePath() + File.separator + "create_full_patch");
     File tempFileForFullPatchEncryption = new File(fullPatch.getAbsolutePath() + ".encrypted");
     File tempDirForFullPatch = new File(tempDir.getAbsolutePath() + File.separator + "full_patch");
     File logFileForFullPatch = new File(tempDirForCreateFullPatch.getAbsolutePath() + File.separator + "action_full_patch.log");
     File tempDirForApplyFullPatch = new File(tempDir.getAbsolutePath() + File.separator + "apply_full_patch");
+    File tempDirForApplyFullPatch2 = new File(tempDir.getAbsolutePath() + File.separator + "apply_full_patch2");
     tempDirForCreateFullPatch.mkdirs();
     tempDirForFullPatch.mkdirs();
     tempDirForApplyFullPatch.mkdirs();
+    tempDirForApplyFullPatch2.mkdir();
 
     // copy 'old' folder to new directory
     assertTrue(CommonUtil.truncateFolder(tempDirForFullPatch));
@@ -843,6 +887,8 @@ public class PatchTest {
     // compare the new 'old' folder and the 'new_over_old' folder
     assertTrue(TestCommon.compareFolder(tempDirForFullPatch, newOverOldFolder));
 
+    TestCommon.copyFolder(tempDirForApplyFullPatch, tempDirForApplyFullPatch2);
+
     System.out.println("+ revert full patch");
     try {
       patcher.revert();
@@ -864,6 +910,9 @@ public class PatchTest {
     }, fullPatch, 1, aesKey, tempDirForFullPatch, tempDirForApplyFullPatch, new HashMap<String, String>());
     // compare the new 'old' folder and the 'new_over_old' folder
     assertTrue(TestCommon.compareFolder(tempDirForFullPatch, newOverOldFolder));
+
+    System.out.println("+ compare temp dir with previous patching");
+    assertTrue(TestCommon.compareFolder(tempDirForApplyFullPatch, tempDirForApplyFullPatch2));
 
 
     System.out.println("+ extraction and packing");

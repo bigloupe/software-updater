@@ -16,6 +16,10 @@ public class PatchRecord {
    */
   protected OperationType operationType;
   /**
+   * The detail operation id.
+   */
+  protected int operationId;
+  /**
    * The backup file path of the replacement record.
    */
   protected String backupFilePath;
@@ -31,11 +35,12 @@ public class PatchRecord {
   /**
    * Constructor.
    * @param fileIndex the file index of the record
+   * @param operationId 
    * @param backupFilePath the backup file path
    * @param newFilePath the copy-from file path
    * @param destinationFilePath the copy-to file path
    */
-  public PatchRecord(int fileIndex, String backupFilePath, String newFilePath, String destinationFilePath) {
+  public PatchRecord(int fileIndex, int operationId, String backupFilePath, String newFilePath, String destinationFilePath) {
     if (newFilePath == null) {
       throw new NullPointerException("argument 'newFilePath' cannot be null");
     }
@@ -46,6 +51,7 @@ public class PatchRecord {
       throw new NullPointerException("argument 'destinationFilePath' cannot be null");
     }
     this.fileIndex = fileIndex;
+    this.operationId = operationId;
     this.operationType = null;
     this.backupFilePath = backupFilePath;
     this.newFilePath = newFilePath;
@@ -59,7 +65,7 @@ public class PatchRecord {
    * @param newFilePath the path where the new file locate
    * @param backupFilePath the path where the backup file locate
    */
-  protected PatchRecord(OperationType operationType, String destinationFilePath, String newFilePath, String backupFilePath) {
+  public PatchRecord(OperationType operationType, String destinationFilePath, String newFilePath, String backupFilePath) {
     if (operationType == null) {
       throw new NullPointerException("argument 'operationType' cannot be null");
     }
@@ -73,6 +79,7 @@ public class PatchRecord {
       throw new NullPointerException("argument 'backupFilePath' cannot be null");
     }
     this.fileIndex = -1;
+    this.operationId = -1;
     this.operationType = operationType;
     this.destinationFilePath = destinationFilePath;
     this.newFilePath = newFilePath;
@@ -80,19 +87,35 @@ public class PatchRecord {
   }
 
   /**
+   * Get the file index of the record.
+   * @return the file index, -1 means not specified
+   */
+  public int getFileIndex() {
+    return fileIndex;
+  }
+
+  /**
    * Get operation type.
-   * @return the operation type
+   * @return the operation type, null means not specified
    */
   public OperationType getOperationType() {
     return operationType;
   }
 
   /**
-   * Get the file index of the record.
-   * @return the file index
+   * Get detail operation id.
+   * @return the operation id, -1 means not specified
    */
-  public int getFileIndex() {
-    return fileIndex;
+  public int getOperationId() {
+    return operationId;
+  }
+
+  /**
+   * Set the operation id.
+   * @param operationId the operation id
+   */
+  public void setOperationId(int operationId) {
+    this.operationId = operationId;
   }
 
   /**
@@ -128,11 +151,12 @@ public class PatchRecord {
   @Override
   public int hashCode() {
     int hash = 3;
-    hash = 11 * hash + this.fileIndex;
-    hash = 11 * hash + (this.operationType != null ? this.operationType.hashCode() : 0);
-    hash = 11 * hash + (this.backupFilePath != null ? this.backupFilePath.hashCode() : 0);
-    hash = 11 * hash + (this.newFilePath != null ? this.newFilePath.hashCode() : 0);
-    hash = 11 * hash + (this.destinationFilePath != null ? this.destinationFilePath.hashCode() : 0);
+    hash = 17 * hash + this.fileIndex;
+    hash = 17 * hash + (this.operationType != null ? this.operationType.hashCode() : 0);
+    hash = 17 * hash + this.operationId;
+    hash = 17 * hash + (this.backupFilePath != null ? this.backupFilePath.hashCode() : 0);
+    hash = 17 * hash + (this.newFilePath != null ? this.newFilePath.hashCode() : 0);
+    hash = 17 * hash + (this.destinationFilePath != null ? this.destinationFilePath.hashCode() : 0);
     return hash;
   }
 
@@ -147,6 +171,7 @@ public class PatchRecord {
     PatchRecord _object = (PatchRecord) compareTo;
 
     return _object.getFileIndex() == fileIndex
+            && _object.getOperationId() == _object.getOperationId()
             && (_object.getOperationType() == null && getOperationType() == null || (_object.getOperationType() != null && getOperationType() != null && _object.getOperationType().equals(getOperationType())))
             && _object.getBackupFilePath().equals(getBackupFilePath())
             && _object.getNewFilePath().equals(getNewFilePath())
