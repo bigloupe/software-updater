@@ -35,6 +35,7 @@ call:copyFile src\updater\patch\PatcherListener.java
 call:copyFile src\updater\patch\ReplacementRecord.java
 mkdir "%softwareDirectory%\src\updater\util"
 call:copyFile src\updater\util\CommonUtil.java
+call:copyFile src\updater\util\GetClientScriptResult.java
 call:copyFile src\updater\util\Interruptible.java
 call:copyFile src\updater\util\InterruptibleInputStream.java
 call:copyFile src\updater\util\InterruptibleOutputStream.java
@@ -77,6 +78,7 @@ call:copyFile src\updater\patch\PatcherListener.java
 call:copyFile src\updater\patch\ReplacementRecord.java
 mkdir "%softwareDirectory%\src\updater\util"
 call:copyFile src\updater\util\CommonUtil.java
+call:copyFile src\updater\util\GetClientScriptResult.java
 call:copyFile src\updater\util\Interruptible.java
 call:copyFile src\updater\util\InterruptibleInputStream.java
 call:copyFile src\updater\util\InterruptibleOutputStream.java
@@ -103,6 +105,7 @@ call:copyFile src\updater\script\InvalidFormatException.java
 call:copyFile src\updater\script\Patch.java
 mkdir "%softwareDirectory%\src\updater\util"
 call:copyFile src\updater\util\CommonUtil.java
+call:copyFile src\updater\util\GetClientScriptResult.java
 call:copyFile src\updater\util\DownloadProgressListener.java
 call:copyFile src\updater\util\DownloadProgressUtil.java
 call:copyFile src\updater\util\DownloadResult.java

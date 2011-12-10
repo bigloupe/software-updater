@@ -8,7 +8,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * An object that contain the {@link FileOutputStream} and {@link FileLock} related to one lock.
+ * An object that contain the {@link FileOutputStream} and {@link FileLock} 
+ * related to one lock.
  * 
  * @author Chan Wai Shing <cws1989@gmail.com>
  */

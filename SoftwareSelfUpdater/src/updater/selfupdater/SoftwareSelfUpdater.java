@@ -21,9 +21,10 @@ import javax.swing.UIManager;
 
 /**
  * This is a self updater used by software launcher.
- * When the launcher encounter any files that it can't do a replacement due to file locking, then this will be used.
- * The launcher will launch this and exit (to release the file lock on the itself), then this self updater will do the replacement 
- * according to a list the launcher give it.
+ * When the launcher encounter any files that it can't do a replacement due to 
+ * file locking, then this will be used. The launcher will launch this and exit 
+ * (to release the file lock on the itself), then this self updater will do the 
+ * replacement according to a list the launcher give it.
  * 
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
@@ -41,9 +42,11 @@ public class SoftwareSelfUpdater {
   }
   /**
    * The maximum execution time allowed (in ms).
-   * When the self updater failed, it will not give up immediately, because the launcher may not exit so quickly after launching this.
-   * In this case, the program will keep trying until this maximum execution time is reached.
-   * This is configurable by replacing/editing '/config.xml' inside the jar, for more information, see the code below.
+   * When the self updater failed, it will not give up immediately, because the 
+   * launcher may not exit so quickly after launching this. In this case, the 
+   * program will keep trying until this maximum execution time is reached.
+   * This is configurable by replacing/editing '/config.xml' inside the jar, 
+   * for more information, see the code below.
    */
   protected static long maxExecutionTime = 15000;
 
@@ -190,12 +193,14 @@ public class SoftwareSelfUpdater {
   }
 
   /**
-   * Rename the file {@code from} to {@code to} within {@code timeout} milli seconds.
+   * Rename the file {@code from} to {@code to} within {@code timeout} milli 
+   * seconds.
    * 
    * @param from the position to move from
    * @param to the position to move to
    * @param timeout the maximum execution time in milli second
-   * @param retryDelay the time delay in milli second between each retry, must >= 0
+   * @param retryDelay the time delay in milli second between each retry, 
+   * must >= 0
    * 
    * @return true if rename succeed, false if rename failed
    * 
@@ -228,7 +233,8 @@ public class SoftwareSelfUpdater {
   }
 
   /**
-   * Get and update the maximum execution time from /config.xml inside the jar if there is any.
+   * Get and update the maximum execution time from /config.xml inside the jar 
+   * if there is any.
    */
   protected static void updateMaxExecutionTime() {
     try {

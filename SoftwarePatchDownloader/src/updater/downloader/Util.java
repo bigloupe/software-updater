@@ -36,7 +36,8 @@ public class Util extends CommonUtil {
   /**
    * Convert the number of bytes to human readable string.
    * @param bytes the number of bytes
-   * @param si use internation system of units of not, true to use 1000, false to use 1024
+   * @param si use internation system of units of not, true to use 1000, 
+   * false to use 1024
    * @return the human readable string of the 'number of bytes'
    */
   public static String humanReadableByteCount(long bytes, boolean si) {
@@ -53,7 +54,8 @@ public class Util extends CommonUtil {
   /**
    * Convert the time (in second) to human readable string.
    * @param timeInSecond the time to convert
-   * @param maxDisplay indicate the max number of item to display, max: 6, e.g. timeInSecond = 3661, maxDisplay: 2 => 1h 1m
+   * @param maxDisplay indicate the max number of item to display, max: 6, 
+   * e.g. timeInSecond = 3661, maxDisplay: 2 => 1h 1m
    * @return the human readable string of the time
    */
   public static String humanReadableTimeCount(int timeInSecond, int maxDisplay) {

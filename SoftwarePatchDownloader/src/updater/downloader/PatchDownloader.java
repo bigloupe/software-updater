@@ -193,7 +193,8 @@ public class PatchDownloader {
 
   /**
    * Get the patch from the Internet.
-   * This will check the exist file in the path of {@code saveToFile} and determine resume download.
+   * This will check the exist file in the path of {@code saveToFile} and 
+   * determine resume download.
    * @param listener the progress listener
    * @param url the URL to download the patch from
    * @param saveToFile the place to save the downloaded patch
@@ -232,18 +233,12 @@ public class PatchDownloader {
   }
 
   /**
-   * The return result used by {@link #downloadPatches(updater.downloader.PatchDownloader.DownloadPatchesListener, java.io.File, updater.script.Client, java.util.List, int, int)}.
-   */
-  public static enum DownloadPatchesResult {
-
-    SAVE_TO_CLIENT_SCRIPT_FAIL, DOWNLOAD_INTERRUPTED, ERROR, COMPLETED
-  }
-
-  /**
-   * Determine the suitable patches to download to upgrade the current version of software to highest possible version with least download size.
+   * Determine the suitable patches to download to upgrade the current version 
+   * of software to highest possible version with least download size.
    * @param catalog the patches catalog
    * @param currentVersion the current software version
-   * @param acceptOnlyFullPack true to accept only full pack patches, false to accept both patch (diff/partly) and full pack patches.
+   * @param acceptOnlyFullPack true to accept only full pack patches, false 
+   * to accept both patch (diff/partly) and full pack patches.
    * @return the list of suitable patches
    */
   public static List<Patch> getSuitablePatches(Catalog catalog, String currentVersion, boolean acceptOnlyFullPack) {
@@ -251,10 +246,13 @@ public class PatchDownloader {
   }
 
   /**
-   * Determine the suitable patches to download to upgrade the software with version <code>fromVersion</code> to highest possible version with least download size.
+   * Determine the suitable patches to download to upgrade the software with 
+   * version {@code fromVersion} to highest possible version with least 
+   * download size.
    * @param allPatches all available patches to choose from
    * @param fromVersion the starting version to match
-   * @param acceptOnlyFullPack true to accept only full pack patches, false to accept both patch (diff/partly) and full pack patches.
+   * @param acceptOnlyFullPack true to accept only full pack patches, false 
+   * to accept both patch (diff/partly) and full pack patches.
    * @return the list of suitable patches
    */
   public static List<Patch> getSuitablePatches(List<Patch> allPatches, String fromVersion, boolean acceptOnlyFullPack) {
@@ -303,7 +301,7 @@ public class PatchDownloader {
   }
 
   /**
-   * Calculate the summation of size of all patches in <code>allPatches</code>.
+   * Calculate the summation of size of all patches in {@code allPatches}.
    * @param allPatches the patches list
    * @return the summation of size of all patches
    */
@@ -337,8 +335,10 @@ public class PatchDownloader {
    * Get the updated catalog.
    * @param client the path of the file of the client script
    * @return the catalog, null means no newer version of catalog is available
-   * @throws IOException RSA key invalid or error occurred when getting the catalog
-   * @throws InvalidFormatException the format of the downloaded catalog is invalid
+   * @throws IOException RSA key invalid or error occurred when getting the 
+   * catalog
+   * @throws InvalidFormatException the format of the downloaded catalog is 
+   * invalid
    */
   public static Catalog getUpdatedCatalog(Client client) throws IOException, InvalidFormatException {
     if (client == null) {
@@ -374,9 +374,12 @@ public class PatchDownloader {
    * Get the catalog from Internet.
    * @param out the stream to output the catalog data to
    * @param url the URL to download the catalog from
-   * @param lastUpdateDate the last update date, if the catalog not be updated since this date, the content of the catalog will not be downloaded (save time and traffic); -1 means not specified
+   * @param lastUpdateDate the last update date, if the catalog not be updated 
+   * since this date, the content of the catalog will not be downloaded 
+   * (save time and traffic); -1 means not specified
    * @param key the RSA key to decrypt the catalog, null means no encryption
-   * @param keyLength if {@code key} specified, provide the key length of the RSA key in byte
+   * @param keyLength if {@code key} specified, provide the key length of the 
+   * RSA key in byte
    * @return the get catalog result
    * @throws MalformedURLException {@code url} is not a valid HTTP URL
    * @throws IOException catalog content invalid

@@ -21,7 +21,8 @@ import updater.util.Pausable;
 public class BatchPatcher implements Pausable {
 
   /**
-   * The reference to the current-using patcher, it may change to other patcher when apply current patch finished and proceed to apply next patch.
+   * The reference to the current-using patcher, it may change to other patcher 
+   * when apply current patch finished and proceed to apply next patch.
    */
   protected Patcher patcher;
 
@@ -46,7 +47,8 @@ public class BatchPatcher implements Pausable {
    * Apply patches to {@code applyToFolder}. 
    * @param listener the listener
    * @param applyToFolder the root directory of the software
-   * @param tempDir temporary folder to store temporary generated files while patching
+   * @param tempDir temporary folder to store temporary generated files while 
+   * patching
    * @param fromVersion the current version of the software
    * @param patches the patches to apply, must be in sequence
    * @return 

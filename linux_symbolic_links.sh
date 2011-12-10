@@ -46,6 +46,7 @@ linkFile src/updater/patch/PatcherListener.java
 linkFile src/updater/patch/ReplacementRecord.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/util"
 linkFile src/updater/util/CommonUtil.java
+linkFile src/updater/util/GetClientScriptResult.java
 linkFile src/updater/util/Interruptible.java
 linkFile src/updater/util/InterruptibleInputStream.java
 linkFile src/updater/util/InterruptibleOutputStream.java
@@ -88,6 +89,7 @@ linkFile src/updater/patch/PatcherListener.java
 linkFile src/updater/patch/ReplacementRecord.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/util"
 linkFile src/updater/util/CommonUtil.java
+linkFile src/updater/util/GetClientScriptResult.java
 linkFile src/updater/util/Interruptible.java
 linkFile src/updater/util/InterruptibleInputStream.java
 linkFile src/updater/util/InterruptibleOutputStream.java
@@ -114,6 +116,7 @@ linkFile src/updater/script/InvalidFormatException.java
 linkFile src/updater/script/Patch.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/util"
 linkFile src/updater/util/CommonUtil.java
+linkFile src/updater/util/GetClientScriptResult.java
 linkFile src/updater/util/DownloadProgressListener.java
 linkFile src/updater/util/DownloadProgressUtil.java
 linkFile src/updater/util/DownloadResult.java

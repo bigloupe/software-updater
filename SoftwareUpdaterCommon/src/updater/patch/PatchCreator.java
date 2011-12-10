@@ -397,6 +397,7 @@ public class PatchCreator {
       if (fileLength > newFileLength) {
         // if the patched file is larger than the new file (very rare), don't patch it, use replace instead
         replaceFileList.add(record);
+        diffFile.delete();
         continue;
       } else {
         String newFileSHA256 = newVersionFilesChecksumMap.get(_newFile.getAbsolutePath());

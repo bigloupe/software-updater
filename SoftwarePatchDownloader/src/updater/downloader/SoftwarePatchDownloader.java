@@ -18,14 +18,13 @@ import javax.swing.JOptionPane;
 import updater.concurrent.ConcurrentLock;
 import updater.concurrent.LockType;
 import updater.concurrent.LockUtil;
-import updater.downloader.PatchDownloader.DownloadPatchesResult;
 import updater.gui.UpdaterWindow;
 import updater.script.Catalog;
 import updater.script.Client;
 import updater.script.Client.Information;
 import updater.script.InvalidFormatException;
 import updater.script.Patch;
-import updater.util.CommonUtil.GetClientScriptResult;
+import updater.util.GetClientScriptResult;
 
 /**
  * This is a software patch downloader.
@@ -54,7 +53,8 @@ public class SoftwarePatchDownloader {
 
   /**
    * Main function of main class.
-   * @param args the first argument (if any) indicate the location of the client script ({@link updater.script.Client})
+   * @param args the first argument (if any) indicate the location of the 
+   * client script ({@link updater.script.Client})
    */
   public static void main(String[] args) {
     // set look & feel

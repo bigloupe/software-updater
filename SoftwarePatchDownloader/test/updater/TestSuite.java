@@ -8,8 +8,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    updater.downloader.PatchDownloaderTest.class,
-    updater.downloader.UtilTest.class
+  updater.downloader.PatchDownloaderTest.class,
+  updater.downloader.UtilTest.class
 })
 public class TestSuite {
 }

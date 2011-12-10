@@ -33,7 +33,7 @@ import updater.script.Client.Information;
 import updater.script.InvalidFormatException;
 import updater.script.Patch;
 import updater.util.CommonUtil;
-import updater.util.CommonUtil.GetClientScriptResult;
+import updater.util.GetClientScriptResult;
 
 /**
  * The software launcher main class.
@@ -50,9 +50,12 @@ public class SoftwareLauncher {
    * Start update (if any) and launch/start the software.
    * @param clientScriptPath the path of the client script file
    * @param args the arguments to pass-in to launch/start the software
-   * @throws IOException possible failure: failed to copy self-updater to desire destination, failed to write to replacement file or failed to execute the command
+   * @throws IOException possible failure: failed to copy self-updater to 
+   * desire destination, failed to write to replacement file or failed to 
+   * execute the command
    * @throws InvalidFormatException the format of the client script is invalid
-   * @throws LaunchFailedException launch failed, possible jar not found, class not found or main method not found
+   * @throws LaunchFailedException launch failed, possible jar not found, 
+   * class not found or main method not found
    */
   public static void start(String clientScriptPath, String[] args) throws IOException, InvalidFormatException, LaunchFailedException {
     File clientScript = new File(clientScriptPath);
@@ -67,8 +70,11 @@ public class SoftwareLauncher {
    * @param clientScriptFile the client script file
    * @param client the client script
    * @param args the arguments to pass-in to launch/start the software
-   * @throws IOException possible failure: failed to copy self-updater to desire destination, failed to write to replacement file or failed to execute the command
-   * @throws LaunchFailedException launch failed, possible jar not found, class not found or main method not found
+   * @throws IOException possible failure: failed to copy self-updater to 
+   * desire destination, failed to write to replacement file or failed to 
+   * execute the command
+   * @throws LaunchFailedException launch failed, possible jar not found, 
+   * class not found or main method not found
    */
   public static void start(final File clientScriptFile, final Client client, String[] args) throws IOException, LaunchFailedException {
     boolean launchSoftware = false;
@@ -251,7 +257,8 @@ public class SoftwareLauncher {
   /**
    * Revert all the patching action of {@code patches}.
    * @param patches the patches to revert, must be in sequence
-   * @param tempDir temporary folder to store temporary generated files while patching
+   * @param tempDir temporary folder to store temporary generated files while 
+   * patching
    * @throws IOException error occurred when doing revert
    */
   public static void doRevert(List<Patch> patches, File tempDir) throws IOException {
@@ -318,7 +325,8 @@ public class SoftwareLauncher {
   }
 
   /**
-   * Write the replacement list into the file. (destination, then new file path, line by line)
+   * Write the replacement list into the file. (destination, then new file 
+   * path, line by line)
    * @param file the file to write into
    * @param replacementList the replacement list
    * @throws IOException error occurred when writing to the file
@@ -343,7 +351,8 @@ public class SoftwareLauncher {
    * @param jarPath the path of the jar file
    * @param mainClass the class that contain the main method
    * @param args arguments to pass-in to the main method
-   * @throws LaunchFailedException launch failed, possible jar not found, class not found or main method not found
+   * @throws LaunchFailedException launch failed, possible jar not found, 
+   * class not found or main method not found
    */
   protected static void startSoftware(String jarPath, String mainClass, String[] args) throws LaunchFailedException {
     try {
