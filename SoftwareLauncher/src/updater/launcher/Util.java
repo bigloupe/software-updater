@@ -8,6 +8,6 @@ import updater.util.CommonUtil;
  */
 public class Util extends CommonUtil {
 
-    protected Util() {
-    }
+  protected Util() {
+  }
 }

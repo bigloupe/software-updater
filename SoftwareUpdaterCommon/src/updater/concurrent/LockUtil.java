@@ -18,15 +18,7 @@ import updater.util.CommonUtil;
  */
 public class LockUtil {
 
-  /**
-   * Indicate whether it is in debug mode or not.
-   */
-  protected final static boolean debug;
-
-  static {
-    String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
-    debug = debugMode == null || !debugMode.equals("true") ? false : true;
-  }
+  private static final Logger LOG = Logger.getLogger(LockUtil.class.getName());
 
   protected LockUtil() {
   }
@@ -71,9 +63,7 @@ public class LockUtil {
         returnLock = new ConcurrentLock(lockFileOut, fileLock);
         break;
       } catch (IOException ex) {
-        if (debug) {
-          Logger.getLogger(LockUtil.class.getName()).log(Level.INFO, null, ex);
-        }
+        LOG.log(Level.FINE, null, ex);
 
         // exceed timeout
         if (System.currentTimeMillis() - acquireLockStart >= timeout) {
@@ -110,7 +100,8 @@ public class LockUtil {
    * 
    * @return the lock if acquired successfully, null if failed
    * 
-   * @throws IllegalArgumentException {@code lockFolder} is not a valid directory; {@code retryDelay} < 0
+   * @throws IllegalArgumentException {@code lockFolder} is not a valid 
+   * directory; {@code retryDelay} < 0
    */
   public static ConcurrentLock acquireLock(LockType lockType, File lockFolder, int timeout, int retryDelay) {
     if (lockType == null) {

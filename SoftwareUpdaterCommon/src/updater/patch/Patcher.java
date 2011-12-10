@@ -36,15 +36,6 @@ import watne.seis720.project.Padding;
 public class Patcher implements Pausable {
 
   /**
-   * Indicate whether it is in debug mode or not.
-   */
-  protected final static boolean debug;
-
-  static {
-    String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
-    debug = debugMode == null || !debugMode.equals("true") ? false : true;
-  }
-  /**
    * The log file.
    */
   protected File logFile;
@@ -518,6 +509,7 @@ public class Patcher implements Pausable {
               try {
                 destFileChecksum = CommonUtil.getSHA256String(destFile);
               } catch (IOException ex) {
+                // failure is allowed
               }
               if (destFileChecksum == null) {
                 log(0);
@@ -559,6 +551,7 @@ public class Patcher implements Pausable {
             try {
               destFileChecksum = CommonUtil.getSHA256String(destFile);
             } catch (IOException ex) {
+              // failure is allowed
             }
             if (destFileChecksum == null) {
               log(0);

@@ -28,15 +28,6 @@ import java.util.zip.GZIPInputStream;
 public class HTTPDownloader implements Pausable, Interruptible {
 
   /**
-   * Indicate whether it is in debug mode or not.
-   */
-  protected final static boolean debug;
-
-  static {
-    String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
-    debug = debugMode == null || !debugMode.equals("true") ? false : true;
-  }
-  /**
    * List of tasks to be executed after interrupted.
    */
   protected final List<Runnable> interruptedTasks;

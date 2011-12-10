@@ -41,15 +41,7 @@ import updater.script.InvalidFormatException;
  */
 public class CommonUtil {
 
-  /**
-   * Indicate whether it is in debug mode or not.
-   */
-  protected final static boolean debug;
-
-  static {
-    String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
-    debug = debugMode == null || !debugMode.equals("true") ? false : true;
-  }
+  private static final Logger LOG = Logger.getLogger(CommonUtil.class.getName());
 
   protected CommonUtil() {
   }
@@ -88,9 +80,7 @@ public class CommonUtil {
       result = new String(hexBytes, "US-ASCII");
     } catch (UnsupportedEncodingException ex) {
       // US-ASCII should always exist
-      if (debug) {
-        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     }
 
     return result;
@@ -170,9 +160,7 @@ public class CommonUtil {
       return messageDigest.digest();
     } catch (NoSuchAlgorithmException ex) {
       // should have SHA-256
-      if (debug) {
-        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     } finally {
       closeQuietly(fin);
     }
@@ -647,29 +635,19 @@ public class CommonUtil {
       }
     } catch (NoSuchAlgorithmException ex) {
       // it should be included in JCE
-      if (debug) {
-        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     } catch (NoSuchPaddingException ex) {
       // no special padding is specified
-      if (debug) {
-        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     } catch (InvalidKeyException ex) {
       // the key is RSAPrivateKey
-      if (debug) {
-        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     } catch (IllegalBlockSizeException ex) {
       // it is handled
-      if (debug) {
-        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     } catch (BadPaddingException ex) {
       // encryption should not have this problem
-      if (debug) {
-        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     }
 
     return bout.toByteArray();
@@ -715,24 +693,16 @@ public class CommonUtil {
       }
     } catch (NoSuchAlgorithmException ex) {
       // it should be included in JCE
-      if (debug) {
-        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     } catch (NoSuchPaddingException ex) {
       // no special padding is specified
-      if (debug) {
-        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     } catch (IllegalBlockSizeException ex) {
       // it is checked
-      if (debug) {
-        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     } catch (InvalidKeyException ex) {
       // the key is RSAPublicKey
-      if (debug) {
-        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     }
 
     return bout.toByteArray();
@@ -760,9 +730,7 @@ public class CommonUtil {
       KeyFactory keyFactory = KeyFactory.getInstance("RSA");
       returnKey = (RSAPublicKey) keyFactory.generatePublic(keySpec);
     } catch (NoSuchAlgorithmException ex) {
-      if (debug) {
-        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     }
     return returnKey;
   }
@@ -789,9 +757,7 @@ public class CommonUtil {
       KeyFactory keyFactory = KeyFactory.getInstance("RSA");
       returnKey = (RSAPrivateKey) keyFactory.generatePrivate(keySpec);
     } catch (NoSuchAlgorithmException ex) {
-      if (debug) {
-        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     }
     return returnKey;
   }
@@ -818,9 +784,7 @@ public class CommonUtil {
       return lock != null;
     } catch (IOException ex) {
       // if any IOException caught, consider it as failure and no exception is thrown
-      if (debug) {
-        Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.FINE, null, ex);
     } finally {
       releaseLockQuietly(lock);
       closeQuietly(fout);
@@ -985,9 +949,7 @@ public class CommonUtil {
       try {
         closeable.close();
       } catch (IOException ex) {
-        if (debug) {
-          Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        LOG.log(Level.FINE, null, ex);
       }
     }
   }
@@ -1001,9 +963,7 @@ public class CommonUtil {
       try {
         fileLock.release();
       } catch (IOException ex) {
-        if (debug) {
-          Logger.getLogger(CommonUtil.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        LOG.log(Level.FINE, null, ex);
       }
     }
   }

@@ -29,15 +29,7 @@ import updater.script.InvalidFormatException;
  */
 public class XMLUtil {
 
-  /**
-   * Indicate whether it is in debug mode or not.
-   */
-  protected final static boolean debug;
-
-  static {
-    String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
-    debug = debugMode == null || !debugMode.equals("true") ? false : true;
-  }
+  private static final Logger LOG = Logger.getLogger(XMLUtil.class.getName());
 
   protected XMLUtil() {
   }
@@ -169,9 +161,7 @@ public class XMLUtil {
       doc = docBuilder.parse(new ByteArrayInputStream(content));
     } catch (ParserConfigurationException ex) {
       // should not get this exception
-      if (debug) {
-        Logger.getLogger(XMLUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     }
 
     return doc;
@@ -189,9 +179,7 @@ public class XMLUtil {
       doc = docBuilder.newDocument();
     } catch (Exception ex) {
       // create empty document, should not get any exception
-      if (debug) {
-        Logger.getLogger(XMLUtil.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     }
     return doc;
   }

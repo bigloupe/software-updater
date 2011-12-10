@@ -4,6 +4,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.channels.FileLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * An object that contain the {@link FileOutputStream} and {@link FileLock} related to one lock.
@@ -12,6 +14,7 @@ import java.nio.channels.FileLock;
  */
 public class ConcurrentLock {
 
+  private static final Logger LOG = Logger.getLogger(ConcurrentLock.class.getName());
   /**
    * The file output stream that the lock belongs to.
    */
@@ -48,6 +51,7 @@ public class ConcurrentLock {
         fileLock.release();
         fileLock = null;
       } catch (IOException ex) {
+        LOG.log(Level.FINE, null, ex);
       }
     }
     if (lockFileOut != null) {
@@ -55,6 +59,7 @@ public class ConcurrentLock {
         lockFileOut.close();
         lockFileOut = null;
       } catch (IOException ex) {
+        LOG.log(Level.FINE, null, ex);
       }
     }
   }

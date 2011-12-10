@@ -20,15 +20,7 @@ import updater.util.CommonUtil;
  */
 public class PatchExtractor {
 
-  /**
-   * Indicate whether it is in debug mode or not.
-   */
-  protected final static boolean debug;
-
-  static {
-    String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
-    debug = debugMode == null || !debugMode.equals("true") ? false : true;
-  }
+  private static final Logger LOG = Logger.getLogger(PatchExtractor.class.getName());
 
   protected PatchExtractor() {
   }
@@ -92,9 +84,7 @@ public class PatchExtractor {
         id++;
       }
     } catch (TransformerException ex) {
-      if (debug) {
-        Logger.getLogger(PatchCreator.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     } finally {
       CommonUtil.closeQuietly(in);
       if (deletePatch) {

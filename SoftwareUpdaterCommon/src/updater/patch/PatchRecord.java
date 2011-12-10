@@ -1,5 +1,7 @@
 package updater.patch;
 
+import java.util.logging.Logger;
+
 /**
  * The record used to represent the essential data in a row of replacement log.
  * 
@@ -36,10 +38,6 @@ public class PatchRecord {
    * Constructor.
    * @param fileIndex the file index of the record
    * @param operationId the operation id
-   * @param backupFileExist true means backup file exist when patching, false 
-   * if not
-   * @param newFileExist true means new file exist when patching, false 
-   * if not
    * @param destinationFileExist true means destination file exist when 
    * patching, false if not
    * @param backupFilePath the backup file path

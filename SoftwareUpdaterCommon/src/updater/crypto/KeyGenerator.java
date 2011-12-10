@@ -25,15 +25,7 @@ import updater.util.CommonUtil;
  */
 public class KeyGenerator {
 
-  /**
-   * Indicate whether it is in debug mode or not.
-   */
-  protected final static boolean debug;
-
-  static {
-    String debugMode = System.getProperty("SoftwareUpdaterDebugMode");
-    debug = debugMode == null || !debugMode.equals("true") ? false : true;
-  }
+  private static final Logger LOG = Logger.getLogger(KeyGenerator.class.getName());
 
   protected KeyGenerator() {
   }
@@ -65,21 +57,13 @@ public class KeyGenerator {
 
       CommonUtil.writeFile(saveTo, rsaKey.output());
     } catch (InvalidKeySpecException ex) {
-      if (debug) {
-        Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     } catch (NoSuchAlgorithmException ex) {
-      if (debug) {
-        Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     } catch (UnsupportedEncodingException ex) {
-      if (debug) {
-        Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     } catch (TransformerException ex) {
-      if (debug) {
-        Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     }
   }
 
@@ -106,9 +90,7 @@ public class KeyGenerator {
     try {
       CommonUtil.writeFile(saveTo, aesKey.output());
     } catch (TransformerException ex) {
-      if (debug) {
-        Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     }
   }
 
@@ -133,14 +115,13 @@ public class KeyGenerator {
     try {
       CommonUtil.writeFile(file, aesKey.output());
     } catch (TransformerException ex) {
-      if (debug) {
-        Logger.getLogger(KeyGenerator.class.getName()).log(Level.SEVERE, null, ex);
-      }
+      LOG.log(Level.SEVERE, null, ex);
     }
   }
 
   /**
-   * Generate a random byte array with specified length in byte.
+   * Generate a random byte array with specified length in byte. (Low 
+   * efficiency)
    * 
    * @param length the length in byte, not allow <= 0
    * 
