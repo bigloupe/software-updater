@@ -10,6 +10,8 @@ import java.math.BigInteger;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.xml.transform.TransformerException;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -21,6 +23,7 @@ import updater.TestCommon;
 import updater.script.Catalog;
 import updater.script.InvalidFormatException;
 import updater.script.Patch;
+import updater.util.CommonUtil;
 import updater.util.DownloadResult;
 
 /**
@@ -184,11 +187,72 @@ public class PatchDownloaderTest {
 
   /**
    * Test of getPatch method, of class PatchDownloader.
-   * This test depends on some functions in /updater/util/Util.java.
    */
   @Test
-  public void testGetPatch() throws IOException {
+  public void testGetPatch() throws IOException, InvalidFormatException {
     System.out.println("+++++ testGetPatch +++++");
 
+    File getPatchTestFolder = new File("testGetPatch");
+    getPatchTestFolder.mkdirs();
+    assertTrue(getPatchTestFolder.isDirectory());
+    assertTrue(CommonUtil.truncateFolder(getPatchTestFolder));
+
+    ByteArrayOutputStream cout = new ByteArrayOutputStream();
+    DownloadResult result = PatchDownloader.getCatalog(cout, TestCommon.urlRoot + "PatchDownloaderTest_getPatch_catalog.xml", 0L, null, -1);
+    assertEquals(DownloadResult.SUCCEED, result);
+
+    Catalog catalog = Catalog.read(cout.toByteArray());
+    assertNotNull(catalog);
+    List<Patch> patches = catalog.getPatchs();
+    assertEquals(2, patches.size());
+    Patch patch1 = patches.get(0);
+    assertEquals("http://localhost/SoftwareUpdaterTest/PatchDownloaderTest_getPatch_1.4.4_2.0.patch", patch1.getDownloadUrl());
+    assertEquals("6d7d2dfe32d56de62bf9b8ba487382db241e31491dc574dddc5642edb0ed70b2", patch1.getDownloadChecksum());
+    assertEquals(505058, patch1.getDownloadLength());
+    Patch patch2 = patches.get(1);
+    assertEquals("http://localhost/SoftwareUpdaterTest/PatchDownloaderTest_getPatch_2.0_3.0.9.patch", patch2.getDownloadUrl());
+    assertEquals("0f3f9c3e5f4deb43de2d84e446743806220b88b039cf9cc941cccfc905ea7fbc", patch2.getDownloadChecksum());
+    assertEquals(1340810, patch2.getDownloadLength());
+
+    File clientScriptTemp = new File("PatchDownloaderTest_getPaych_client.xml");
+    CommonUtil.copyFile(new File(packagePath + "PatchDownloaderTest_getPaych_client.xml"), clientScriptTemp);
+
+    final AtomicBoolean progressIncrementCorrect = new AtomicBoolean(true);
+    final AtomicInteger progressRecord = new AtomicInteger(0);
+    final AtomicInteger numberOfPatchDownloaded = new AtomicInteger(0);
+    PatchDownloader.downloadPatches(new DownloadPatchesListener() {
+
+      @Override
+      public void downloadPatchesPatchDownloaded(Patch patch) throws IOException {
+        numberOfPatchDownloaded.incrementAndGet();
+      }
+
+      @Override
+      public void downloadPatchesProgress(int progress) {
+        if (progress < progressRecord.get()) {
+          progressIncrementCorrect.set(false);
+        }
+        progressRecord.set(progress);
+      }
+
+      @Override
+      public void downloadPatchesMessage(String message) {
+      }
+    }, patches, getPatchTestFolder.getAbsolutePath(), 0, 0);
+    assertEquals(2, numberOfPatchDownloaded.get());
+    assertTrue(progressIncrementCorrect.get());
+    assertEquals(100, progressRecord.get());
+
+    File downloadedPatch1 = new File(getPatchTestFolder.getAbsolutePath() + File.separator + "1.patch");
+    File downloadedPatch2 = new File(getPatchTestFolder.getAbsolutePath() + File.separator + "2.patch");
+    assertEquals(patch1.getDownloadChecksum(), CommonUtil.getSHA256String(downloadedPatch1));
+    assertEquals(505058L, downloadedPatch1.length());
+    assertEquals(patch2.getDownloadChecksum(), CommonUtil.getSHA256String(downloadedPatch2));
+    assertEquals(1340810L, downloadedPatch2.length());
+
+    assertTrue(CommonUtil.truncateFolder(getPatchTestFolder));
+    getPatchTestFolder.delete();
+
+    clientScriptTemp.delete();
   }
 }

@@ -84,7 +84,7 @@ public class BatchPatcher implements Pausable {
       return returnList;
     }
 
-    listener.patchProgress(1, "Starting ...");
+    listener.patchProgress(0, "Starting ...");
     // iterate patches and do patch
     final float stepSize = 100F / (float) _patches.size();
 
