@@ -398,7 +398,7 @@ public class Patcher implements Pausable {
               if (destFile.list().length == 0) {
                 log(1);
                 if (!destFile.renameTo(backupFile)) {
-                  returnValue = new ReplacementRecord(operationType, destFileAbsPath, "", backupFileAbsPath);
+                  returnValue = new ReplacementRecord(operationType, 1, destFileAbsPath, "", backupFileAbsPath);
                 }
               } else {
                 log(2);
@@ -421,7 +421,7 @@ public class Patcher implements Pausable {
             } else {
               log(6);
               if (!destFile.renameTo(backupFile)) {
-                returnValue = new ReplacementRecord(operationType, destFileAbsPath, "", backupFileAbsPath);
+                returnValue = new ReplacementRecord(operationType, 6, destFileAbsPath, "", backupFileAbsPath);
               }
             }
           } else {
@@ -473,7 +473,7 @@ public class Patcher implements Pausable {
             log(15);
             prepareNewFile(operation, patchIn, newFile, destFile);
             if (!newFile.renameTo(destFile)) {
-              returnValue = new ReplacementRecord(operationType, "", newFileAbsPath, backupFileAbsPath);
+              returnValue = new ReplacementRecord(operationType, 15, "", newFileAbsPath, backupFileAbsPath);
             }
           }
         }
@@ -513,12 +513,12 @@ public class Patcher implements Pausable {
               }
               if (destFileChecksum == null) {
                 log(0);
-                returnValue = new ReplacementRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
+                returnValue = new ReplacementRecord(operationType, 0, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
               } else if (!backupFile.exists() && (operation.getNewFileLength() != destFileLength || !operation.getNewFileChecksum().equals(destFileChecksum))) {
                 log(20);
                 prepareNewFile(operation, patchIn, newFile, destFile);
                 if (!destFile.renameTo(backupFile) || !newFile.renameTo(destFile)) {
-                  returnValue = new ReplacementRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
+                  returnValue = new ReplacementRecord(operationType, 20, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
                 }
               } else if (operation.getNewFileLength() == destFileLength && operation.getNewFileChecksum().equals(destFileChecksum)) {
                 prepareLog(operation.getId(), destFileExist, "", "", "");
@@ -533,7 +533,7 @@ public class Patcher implements Pausable {
             log(23);
             prepareNewFile(operation, patchIn, newFile, destFile);
             if (!newFile.renameTo(destFile)) {
-              returnValue = new ReplacementRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
+              returnValue = new ReplacementRecord(operationType, 23, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
             }
           }
         }
@@ -555,7 +555,7 @@ public class Patcher implements Pausable {
             }
             if (destFileChecksum == null) {
               log(0);
-              returnValue = new ReplacementRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
+              returnValue = new ReplacementRecord(operationType, 0, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
             } else if (backupFile.exists()) {
               log(25);
               // succeed
@@ -563,7 +563,7 @@ public class Patcher implements Pausable {
               log(26);
               prepareNewFile(operation, patchIn, newFile, destFile);
               if (!destFile.renameTo(backupFile) || !newFile.renameTo(destFile)) {
-                returnValue = new ReplacementRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
+                returnValue = new ReplacementRecord(operationType, 26, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
               }
             } else {
               log(27);
@@ -574,7 +574,7 @@ public class Patcher implements Pausable {
           if (backupFile.exists() && newFile.exists()) {
             log(28);
             if (!newFile.renameTo(destFile)) {
-              returnValue = new ReplacementRecord(operationType, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
+              returnValue = new ReplacementRecord(operationType, 28, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
             }
           } else {
             log(29);

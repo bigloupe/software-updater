@@ -610,7 +610,7 @@ public class PatchTest {
 
       List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertEquals(1, replacementList.size());
-      assertEquals(replacementList.get(0), new ReplacementRecord(OperationType.FORCE, new File(softwareFolder.getAbsolutePath() + File.separator + "20").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "3").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_3").getAbsolutePath()));
+      assertEquals(new ReplacementRecord(OperationType.FORCE, 0, new File(softwareFolder.getAbsolutePath() + File.separator + "20").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "3").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_3").getAbsolutePath()), replacementList.get(0));
 
       assertExistance(16, 1, true, true, true, false);
       assertExistance(18, 2, true, true, true, false);
@@ -669,8 +669,8 @@ public class PatchTest {
 
       List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertEquals(2, replacementList.size());
-      assertEquals(replacementList.get(0), new ReplacementRecord(OperationType.REMOVE, new File(softwareFolder.getAbsolutePath() + File.separator + "6").getAbsolutePath(), "", new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_2").getAbsolutePath()));
-      assertEquals(replacementList.get(1), new ReplacementRecord(OperationType.REPLACE, new File(softwareFolder.getAbsolutePath() + File.separator + "26").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "11").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_11").getAbsolutePath()));
+      assertEquals(new ReplacementRecord(OperationType.REMOVE, 6, new File(softwareFolder.getAbsolutePath() + File.separator + "6").getAbsolutePath(), "", new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_2").getAbsolutePath()), replacementList.get(0));
+      assertEquals(new ReplacementRecord(OperationType.REPLACE, 0, new File(softwareFolder.getAbsolutePath() + File.separator + "26").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "11").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_11").getAbsolutePath()), replacementList.get(1));
 
       lock1_file.release();
       lock6.release();

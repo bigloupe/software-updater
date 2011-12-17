@@ -1,0 +1,1 @@
+Some tests need to get files from the Internet, so you have to put those files in the 'web/' folder becomes Internet available and update the 'urlRoot' in the updater/TestCommon.java.
