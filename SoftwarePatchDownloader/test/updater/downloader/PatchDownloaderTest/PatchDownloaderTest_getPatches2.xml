@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<patches>
+  <patch id="1"><version><from>1.0.0</from><to>1.0.1</to></version><download><url>url</url><checksum>cs</checksum><length>82</length></download></patch>
+  <patch id="2"><version><from>1.0.0</from><to>1.0.2</to></version><download><url>url</url><checksum>cs</checksum><length>187</length></download></patch>
+  <patch id="3"><version><from>1.0.0</from><to>1.0.3</to></version><download><url>url</url><checksum>cs</checksum><length>174</length></download></patch>
+  <patch id="4"><version><from>1.0.0</from><to>1.0.4</to></version><download><url>url</url><checksum>cs</checksum><length>251</length></download></patch>
+  <patch id="5"><version><from>1.0.0</from><to>1.0.5</to></version><download><url>url</url><checksum>cs</checksum><length>407</length></download></patch>
+  <patch id="6"><version><from>1.0.0</from><to>1.0.6</to></version><download><url>url</url><checksum>cs</checksum><length>214</length></download></patch>
+
+  <patch id="7"><version><from>1.0.1</from><to>1.0.2</to></version><download><url>url</url><checksum>cs</checksum><length>75</length></download></patch>
+  <patch id="8"><version><from>1.0.1</from><to>1.0.3</to></version><download><url>url</url><checksum>cs</checksum><length>30</length></download></patch>
+  <patch id="9"><version><from>1.0.1</from><to>1.0.4</to></version><download><url>url</url><checksum>cs</checksum><length>13</length></download></patch>
+
+  <patch id="10"><version><from>1.0.2</from><to>1.0.3</to></version><download><url>url</url><checksum>cs</checksum><length>16</length></download></patch>
+  <patch id="11"><version><from>1.0.2</from><to>1.0.4</to></version><download><url>url</url><checksum>cs</checksum><length>200</length></download></patch>
+  <patch id="12"><version><from>1.0.2</from><to>1.0.5</to></version><download><url>url</url><checksum>cs</checksum><length>204</length></download></patch>
+
+  <patch id="13"><version><from>1.0.3</from><to>1.0.4</to></version><download><url>url</url><checksum>cs</checksum><length>100</length></download></patch>
+  <patch id="14"><version><from>1.0.3</from><to>1.0.5</to></version><download><url>url</url><checksum>cs</checksum><length>88</length></download></patch>
+  <patch id="15"><version><from>1.0.3</from><to>1.0.6</to></version><download><url>url</url><checksum>cs</checksum><length>273</length></download></patch>
+
+  <patch id="16"><version><from>1.0.4</from><to>1.0.5</to></version><download><url>url</url><checksum>cs</checksum><length>7</length></download></patch>
+  <patch id="17"><version><from>1.0.4</from><to>1.0.6</to></version><download><url>url</url><checksum>cs</checksum><length>184</length></download></patch>
+
+  <patch id="18"><version><from>1.0.5</from><to>1.0.6</to></version><download><url>url</url><checksum>cs</checksum><length>14</length></download></patch>
+
+  <patch id="19"><type>full></type><version><from-subsequent>1.0.0</from-subsequent><to>2.0.0</to></version><download><url>url</url><checksum>cs</checksum><length>200</length></download></patch>
+</patches>

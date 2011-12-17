@@ -1,5 +1,6 @@
 package updater.concurrent;
 
+import java.io.Closeable;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.nio.channels.FileLock;
@@ -14,9 +15,9 @@ import updater.util.CommonUtil;
 public class ConcurrentLock {
 
   /**
-   * The file output stream that the lock belongs to.
+   * The file input/output stream that the lock belongs to.
    */
-  protected OutputStream lockFileOut;
+  protected Closeable lockFileStream;
   /**
    * The file lock.
    */
@@ -25,18 +26,18 @@ public class ConcurrentLock {
   /**
    * Constructor.
    * 
-   * @param fileOut the file output stream that the lock belongs to
+   * @param lockFileStream the file input/output stream that the lock belongs to
    * @param fileLock the file lock
    */
-  public ConcurrentLock(FileOutputStream fileOut, FileLock fileLock) {
-    if (fileOut == null) {
+  public ConcurrentLock(Closeable lockFileStream, FileLock fileLock) {
+    if (lockFileStream == null) {
       throw new NullPointerException("argument 'fileOut' cannot be null");
     }
     if (fileLock == null) {
       throw new NullPointerException("argument 'fileLock' cannot be null");
     }
 
-    this.lockFileOut = fileOut;
+    this.lockFileStream = lockFileStream;
     this.fileLock = fileLock;
   }
 
@@ -45,8 +46,8 @@ public class ConcurrentLock {
    */
   public synchronized void release() {
     CommonUtil.releaseLockQuietly(fileLock);
-    CommonUtil.closeQuietly(lockFileOut);
+    CommonUtil.closeQuietly(lockFileStream);
     fileLock = null;
-    lockFileOut = null;
+    lockFileStream = null;
   }
 }

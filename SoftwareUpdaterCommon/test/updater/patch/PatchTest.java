@@ -605,17 +605,17 @@ public class PatchTest {
   public void test3Step1(File patch, AESKey aesKey) throws Exception {
     ConcurrentLock lock20 = null;
     try {
-      lock20 = LockUtil.acquireLock(new File(softwareFolder.getAbsolutePath() + File.separator + "20"), 0, 0);
+      lock20 = TestCommon.acquireShareLock(new File(softwareFolder.getAbsolutePath() + File.separator + "20"));
       assertNotNull(lock20);
 
       List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertEquals(1, replacementList.size());
-      assertEquals(new ReplacementRecord(OperationType.FORCE, 0, new File(softwareFolder.getAbsolutePath() + File.separator + "20").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "3").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_3").getAbsolutePath()), replacementList.get(0));
+      assertEquals(new ReplacementRecord(OperationType.FORCE, 20, new File(softwareFolder.getAbsolutePath() + File.separator + "20").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "3").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_3").getAbsolutePath()), replacementList.get(0));
 
       assertExistance(16, 1, true, true, true, false);
       assertExistance(18, 2, true, true, true, false);
       assertExistance(20, 3, false, false, true, false);
-      assertFalse(new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "3").exists());
+      assertTrue(new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "3").exists());
       assertExistance(21, 4, false, false, true, false);
       assertTrue(new String(CommonUtil.readFile(new File(softwareFolder.getAbsolutePath() + File.separator + "21"))).equals("21_new"));
       assertExistance(23, 5, false, false, true, false);
@@ -660,17 +660,17 @@ public class PatchTest {
     try {
       File folder1LockFile = new File(softwareFolder.getAbsolutePath() + File.separator + "1/lock");
       CommonUtil.truncateFile(folder1LockFile);
-      lock1_file = LockUtil.acquireLock(folder1LockFile, 0, 0);
+      lock1_file = TestCommon.acquireShareLock(folder1LockFile);
       assertNotNull(lock1_file);
-      lock6 = LockUtil.acquireLock(new File(softwareFolder.getAbsolutePath() + File.separator + "6"), 0, 0);
+      lock6 = TestCommon.acquireShareLock(new File(softwareFolder.getAbsolutePath() + File.separator + "6"));
       assertNotNull(lock6);
-      lock26 = LockUtil.acquireLock(new File(softwareFolder.getAbsolutePath() + File.separator + "26"), 0, 0);
+      lock26 = TestCommon.acquireShareLock(new File(softwareFolder.getAbsolutePath() + File.separator + "26"));
       assertNotNull(lock26);
 
       List<ReplacementRecord> replacementList = detailPatchingTestInit(patch, aesKey);
       assertEquals(2, replacementList.size());
       assertEquals(new ReplacementRecord(OperationType.REMOVE, 6, new File(softwareFolder.getAbsolutePath() + File.separator + "6").getAbsolutePath(), "", new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_2").getAbsolutePath()), replacementList.get(0));
-      assertEquals(new ReplacementRecord(OperationType.REPLACE, 0, new File(softwareFolder.getAbsolutePath() + File.separator + "26").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "11").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_11").getAbsolutePath()), replacementList.get(1));
+      assertEquals(new ReplacementRecord(OperationType.REPLACE, 26, new File(softwareFolder.getAbsolutePath() + File.separator + "26").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "11").getAbsolutePath(), new File(tempDirForApplyPatch.getAbsolutePath() + File.separator + "old_11").getAbsolutePath()), replacementList.get(1));
 
       lock1_file.release();
       lock6.release();

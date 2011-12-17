@@ -142,14 +142,17 @@ public class BatchPatcher implements Pausable {
       for (ReplacementRecord _replacement : replacementList) {
         switch (_replacement.getOperationType()) {
           case REMOVE:
+            // for 1, 6
             destinationReplacement.put(_replacement.getDestinationFilePath(), _replacement.getBackupFilePath());
             break;
           case REPLACE:
           case PATCH:
           case FORCE:
+            // for 20, 23, 26
             destinationReplacement.put(_replacement.getDestinationFilePath(), _replacement.getNewFilePath());
             break;
           case NEW:
+            // for 15
             if (!_replacement.getNewFilePath().isEmpty() && !_replacement.getDestinationFilePath().isEmpty()) {
               destinationReplacement.put(_replacement.getDestinationFilePath(), _replacement.getNewFilePath());
             }

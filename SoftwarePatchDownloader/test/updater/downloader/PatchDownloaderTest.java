@@ -60,7 +60,8 @@ public class PatchDownloaderTest {
   }
 
   /**
-   * Test of getSuitablePatches method, of class SoftwareUpdater.
+   * Test of getSuitablePatches method, of class SoftwareUpdater. Very simple 
+   * test case only.
    */
   @Test
   public void testGetPatches_Catalog_String() {
@@ -128,6 +129,42 @@ public class PatchDownloaderTest {
     assertEquals("1.0.6", update.getVersionTo());
 
     assertEquals(16 + 88 + 14, totalSize);
+  }
+
+  @Test
+  public void testGetPatches_Catalog_String2() {
+    System.out.println("+++++ testGetPatches_Catalog_String2 +++++");
+    System.out.println("+ full patch only");
+
+    byte[] catalogData = null;
+    try {
+      catalogData = Util.readFile(new File(packagePath + "PatchDownloaderTest_getPatches2.xml"));
+    } catch (IOException ex) {
+      Logger.getLogger(PatchDownloaderTest.class.getName()).log(Level.SEVERE, null, ex);
+    }
+    assertNotNull(catalogData);
+    assertTrue(catalogData.length != 0);
+
+    Catalog catalog = null;
+    try {
+      catalog = Catalog.read(catalogData);
+    } catch (InvalidFormatException ex) {
+      Logger.getLogger(PatchDownloader.class.getName()).log(Level.SEVERE, null, ex);
+      fail("! Failed to read test file.");
+    }
+
+
+    List<Patch> result = PatchDownloader.getSuitablePatches(catalog, "1.0.0", true);
+    assertEquals(1, result.size());
+
+    int totalSize = 0;
+
+    Patch update = result.get(0);
+    totalSize += update.getDownloadLength();
+    assertEquals("1.0.0", update.getVersionFrom());
+    assertEquals("2.0.0", update.getVersionTo());
+
+    assertEquals(200, totalSize);
   }
 
   /**

@@ -52,6 +52,8 @@ mkdir "%softwareDirectory%\src\org\apache\commons"
 call:copyDir src\org\apache\commons\codec
 mkdir "%softwareDirectory%\src"
 call:copyDir src\watne
+mkdir "%softwareDirectory%\src\updater\concurrent"
+call:copyFile src\updater\concurrent\ConcurrentLock.java
 mkdir "%softwareDirectory%\src\updater\crypto"
 call:copyFile src\updater\crypto\AESKey.java
 call:copyFile src\updater\crypto\KeyGenerator.java

@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.crypto.BadPaddingException;
 import updater.script.Catalog;
 import updater.script.Client;
@@ -31,6 +33,7 @@ import updater.util.HTTPDownloader;
  * @author Chan Wai Shing <cws1989@gmail.com>
  */
 public class PatchDownloader {
+  private static final Logger LOG = Logger.getLogger(PatchDownloader.class.getName());
 
   protected PatchDownloader() {
   }
@@ -100,9 +103,11 @@ public class PatchDownloader {
 
     final AtomicInteger retryTimesRemaining = new AtomicInteger(retryTimes);
 
+    // use to restrict/lower the 'download size' refresh time interval
     final AtomicLong lastRefreshTime = new AtomicLong(0L);
     final AtomicInteger downloadedSizeSinceLastRefresh = new AtomicInteger(0);
 
+    // global download(ed) size record
     final long totalDownloadSize = calculateTotalLength(patches);
     final AtomicInteger downloadedSize = new AtomicInteger(0);
 
@@ -111,6 +116,7 @@ public class PatchDownloader {
 
     // download
     for (Patch patch : patches) {
+      // downloaded size of this patch
       final AtomicInteger patchDownloadedSize = new AtomicInteger(0);
       DownloadProgressListener getPatchListener = new DownloadProgressListener() {
 
@@ -181,6 +187,7 @@ public class PatchDownloader {
                 patch.getDownloadEncryptionType(), patch.getDownloadEncryptionKey(), patch.getDownloadEncryptionIV(),
                 new ArrayList<Operation>(), new ArrayList<ValidationFile>()));
       } catch (IOException ex) {
+        LOG.log(Level.WARNING, null, ex);
         return DownloadPatchesResult.SAVE_TO_CLIENT_SCRIPT_FAIL;
       }
     }

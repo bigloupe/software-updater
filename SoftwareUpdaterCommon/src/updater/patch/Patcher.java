@@ -513,7 +513,8 @@ public class Patcher implements Pausable {
               }
               if (destFileChecksum == null) {
                 log(0);
-                returnValue = new ReplacementRecord(operationType, 0, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
+                throw new IOException(String.format("Failed to read file %1$s", destFileAbsPath));
+//                returnValue = new ReplacementRecord(operationType, 0, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
               } else if (!backupFile.exists() && (operation.getNewFileLength() != destFileLength || !operation.getNewFileChecksum().equals(destFileChecksum))) {
                 log(20);
                 prepareNewFile(operation, patchIn, newFile, destFile);
@@ -555,7 +556,8 @@ public class Patcher implements Pausable {
             }
             if (destFileChecksum == null) {
               log(0);
-              returnValue = new ReplacementRecord(operationType, 0, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
+              throw new IOException(String.format("Failed to read file %1$s", destFileAbsPath));
+//              returnValue = new ReplacementRecord(operationType, 0, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
             } else if (backupFile.exists()) {
               log(25);
               // succeed
@@ -737,6 +739,12 @@ public class Patcher implements Pausable {
         String destChangeTo = null;
         if ((destChangeTo = destinationReplacement.get(operation.getDestFilePath())) != null) {
           operation.setDestFilePath(destChangeTo);
+        }
+      }
+      for (ValidationFile validation : validations) {
+        String destChangeTo = null;
+        if ((destChangeTo = destinationReplacement.get(validation.getFilePath())) != null) {
+          validation.setFilePath(destChangeTo);
         }
       }
 

@@ -63,6 +63,8 @@ mkdir -p "$SOFTWARE_DIRECTORY/src/org/apache/commons"
 linkDir src/org/apache/commons/codec
 mkdir -p "$SOFTWARE_DIRECTORY/src"
 linkDir src/watne
+mkdir -p "$SOFTWARE_DIRECTORY/src/updater/concurrent"
+linkFile src/updater/concurrent/ConcurrentLock.java
 mkdir -p "$SOFTWARE_DIRECTORY/src/updater/crypto"
 linkFile src/updater/crypto/AESKey.java
 linkFile src/updater/crypto/KeyGenerator.java

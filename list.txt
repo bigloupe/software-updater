@@ -33,6 +33,7 @@ file: test/updater/TestCommon.java
 =SoftwarePatchBuilder=
 dir:  src/org/apache/commons/codec/
 dir:  src/watne/
+file: src/updater/concurrent/ConcurrentLock.java
 file: src/updater/crypto/AESKey.java
 file: src/updater/crypto/KeyGenerator.java
 file: src/updater/crypto/RSAKey.java

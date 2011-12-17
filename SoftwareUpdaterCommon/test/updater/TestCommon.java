@@ -1,16 +1,22 @@
 package updater;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import updater.concurrent.ConcurrentLock;
 import updater.util.CommonUtil;
 
 /**
@@ -147,6 +153,39 @@ public class TestCommon {
         CommonUtil.copyFile(file, copyTo);
       }
     }
+  }
+
+  public static ConcurrentLock acquireShareLock(File fileToLock) {
+    if (fileToLock == null) {
+      throw new NullPointerException("argument 'fileToLock' cannot be null");
+    }
+
+    ConcurrentLock returnLock = null;
+
+    FileInputStream lockFileIn = null;
+    FileLock fileLock = null;
+    try {
+      lockFileIn = new FileInputStream(fileToLock);
+      try {
+        fileLock = lockFileIn.getChannel().tryLock(0, fileToLock.length(), true);
+        if (fileLock == null) {
+          throw new IOException("failed to acquire share lock");
+        }
+      } catch (OverlappingFileLockException ex) {
+        throw new IOException(ex);
+      }
+
+      returnLock = new ConcurrentLock(lockFileIn, fileLock);
+    } catch (IOException ex) {
+      Logger.getLogger(TestCommon.class.getName()).log(Level.FINE, null, ex);
+    } finally {
+      if (returnLock == null) {
+        CommonUtil.closeQuietly(lockFileIn);
+        CommonUtil.releaseLockQuietly(fileLock);
+      }
+    }
+
+    return returnLock;
   }
 
   public static void unzip(File zipFile, File unzipTo) throws IOException {
