@@ -78,10 +78,10 @@ public class BatchPatcher implements Pausable {
     }
     List<Patch> _patches = new ArrayList<Patch>(patches);
 
-    List<PatchRecord> returnList = new ArrayList<PatchRecord>();
+    List<PatchRecord> replacementList = new ArrayList<PatchRecord>();
 
     if (_patches.isEmpty()) {
-      return returnList;
+      return replacementList;
     }
 
     listener.patchProgress(0, "Starting ...");
@@ -125,7 +125,7 @@ public class BatchPatcher implements Pausable {
       // initialize patcher
       final int _count = count;
       patcher = new Patcher(new File(tempDirForPatch + File.separator + "action.log"));
-      List<ReplacementRecord> replacementList = patcher.doPatch(new PatcherListener() {
+      List<ReplacementRecord> _replacementList = patcher.doPatch(new PatcherListener() {
 
         @Override
         public void patchProgress(int percentage, String message) {
@@ -139,27 +139,31 @@ public class BatchPatcher implements Pausable {
           listener.patchEnableCancel(enable);
         }
       }, patchFile, _patch.getId(), aesKey, applyToFolder, tempDirForPatch, destinationReplacement);
-      for (ReplacementRecord _replacement : replacementList) {
+      for (ReplacementRecord _replacement : _replacementList) {
+        String key = findKey(destinationReplacement, _replacement.getDestinationFilePath());
+        if (key == null) {
+          key = _replacement.getDestinationFilePath();
+        }
         switch (_replacement.getOperationType()) {
           case REMOVE:
             // for 1, 6
-            destinationReplacement.put(_replacement.getDestinationFilePath(), _replacement.getBackupFilePath());
+            destinationReplacement.put(key, _replacement.getBackupFilePath());
             break;
           case REPLACE:
           case PATCH:
           case FORCE:
             // for 20, 23, 26
-            destinationReplacement.put(_replacement.getDestinationFilePath(), _replacement.getNewFilePath());
+            destinationReplacement.put(key, _replacement.getNewFilePath());
             break;
           case NEW:
             // for 15
             if (!_replacement.getNewFilePath().isEmpty() && !_replacement.getDestinationFilePath().isEmpty()) {
-              destinationReplacement.put(_replacement.getDestinationFilePath(), _replacement.getNewFilePath());
+              destinationReplacement.put(key, _replacement.getNewFilePath());
             }
             break;
         }
       }
-      if (!replacementList.isEmpty()) {
+      if (!_replacementList.isEmpty()) {
         previousPatchingAllSucceed = false;
       }
 
@@ -174,6 +178,21 @@ public class BatchPatcher implements Pausable {
       patcher = null;
     }
 
-    return returnList;
+    return replacementList;
+  }
+
+  /**
+   * Fine the key in the map with value {@code value}.
+   * @param mapToSearch the map
+   * @param value the value
+   * @return the key or null if not found
+   */
+  public String findKey(Map<String, String> mapToSearch, String value) {
+    for (String key : mapToSearch.keySet()) {
+      if (value.equals(mapToSearch.get(key))) {
+        return key;
+      }
+    }
+    return null;
   }
 }
