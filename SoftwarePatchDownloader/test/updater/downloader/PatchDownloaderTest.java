@@ -161,7 +161,7 @@ public class PatchDownloaderTest {
 
     Patch update = result.get(0);
     totalSize += update.getDownloadLength();
-    assertEquals("1.0.0", update.getVersionFrom());
+    assertEquals("1.0.0", update.getVersionFromSubsequent());
     assertEquals("2.0.0", update.getVersionTo());
 
     assertEquals(200, totalSize);

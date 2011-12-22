@@ -709,7 +709,7 @@ public class PatchTest {
     }
   }
 
-  @Test
+//  @Test
   public void patchingTest() throws Exception {
     System.out.println("+++++ patchingTest +++++");
 

@@ -176,6 +176,10 @@ public class BatchPatcher implements Pausable {
       }
 
       patcher = null;
+
+      if (count == patches.size() - 1) {
+        replacementList.addAll(_replacementList);
+      }
     }
 
     return replacementList;

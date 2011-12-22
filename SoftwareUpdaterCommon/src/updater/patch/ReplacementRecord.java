@@ -7,11 +7,12 @@ public class ReplacementRecord extends PatchRecord {
 
   protected OperationType operationType;
 
-  public ReplacementRecord(OperationType operationType, int operationId, String backupFilePath, String newFilePath, String destinationFilePath) {
+  public ReplacementRecord(OperationType operationType, int operationId, String destinationFilePath, String newFilePath, String backupFilePath) {
     super(-1, operationId, false, backupFilePath, newFilePath, destinationFilePath);
     if (operationType == null) {
       throw new NullPointerException("argument 'operationType' cannot be null");
     }
+    this.operationType = operationType;
   }
 
   /**

@@ -473,7 +473,7 @@ public class Patcher implements Pausable {
             log(15);
             prepareNewFile(operation, patchIn, newFile, destFile);
             if (!newFile.renameTo(destFile)) {
-              returnValue = new ReplacementRecord(operationType, 15, "", newFileAbsPath, backupFileAbsPath);
+              returnValue = new ReplacementRecord(operationType, 15, destFileAbsPath, newFileAbsPath, backupFileAbsPath);
             }
           }
         }

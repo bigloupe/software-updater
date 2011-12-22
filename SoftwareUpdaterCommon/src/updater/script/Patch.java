@@ -212,7 +212,11 @@ public class Patch {
       if (_downloadUrlElement != null) {
         _downloadUrl = XMLUtil.getTextContent(_downloadElement, "url", true);
         _downloadChecksum = XMLUtil.getTextContent(_downloadElement, "checksum", true);
-        _downloadLength = Integer.parseInt(XMLUtil.getTextContent(_downloadElement, "length", true));
+        try {
+          _downloadLength = Integer.parseInt(XMLUtil.getTextContent(_downloadElement, "length", true));
+        } catch (NumberFormatException ex) {
+          throw new InvalidFormatException("attribute 'length' for 'download' element is not a valid integer");
+        }
       }
 
       Element _downloadEncryptionElement = XMLUtil.getElement(_downloadElement, "encryption", false);
@@ -486,8 +490,12 @@ public class Patch {
       int length = 0;
       if (_type.equals("patch") || _type.equals("replace") || _type.equals("new") || _type.equals("force")) {
         Element _contentElement = XMLUtil.getElement(operationElement, "content", true);
-        pos = Integer.parseInt(XMLUtil.getTextContent(_contentElement, "pos", true));
-        length = Integer.parseInt(XMLUtil.getTextContent(_contentElement, "length", true));
+        try {
+          pos = Integer.parseInt(XMLUtil.getTextContent(_contentElement, "pos", true));
+          length = Integer.parseInt(XMLUtil.getTextContent(_contentElement, "length", true));
+        } catch (NumberFormatException ex) {
+          throw new InvalidFormatException("pos or length of <content> is not a valid integer, found: pos: " + XMLUtil.getTextContent(_contentElement, "pos", true) + ", length: " + XMLUtil.getTextContent(_contentElement, "length", true));
+        }
       }
 
       String _fileType = XMLUtil.getTextContent(operationElement, "file-type", true);
@@ -498,7 +506,11 @@ public class Patch {
       if (_type.equals("patch") || _type.equals("replace") || _type.equals("remove")) {
         Element _oldFileElement = XMLUtil.getElement(operationElement, "old-file", true);
         oldChecksum = XMLUtil.getTextContent(_oldFileElement, "checksum", true);
-        oldLength = Integer.parseInt(XMLUtil.getTextContent(_oldFileElement, "length", true));
+        try {
+          oldLength = Integer.parseInt(XMLUtil.getTextContent(_oldFileElement, "length", true));
+        } catch (NumberFormatException ex) {
+          throw new InvalidFormatException("length of <old-file> is not a valid integer, found: " + XMLUtil.getTextContent(_oldFileElement, "length", true));
+        }
       }
 
       String newChecksum = null;
@@ -506,7 +518,11 @@ public class Patch {
       if (_type.equals("patch") || _type.equals("replace") || _type.equals("new") || _type.equals("force")) {
         Element _newFileElement = XMLUtil.getElement(operationElement, "new-file", true);
         newChecksum = XMLUtil.getTextContent(_newFileElement, "checksum", true);
-        newLength = Integer.parseInt(XMLUtil.getTextContent(_newFileElement, "length", true));
+        try {
+          newLength = Integer.parseInt(XMLUtil.getTextContent(_newFileElement, "length", true));
+        } catch (NumberFormatException ex) {
+          throw new InvalidFormatException("length of <new-file> is not a valid integer, found: " + XMLUtil.getTextContent(_newFileElement, "length", true));
+        }
       }
 
       return new Operation(_id, _type, pos, length, _fileType, destPath, oldChecksum, oldLength, newChecksum, newLength);

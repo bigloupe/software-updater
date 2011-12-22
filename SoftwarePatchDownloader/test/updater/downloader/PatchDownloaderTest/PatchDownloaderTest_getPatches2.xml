@@ -24,5 +24,5 @@
 
   <patch id="18"><version><from>1.0.5</from><to>1.0.6</to></version><download><url>url</url><checksum>cs</checksum><length>14</length></download></patch>
 
-  <patch id="19"><type>full></type><version><from-subsequent>1.0.0</from-subsequent><to>2.0.0</to></version><download><url>url</url><checksum>cs</checksum><length>200</length></download></patch>
+  <patch id="19"><type>full</type><version><from-subsequent>1.0.0</from-subsequent><to>2.0.0</to></version><download><url>url</url><checksum>cs</checksum><length>200</length></download></patch>
 </patches>
