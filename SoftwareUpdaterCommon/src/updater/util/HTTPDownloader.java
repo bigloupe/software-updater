@@ -384,7 +384,9 @@ public class HTTPDownloader implements Pausable, Interruptible {
     if (retryTimes <= 0) {
       return result;
     }
-    listener.downloadRetry(result);
+    if (listener != null) {
+      listener.downloadRetry(result);
+    }
     try {
       Thread.sleep(Math.max(0, retryDelay));
     } catch (InterruptedException ex) {

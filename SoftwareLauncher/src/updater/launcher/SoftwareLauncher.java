@@ -236,33 +236,36 @@ public class SoftwareLauncher {
       String mainClass = client.getLaunchMainClass();
       List<String> launchCommands = client.getLaunchCommands();
 
-      ConcurrentLock instanceLock = LockUtil.acquireLock(LockType.INSTANCE, new File(client.getStoragePath()), 1000, 50);
+      final ConcurrentLock instanceLock = LockUtil.acquireLock(LockType.INSTANCE, new File(client.getStoragePath()), 1000, 50);
+      Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 
-      try {
-        if (launchType.equals("jar")) {
-          startSoftware(jarPath, mainClass, args);
+        @Override
+        public void run() {
+          instanceLock.release();
+        }
+      }));
+
+      if (launchType.equals("jar")) {
+        startSoftware(jarPath, mainClass, args);
+      } else {
+        ProcessBuilder builder = new ProcessBuilder(launchCommands);
+        Process process = null;
+        try {
+          process = builder.start();
+        } catch (Exception ex) {
+          throw new LaunchFailedException(ex);
+        }
+        if (afterLaunchOperation != null && afterLaunchOperation.equals("exit")) {
+          instanceLock.release();
+          System.exit(0);
         } else {
-          ProcessBuilder builder = new ProcessBuilder(launchCommands);
-          Process process = null;
           try {
-            process = builder.start();
-          } catch (Exception ex) {
-            throw new LaunchFailedException(ex);
-          }
-          if (afterLaunchOperation != null && afterLaunchOperation.equals("exit")) {
-            instanceLock.release();
-            System.exit(0);
-          } else {
-            try {
-              process.waitFor();
-            } catch (InterruptedException ex) {
-              LOG.log(Level.INFO, null, ex);
-              Thread.currentThread().interrupt();
-            }
+            process.waitFor();
+          } catch (InterruptedException ex) {
+            LOG.log(Level.INFO, null, ex);
+            Thread.currentThread().interrupt();
           }
         }
-      } finally {
-        instanceLock.release();
       }
     }
   }
