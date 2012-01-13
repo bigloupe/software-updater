@@ -188,6 +188,7 @@ public class SoftwareSelfUpdater {
           break;
         }
       }
+      JOptionPane.showMessageDialog(null, "Software update completed.");
     } catch (IOException ex) {
       JOptionPane.showMessageDialog(null, "Error occurred when reading replacement file.");
       return;

@@ -216,6 +216,7 @@ public class SoftwareLauncher {
         // check if there is any replacement failed and do the replacement with the self updater
         if (replacementFailList.isEmpty()) {
           launchSoftware = true;
+          JOptionPane.showMessageDialog(updaterFrame, "Software update completed.");
         } else {
           handleReplacement(client, replacementFailList, args);
         }
