@@ -195,6 +195,7 @@ public class HTTPDownloader implements Pausable, Interruptible {
       downloading = true;
 
       URLConnection conn = url.openConnection();
+      conn.setConnectTimeout(5000);
       if (!(conn instanceof HttpURLConnection)) {
         throw new MalformedURLException("It is not a valid http URL: " + conn.toString());
       }
