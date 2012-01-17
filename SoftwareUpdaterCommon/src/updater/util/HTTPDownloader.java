@@ -413,7 +413,11 @@ public class HTTPDownloader implements Pausable, Interruptible {
     } catch (InterruptedException ex) {
       Thread.currentThread().interrupt();
     }
-    check();
+    try {
+      check();
+    } catch (RuntimeException ex) {
+      return DownloadResult.INTERRUPTED;
+    }
     if (truncateResumeFileOnRetry) {
       CommonUtil.truncateFile(resumeFile);
     }

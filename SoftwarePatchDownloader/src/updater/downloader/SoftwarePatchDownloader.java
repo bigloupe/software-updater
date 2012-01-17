@@ -219,10 +219,12 @@ public class SoftwarePatchDownloader {
       LOG.log(Level.SEVERE, null, ex);
       JOptionPane.showMessageDialog(updaterFrame, "Patches catalog format invalid.");
       disposeWindow(updaterFrame);
+      return;
     } catch (IOException ex) {
       LOG.log(Level.SEVERE, null, ex);
       JOptionPane.showMessageDialog(updaterFrame, "Error occurred when getting the patches catalog.");
       disposeWindow(updaterFrame);
+      return;
     }
 
     // determine suitable patches to download
