@@ -256,7 +256,7 @@ public class Client {
     String _catalogPublicKeyModulus = null;
     String _catalogPublicKeyExponent = null;
     Long _catalogLastUpdated = -1L;
-    Boolean catalogFullPackOnly = null;
+    Boolean _catalogFullPackOnly = null;
     Element _catalogNode = XMLUtil.getElement(_rootNode, "catalog", false);
     if (_catalogNode != null) {
       _catalogUrl = XMLUtil.getTextContent(_catalogNode, "url", true);
@@ -271,25 +271,25 @@ public class Client {
       _catalogLastUpdated = _catalogLastUpdatedString != null ? Long.parseLong(_catalogLastUpdatedString) : -1;
     }
 
-    List<Patch> patches = new ArrayList<Patch>();
+    List<Patch> _patches = new ArrayList<Patch>();
     Element _patchesElement = XMLUtil.getElement(_rootNode, "patches", false);
     if (_patchesElement != null) {
       NodeList _patchNodeList = _patchesElement.getElementsByTagName("patch");
       for (int i = 0, iEnd = _patchNodeList.getLength(); i < iEnd; i++) {
         Element _patchNode = (Element) _patchNodeList.item(i);
-        patches.add(Patch.read(_patchNode));
+        _patches.add(Patch.read(_patchNode));
       }
     }
     String _catalogFullPackOnlyString = XMLUtil.getTextContent(_catalogNode, "full-pack-only", false);
     if (_catalogFullPackOnlyString != null) {
-      catalogFullPackOnly = _catalogFullPackOnlyString.equals("true");
+      _catalogFullPackOnly = _catalogFullPackOnlyString.equals("true");
     }
 
     return new Client(_version,
             _storagePath, _information,
             _launchType, _launchAfterLaunch, _launchCommands, _launchJarPath, _launchMainClass,
-            _catalogUrl, _catalogPublicKeyModulus, _catalogPublicKeyExponent, _catalogLastUpdated, catalogFullPackOnly,
-            patches);
+            _catalogUrl, _catalogPublicKeyModulus, _catalogPublicKeyExponent, _catalogLastUpdated, _catalogFullPackOnly,
+            _patches);
   }
 
   public byte[] output() throws TransformerException {

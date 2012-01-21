@@ -752,7 +752,7 @@ public class SoftwarePatchBuilder {
   }
 
   public static void version() {
-    System.out.println("Software Updater - Patch Builder\r\nversion: 0.1.0 preview");
+    System.out.println("Software Updater - Patch Builder\r\nversion: 0.9.2 beta");
   }
 
   public static void showHelp(Options options) {

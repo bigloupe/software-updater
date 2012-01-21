@@ -174,47 +174,68 @@ public class SoftwareLauncher {
       try {
         lock = LockUtil.acquireLock(LockType.UPDATER, new File(storagePath), 1000, 50);
 
-        replacementFailList = batchPatcher.doPatch(new BatchPatchListener() {
+        try {
+          replacementFailList = batchPatcher.doPatch(new BatchPatchListener() {
 
-          @Override
-          public void patchProgress(int percentage, String message) {
-            updaterGUI.setProgress(percentage);
-            updaterGUI.setMessage(message);
-          }
+            @Override
+            public void patchProgress(int percentage, String message) {
+              updaterGUI.setProgress(percentage);
+              updaterGUI.setMessage(message);
+            }
 
-          @Override
-          public void patchEnableCancel(boolean enable) {
-            updaterGUI.setCancelEnabled(enable);
-          }
+            @Override
+            public void patchEnableCancel(boolean enable) {
+              updaterGUI.setCancelEnabled(enable);
+            }
 
-          @Override
-          public void patchInvalid(Patch patch) throws IOException {
-            List<Patch> patches = client.getPatches();
-            patches.remove(patch);
-            client.setPatches(patches);
+            @Override
+            public void patchInvalid(Patch patch) throws IOException {
+              List<Patch> patches = client.getPatches();
+              patches.remove(patch);
+              client.setPatches(patches);
+              try {
+                CommonUtil.saveClientScript(clientScriptFile, client);
+              } catch (TransformerException ex) {
+                throw new IOException(ex);
+              }
+            }
+
+            @Override
+            public void patchFinished(Patch patch) throws IOException {
+              List<Patch> patches = client.getPatches();
+              patches.remove(patch);
+              client.setPatches(patches);
+              client.setVersion(patch.getVersionTo());
+              try {
+                CommonUtil.saveClientScript(clientScriptFile, client);
+              } catch (TransformerException ex) {
+                throw new IOException(ex);
+              }
+            }
+          }, new File("." + File.separator), new File(storagePath), client.getVersion(), client.getPatches());
+        } catch (IOException ex) {
+          if (!(client.isCatalogFullPackOnly() == true)) {
+            client.setCatalogFullPackOnly(true);
             try {
               CommonUtil.saveClientScript(clientScriptFile, client);
-            } catch (TransformerException ex) {
-              throw new IOException(ex);
+            } catch (Exception ex1) {
+              LOG.log(Level.SEVERE, null, ex1);
             }
           }
-
-          @Override
-          public void patchFinished(Patch patch) throws IOException {
-            List<Patch> patches = client.getPatches();
-            patches.remove(patch);
-            client.setPatches(patches);
-            client.setVersion(patch.getVersionTo());
-            try {
-              CommonUtil.saveClientScript(clientScriptFile, client);
-            } catch (TransformerException ex) {
-              throw new IOException(ex);
-            }
-          }
-        }, new File("." + File.separator), new File(storagePath), client.getVersion(), client.getPatches());
+          throw ex;
+        }
 
         // check if there is any replacement failed and do the replacement with the self updater
         if (replacementFailList.isEmpty()) {
+          if (client.isCatalogFullPackOnly() == true) {
+            client.setCatalogFullPackOnly(null);
+            try {
+              CommonUtil.saveClientScript(clientScriptFile, client);
+            } catch (Exception ex) {
+              LOG.log(Level.SEVERE, null, ex);
+            }
+          }
+
           launchSoftware = true;
           JOptionPane.showMessageDialog(updaterFrame, "Software update completed.");
         } else {
