@@ -214,7 +214,7 @@ public class SoftwareLauncher {
             }
           }, new File("." + File.separator), new File(storagePath), client.getVersion(), client.getPatches());
         } catch (IOException ex) {
-          if (!(client.isCatalogFullPackOnly() == true)) {
+          if (!(client.isCatalogFullPackOnly() == Boolean.TRUE)) {
             client.setCatalogFullPackOnly(true);
             try {
               CommonUtil.saveClientScript(clientScriptFile, client);
@@ -227,7 +227,7 @@ public class SoftwareLauncher {
 
         // check if there is any replacement failed and do the replacement with the self updater
         if (replacementFailList.isEmpty()) {
-          if (client.isCatalogFullPackOnly() == true) {
+          if (client.isCatalogFullPackOnly() == Boolean.TRUE) {
             client.setCatalogFullPackOnly(null);
             try {
               CommonUtil.saveClientScript(clientScriptFile, client);

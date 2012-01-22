@@ -131,7 +131,7 @@ public class SoftwareSelfUpdaterTest {
       } catch (InterruptedException ex) {
       }
 
-      assertTrue("please tune the sleeping time if your computer is not fast enough", testFile.exists());
+      assertTrue("please tune the above sleeping time if your computer is not fast enough", testFile.exists());
       testFile.delete();
       assertFalse(testFile.exists());
     } finally {
