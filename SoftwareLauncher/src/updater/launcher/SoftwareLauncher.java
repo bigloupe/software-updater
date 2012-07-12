@@ -38,6 +38,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.ListIterator;
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -276,6 +277,13 @@ public class SoftwareLauncher {
       String mainClass = client.getLaunchMainClass();
       List<String> launchCommands = client.getLaunchCommands();
 
+      String javaBinary = getJavaBinary();
+      ListIterator<String> listIterator = launchCommands.listIterator();
+      while (listIterator.hasNext()) {
+        String _command = listIterator.next();
+        listIterator.set(_command.replace("{java}", javaBinary));
+      }
+
       final ConcurrentLock instanceLock = LockUtil.acquireLock(LockType.INSTANCE, new File(client.getStoragePath()), 1000, 50);
       Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 
@@ -346,7 +354,7 @@ public class SoftwareLauncher {
     // prepare the command to execute the self updater
     List<String> commands = new ArrayList<String>();
 
-    String javaBinary = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
+    String javaBinary = getJavaBinary();
     // the physical/file path of this launcher jar
     String launcherPath = null;
     try {
@@ -423,6 +431,14 @@ public class SoftwareLauncher {
     } catch (Exception ex) {
       throw new LaunchFailedException(ex);
     }
+  }
+
+  /**
+   * Get the path of java binary.
+   * @return the path of java binary
+   */
+  protected static String getJavaBinary() {
+    return System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
   }
 
   public static void main(String[] args) {

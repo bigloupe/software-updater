@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<root>
+  <version>1.0.0</version>
+  <storage-path>./</storage-path>
+  <launch>
+    <type>command</type>
+    <command>{java}</command>
+    <command>-jar</command>
+    <command>test\updater\launcher\SoftwareStarterTest\SoftwareStarterLaunchTest.jar</command>
+    <command>testLaunch_A9fD6</command>
+  </launch>
+  <catalog>
+    <url>catalog.xml</url>
+  </catalog>
+</root>
