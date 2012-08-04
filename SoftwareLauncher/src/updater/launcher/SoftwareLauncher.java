@@ -55,6 +55,7 @@ import updater.script.InvalidFormatException;
 import updater.script.Patch;
 import updater.util.CommonUtil;
 import updater.util.GetClientScriptResult;
+import updater.util.StreamRedirect;
 
 /**
  * The software launcher main class.
@@ -307,6 +308,11 @@ public class SoftwareLauncher {
           instanceLock.release();
           System.exit(0);
         } else {
+          StreamRedirect stdRedirect = new StreamRedirect(process.getInputStream(), System.out);
+          StreamRedirect errRedirect = new StreamRedirect(process.getErrorStream(), System.err);
+          stdRedirect.start();
+          errRedirect.start();
+
           try {
             process.waitFor();
           } catch (InterruptedException ex) {

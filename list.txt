@@ -27,6 +27,7 @@ file: src/updater/util/InterruptibleInputStream.java
 file: src/updater/util/InterruptibleOutputStream.java
 file: src/updater/util/Pausable.java
 file: src/updater/util/SeekableFile.java
+file: src/updater/util/StreamRedirect.java
 file: src/updater/util/XMLUtil.java
 file: test/updater/TestCommon.java
 

@@ -41,6 +41,7 @@ call:linkFile src\updater\util\InterruptibleInputStream.java
 call:linkFile src\updater\util\InterruptibleOutputStream.java
 call:linkFile src\updater\util\Pausable.java
 call:linkFile src\updater\util\SeekableFile.java
+call:linkFile src\updater\util\StreamRedirect.java
 call:linkFile src\updater\util\XMLUtil.java
 mkdir "%softwareDirectory%\test\updater"
 call:linkFile test\updater\TestCommon.java

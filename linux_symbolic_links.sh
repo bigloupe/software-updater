@@ -52,6 +52,7 @@ linkFile src/updater/util/InterruptibleInputStream.java
 linkFile src/updater/util/InterruptibleOutputStream.java
 linkFile src/updater/util/Pausable.java
 linkFile src/updater/util/SeekableFile.java
+linkFile src/updater/util/StreamRedirect.java
 linkFile src/updater/util/XMLUtil.java
 mkdir -p "$SOFTWARE_DIRECTORY/test/updater"
 linkFile test/updater/TestCommon.java
