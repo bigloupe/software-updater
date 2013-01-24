@@ -419,7 +419,9 @@ public class HTTPDownloader implements Pausable, Interruptible {
       return DownloadResult.INTERRUPTED;
     }
     if (truncateResumeFileOnRetry) {
-      CommonUtil.truncateFile(resumeFile);
+      if (resumeFile != null) {
+        CommonUtil.truncateFile(resumeFile);
+      }
     }
     return download(listener, url, fileSHA256, expectedLength, retryTimes - 1, retryDelay);
   }
