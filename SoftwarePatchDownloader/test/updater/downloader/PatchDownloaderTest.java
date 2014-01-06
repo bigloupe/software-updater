@@ -251,8 +251,8 @@ public class PatchDownloaderTest {
     assertEquals("0f3f9c3e5f4deb43de2d84e446743806220b88b039cf9cc941cccfc905ea7fbc", patch2.getDownloadChecksum());
     assertEquals(1340810, patch2.getDownloadLength());
 
-    File clientScriptTemp = new File("PatchDownloaderTest_getPaych_client.xml");
-    CommonUtil.copyFile(new File(packagePath + "PatchDownloaderTest_getPaych_client.xml"), clientScriptTemp);
+    File clientScriptTemp = new File("PatchDownloaderTest_getPatch_client.xml");
+    CommonUtil.copyFile(new File(packagePath + "PatchDownloaderTest_getPatch_client.xml"), clientScriptTemp);
 
     final AtomicBoolean progressIncrementCorrect = new AtomicBoolean(true);
     final AtomicInteger progressRecord = new AtomicInteger(0);
