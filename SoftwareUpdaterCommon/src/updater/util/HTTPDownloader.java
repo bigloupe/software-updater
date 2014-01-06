@@ -331,7 +331,7 @@ public class HTTPDownloader implements Pausable, Interruptible {
         outputToOut = outputTo;
       }
       int byteRead, cumulateByteRead = 0;
-      byte[] b = new byte[32];
+      byte[] b = new byte[2048];
       while ((byteRead = in.read(b)) != -1) {
         try {
           check();
