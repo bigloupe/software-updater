@@ -752,7 +752,7 @@ public class SoftwarePatchBuilder {
   }
 
   public static void version() {
-    System.out.println("Software Updater - Patch Builder\r\nversion: 0.9.3 beta");
+    System.out.println("Software Updater - Patch Builder\r\nversion: 0.9.4 beta");
   }
 
   public static void showHelp(Options options) {
