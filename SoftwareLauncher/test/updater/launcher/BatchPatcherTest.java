@@ -49,10 +49,7 @@ public class BatchPatcherTest {
   public void tearDown() {
   }
 
-  @Test
-  public void testDoPatch() throws Exception {
-    System.out.println("+++++ testDoPatch +++++");
-
+  protected void testDoPatch(List<Patch> patches) throws Exception {
     File doPatchTestFolder = new File("testDoPatch");
     doPatchTestFolder.mkdirs();
     assertTrue(doPatchTestFolder.isDirectory());
@@ -69,18 +66,6 @@ public class BatchPatcherTest {
     TestCommon.unzip(new File(packagePath + "BatchPatcherTest_doPatch_phpBB.zip"), doPatchTestFolder);
     File softwareFolder = new File(doPatchTestFolder.getAbsolutePath() + File.separator + "1.4.4");
     File newVersionFolder = new File(doPatchTestFolder.getAbsolutePath() + File.separator + "3.0.9");
-
-    List<Patch> patches = new ArrayList<Patch>();
-    patches.add(new Patch(1,
-            "patch", "1.4.4", null, "2.0",
-            null, null, -1,
-            null, null, null,
-            null, null));
-    patches.add(new Patch(2,
-            "patch", "2.0", null, "3.0.9",
-            null, null, -1,
-            null, null, null,
-            null, null));
 
     final AtomicBoolean invalidPatch = new AtomicBoolean(false);
     final AtomicInteger numberOfPatchFinished = new AtomicInteger(0);
@@ -120,5 +105,66 @@ public class BatchPatcherTest {
 
     assertTrue(CommonUtil.truncateFolder(doPatchTestFolder));
     assertTrue(doPatchTestFolder.delete());
+  }
+
+  @Test
+  public void testDoPatch() throws Exception {
+    System.out.println("+++++ testDoPatch +++++");
+
+    System.out.println("+ case 1");
+    List<Patch> patches = new ArrayList<Patch>();
+    patches.add(new Patch(1,
+            "patch", "1.4.4", null, "2.0",
+            null, null, -1,
+            null, null, null,
+            null, null));
+    patches.add(new Patch(2,
+            "patch", "2.0", null, "3.0.9",
+            null, null, -1,
+            null, null, null,
+            null, null));
+    testDoPatch(patches);
+
+    System.out.println("+ case 2");
+    patches = new ArrayList<Patch>();
+    patches.add(new Patch(1,
+            "patch", null, "1.4.0", "2.0",
+            null, null, -1,
+            null, null, null,
+            null, null));
+    patches.add(new Patch(2,
+            "patch", null, "1.5.0", "3.0.9",
+            null, null, -1,
+            null, null, null,
+            null, null));
+    testDoPatch(patches);
+
+    System.out.println("+ case 3");
+    patches = new ArrayList<Patch>();
+    patches.add(new Patch(1,
+            "patch", "1.4.4", null, "2.0",
+            null, null, -1,
+            null, null, null,
+            null, null));
+    patches.add(new Patch(2,
+            "patch", null, "1.5.0", "3.0.9",
+            null, null, -1,
+            null, null, null,
+            null, null));
+    testDoPatch(patches);
+
+    System.out.println("+ case 4");
+    patches = new ArrayList<Patch>();
+    patches.add(new Patch(1,
+            "patch", null, "1.4.0", "2.0",
+            null, null, -1,
+            null, null, null,
+            null, null));
+    patches.add(new Patch(2,
+            "patch", "2.0", null, "3.0.9",
+            null, null, -1,
+            null, null, null,
+            null, null));
+    testDoPatch(patches);
   }
 }

@@ -116,8 +116,9 @@ public class BatchPatcher implements Pausable {
     for (Patch _patch : _patches) {
       count++;
 
-      // check if the update if not suitable
-      if (!currentVersion.equals(_patch.getVersionFrom())) {
+      // check if the version of the patch matches the current software version
+      if ((_patch.getVersionFrom() != null && !currentVersion.equals(_patch.getVersionFrom()))
+              || (_patch.getVersionFromSubsequent() != null && Util.compareVersion(_patch.getVersionFromSubsequent(), currentVersion) > 0)) {
         // normally should not reach here
         listener.patchInvalid(_patch);
         continue;
