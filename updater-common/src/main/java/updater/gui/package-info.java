@@ -1,0 +1,4 @@
+/**
+ * GUI.
+ */
+package updater.gui;
